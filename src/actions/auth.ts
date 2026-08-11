@@ -24,9 +24,14 @@ export async function loginAction(
     });
 
     if (error) {
+      console.error("[loginAction] signIn", {
+        message: error.message,
+        status: error.status,
+      });
       return { ok: false, error: "登入失敗，請檢查電郵或密碼" };
     }
 
+    revalidatePath("/", "layout");
     redirect("/");
   } catch (error) {
     if (
