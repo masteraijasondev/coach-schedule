@@ -18,18 +18,25 @@ export default async function RatesPage() {
         .order("full_name"),
       supabase
         .from("lesson_types")
-        .select("id, name")
+        .select("id, name, pay_mode")
         .eq("active", true)
         .order("name"),
       supabase.from("coach_rates").select("*"),
     ]);
 
   const coachName = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
-  const typeName = new Map((types ?? []).map((t) => [t.id, t.name]));
+  const typeMeta = new Map(
+    (types ?? []).map((t) => [t.id, { name: t.name, pay_mode: t.pay_mode }]),
+  );
+
+  function rateUnit(payMode: string) {
+    if (payMode === "per_head") return "每人";
+    return "堂";
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Panel title="設定教練薪資（按課堂類型）">
+      <Panel title="設定教練薪資（MIIT 每人 / PTA·Admin 每堂）">
         <ActionForm action={upsertCoachRateAction} className="space-y-3">
           <SelectField
             label="教練"
@@ -63,17 +70,21 @@ export default async function RatesPage() {
 
       <Panel title="現有規則">
         <ul className="divide-y divide-stone-100">
-          {(rates ?? []).map((rate) => (
+          {(rates ?? []).map((rate) => {
+            const meta = typeMeta.get(rate.lesson_type_id);
+            return (
             <li key={`${rate.coach_id}-${rate.lesson_type_id}`} className="py-3">
               <p className="font-medium">
                 {coachName.get(rate.coach_id) ?? "教練"} ·{" "}
-                {typeName.get(rate.lesson_type_id) ?? "類型"}
+                {meta?.name ?? "類型"}
               </p>
               <p className="text-sm text-stone-500">
-                {formatMoney(Number(rate.amount_hkd))} / 堂
+                {formatMoney(Number(rate.amount_hkd))} /{" "}
+                {rateUnit(meta?.pay_mode ?? "per_session")}
               </p>
             </li>
-          ))}
+            );
+          })}
           {(rates ?? []).length === 0 ? (
             <li className="py-3 text-sm text-stone-500">尚未設定薪資規則</li>
           ) : null}

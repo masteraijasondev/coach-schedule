@@ -3,9 +3,15 @@ import {
   toggleLessonTypeActiveAction,
 } from "@/actions/lesson-types";
 import { ActionForm } from "@/components/action-form";
-import { Field, Panel, SubmitButton } from "@/components/ui";
+import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+
+const PAY_MODE_LABELS: Record<string, string> = {
+  per_student: "按學生（PT）",
+  per_head: "按人數（MIIT）",
+  per_session: "按堂（PTA/Admin）",
+};
 
 export default async function LessonTypesPage() {
   await requireEmployer();
@@ -28,6 +34,16 @@ export default async function LessonTypesPage() {
             min="1"
             required
           />
+          <SelectField
+            label="薪資模式"
+            name="pay_mode"
+            required
+            options={[
+              { value: "per_student", label: PAY_MODE_LABELS.per_student },
+              { value: "per_head", label: PAY_MODE_LABELS.per_head },
+              { value: "per_session", label: PAY_MODE_LABELS.per_session },
+            ]}
+          />
           <SubmitButton>新增</SubmitButton>
         </ActionForm>
       </Panel>
@@ -42,7 +58,8 @@ export default async function LessonTypesPage() {
               <div>
                 <p className="font-medium">{type.name}</p>
                 <p className="text-sm text-stone-500">
-                  預設 {type.default_duration_minutes} 分鐘
+                  預設 {type.default_duration_minutes} 分鐘 ·{" "}
+                  {PAY_MODE_LABELS[type.pay_mode] ?? type.pay_mode}
                 </p>
               </div>
               <form

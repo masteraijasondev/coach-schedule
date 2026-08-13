@@ -13,6 +13,7 @@ export async function createLessonTypeAction(
     await requireEmployer();
     const name = String(formData.get("name") ?? "").trim();
     const duration = Number(formData.get("default_duration_minutes") ?? 60);
+    const payMode = String(formData.get("pay_mode") ?? "per_session");
 
     if (!name) {
       return { ok: false, error: "請輸入課堂類型名稱" };
@@ -20,11 +21,15 @@ export async function createLessonTypeAction(
     if (!Number.isFinite(duration) || duration <= 0) {
       return { ok: false, error: "預設時長必須大於 0" };
     }
+    if (!["per_student", "per_head", "per_session"].includes(payMode)) {
+      return { ok: false, error: "薪資模式無效" };
+    }
 
     const supabase = await createClient();
     const { error } = await supabase.from("lesson_types").insert({
       name,
       default_duration_minutes: duration,
+      pay_mode: payMode,
     });
 
     if (error) {

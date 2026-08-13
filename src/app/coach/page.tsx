@@ -4,9 +4,10 @@ import {
   updateCoachLessonAction,
 } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
+import { LessonRegisterFields } from "@/components/lesson-register-fields";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
-import { Panel, SelectField, SubmitButton } from "@/components/ui";
+import { Panel, SubmitButton } from "@/components/ui";
 import { TimeSelect } from "@/components/time-select";
 import { requireCoach } from "@/lib/auth";
 import {
@@ -32,22 +33,41 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const { start, end } = monthBoundsIso(month);
 
   const supabase = await createClient();
-  const [{ data: lessons }, { data: types }] = await Promise.all([
-    supabase
-      .from("lessons")
-      .select("*")
-      .eq("coach_id", coach.id)
-      .neq("status", "cancelled")
-      .gte("starts_at", start)
-      .lt("starts_at", end)
-      .order("starts_at", { ascending: true }),
-    supabase
-      .from("lesson_types")
-      .select("id, name")
-      .eq("active", true)
-      .order("name"),
-  ]);
+  const [{ data: lessons }, { data: types }, { data: students }] =
+    await Promise.all([
+      supabase
+        .from("lessons")
+        .select("*")
+        .eq("coach_id", coach.id)
+        .neq("status", "cancelled")
+        .gte("starts_at", start)
+        .lt("starts_at", end)
+        .order("starts_at", { ascending: true }),
+      supabase
+        .from("lesson_types")
+        .select("id, name, pay_mode")
+        .eq("active", true)
+        .order("name"),
+      supabase
+        .from("students")
+        .select("id, name")
+        .eq("active", true)
+        .order("name"),
+    ]);
 
+  const lessonIds = (lessons ?? []).map((l) => l.id);
+  const { data: lessonStudents } =
+    lessonIds.length > 0
+      ? await supabase
+          .from("lesson_students")
+          .select("lesson_id, student_id")
+          .in("lesson_id", lessonIds)
+      : { data: [] };
+
+  const studentByLesson = new Map(
+    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
+  );
+  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const countsByDay = new Map<string, number>();
   for (const lesson of lessons ?? []) {
@@ -60,8 +80,9 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   );
 
   const typeOptions = (types ?? []).map((t) => ({
-    value: t.id,
-    label: t.name,
+    id: t.id,
+    name: t.name,
+    pay_mode: t.pay_mode,
   }));
 
   return (
@@ -77,18 +98,16 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
 
       <Panel title={`登記課堂 · ${day}`}>
         <p className="mb-3 text-sm text-stone-500">
-          登記後即計入薪資（需已設定該課堂類型的薪資規則）。
+          登記後即計入薪資。PT 需選學生；MIIT 需填人數；PTA/Admin 只需類型與時間。
         </p>
         <ActionForm
           action={createCoachLessonAction}
           className="grid gap-3 sm:grid-cols-2"
         >
           <input type="hidden" name="date" value={day} />
-          <SelectField
-            label="課堂類型"
-            name="lesson_type_id"
-            required
-            options={typeOptions}
+          <LessonRegisterFields
+            types={typeOptions}
+            students={students ?? []}
           />
           <div className="grid grid-cols-2 gap-3">
             <TimeSelect label="開始" name="start_time" required />
@@ -109,6 +128,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
               "HH:mm",
             );
             const endTime = formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm");
+            const linkedStudentId = studentByLesson.get(lesson.id);
             const canDelete =
               lesson.status === "completed" || lesson.status === "assigned";
             return (
@@ -122,6 +142,16 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                     <p className="text-sm text-stone-500">
                       {formatDateTime(lesson.starts_at)} – {endTime}
                     </p>
+                    {linkedStudentId ? (
+                      <p className="text-sm text-stone-500">
+                        學生：{studentName.get(linkedStudentId) ?? "—"}
+                      </p>
+                    ) : null}
+                    {lesson.headcount != null ? (
+                      <p className="text-sm text-stone-500">
+                        人數：{lesson.headcount}
+                      </p>
+                    ) : null}
                     {lesson.earned_amount_hkd != null ? (
                       <p className="text-sm text-emerald-700">
                         {formatMoney(Number(lesson.earned_amount_hkd))}
@@ -146,12 +176,12 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                   >
                     <input type="hidden" name="lesson_id" value={lesson.id} />
                     <input type="hidden" name="date" value={day} />
-                    <SelectField
-                      label="課堂類型"
-                      name="lesson_type_id"
-                      required
-                      defaultValue={lesson.lesson_type_id}
-                      options={typeOptions}
+                    <LessonRegisterFields
+                      types={typeOptions}
+                      students={students ?? []}
+                      defaultTypeId={lesson.lesson_type_id}
+                      defaultStudentId={linkedStudentId}
+                      defaultHeadcount={lesson.headcount ?? undefined}
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <TimeSelect

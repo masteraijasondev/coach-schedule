@@ -4,8 +4,9 @@ import { fromZonedTime } from "date-fns-tz";
 import { requireCoach, requireEmployer } from "@/lib/auth";
 import { assertCoachLessonDate } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
+import { calculateLessonPay } from "@/lib/pay";
 import { createClient } from "@/lib/supabase/server";
-import type { ActionResult } from "@/lib/types";
+import type { ActionResult, PayMode } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
 function parseHongKongDateTime(date: string, time: string): Date {
@@ -56,31 +57,81 @@ async function assertNoCoachOverlap(
   return null;
 }
 
-async function getCoachRateAmount(
-  coachId: string,
+async function getLessonTypePayMode(
   lessonTypeId: string,
-): Promise<{ amount: number } | { error: string }> {
+): Promise<PayMode | { error: string }> {
   const supabase = await createClient();
-  const { data: rate, error } = await supabase
-    .from("coach_rates")
-    .select("amount_hkd")
-    .eq("coach_id", coachId)
-    .eq("lesson_type_id", lessonTypeId)
-    .maybeSingle();
+  const { data, error } = await supabase
+    .from("lesson_types")
+    .select("pay_mode")
+    .eq("id", lessonTypeId)
+    .single();
+
+  if (error || !data) {
+    console.error("[getLessonTypePayMode]", { error });
+    return { error: "讀取課堂類型失敗" };
+  }
+
+  return data.pay_mode as PayMode;
+}
+
+async function resolveLessonPay(input: {
+  coachId: string;
+  lessonTypeId: string;
+  studentId?: string | null;
+  headcountRaw?: string;
+}): Promise<{ amount: number; studentId?: string; headcount?: number } | { error: string }> {
+  const payModeResult = await getLessonTypePayMode(input.lessonTypeId);
+  if (typeof payModeResult === "object" && "error" in payModeResult) {
+    return payModeResult;
+  }
+
+  const headcount =
+    input.headcountRaw != null && input.headcountRaw !== ""
+      ? Number(input.headcountRaw)
+      : null;
+
+  const payResult = await calculateLessonPay({
+    coachId: input.coachId,
+    lessonTypeId: input.lessonTypeId,
+    payMode: payModeResult,
+    studentId: input.studentId,
+    headcount,
+  });
+
+  if ("error" in payResult) {
+    return payResult;
+  }
+
+  return {
+    amount: payResult.amount,
+    studentId: payModeResult === "per_student" ? input.studentId ?? undefined : undefined,
+    headcount: payModeResult === "per_head" ? headcount ?? undefined : undefined,
+  };
+}
+
+async function linkLessonStudent(
+  lessonId: string,
+  studentId: string | undefined,
+): Promise<ActionResult> {
+  if (!studentId) {
+    return { ok: true, data: undefined };
+  }
+
+  const supabase = await createClient();
+  await supabase.from("lesson_students").delete().eq("lesson_id", lessonId);
+
+  const { error } = await supabase.from("lesson_students").insert({
+    lesson_id: lessonId,
+    student_id: studentId,
+  });
 
   if (error) {
-    console.error("[getCoachRateAmount]", { error });
-    return { error: "讀取薪資規則失敗" };
+    console.error("[linkLessonStudent]", { error });
+    return { ok: false, error: "連結學生失敗" };
   }
 
-  if (!rate) {
-    return {
-      error:
-        "尚未設定此課堂類型的薪資規則，無法登記。請先到「薪資規則」為該教練加入對應類型金額。",
-    };
-  }
-
-  return { amount: Number(rate.amount_hkd) };
+  return { ok: true, data: undefined };
 }
 
 export async function createLessonAction(
@@ -96,7 +147,8 @@ export async function createLessonAction(
     const endTime = String(formData.get("end_time") ?? "");
     const coachId = String(formData.get("coach_id") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim() || null;
-    const studentIds = formData.getAll("student_ids").map(String);
+    const studentId = String(formData.get("student_id") ?? "").trim() || null;
+    const headcountRaw = String(formData.get("headcount") ?? "");
 
     if (!lessonTypeId || !date || !startTime || !endTime || !coachId) {
       return { ok: false, error: "請填寫課堂類型、時間與教練" };
@@ -118,7 +170,12 @@ export async function createLessonAction(
       return { ok: false, error: "結束時間必須晚於開始時間" };
     }
 
-    const rateResult = await getCoachRateAmount(coachId, lessonTypeId);
+    const rateResult = await resolveLessonPay({
+      coachId,
+      lessonTypeId,
+      studentId,
+      headcountRaw,
+    });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
     }
@@ -138,6 +195,7 @@ export async function createLessonAction(
         status: "completed",
         coach_id: coachId,
         earned_amount_hkd: rateResult.amount,
+        headcount: rateResult.headcount ?? null,
         notes,
       })
       .select("id")
@@ -148,20 +206,9 @@ export async function createLessonAction(
       return { ok: false, error: "建立課堂失敗" };
     }
 
-    if (studentIds.length > 0) {
-      const { error: studentsError } = await supabase
-        .from("lesson_students")
-        .insert(
-          studentIds.map((student_id) => ({
-            lesson_id: lesson.id,
-            student_id,
-          })),
-        );
-
-      if (studentsError) {
-        console.error("[createLessonAction] students", { error: studentsError });
-        return { ok: false, error: "課堂已建立，但學生連結失敗" };
-      }
+    const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
+    if (!linkResult.ok) {
+      return linkResult;
     }
 
     revalidateSchedules();
@@ -183,6 +230,8 @@ export async function createCoachLessonAction(
     const date = String(formData.get("date") ?? "");
     const startTime = String(formData.get("start_time") ?? "");
     const endTime = String(formData.get("end_time") ?? "");
+    const studentId = String(formData.get("student_id") ?? "").trim() || null;
+    const headcountRaw = String(formData.get("headcount") ?? "");
 
     if (!lessonTypeId || !date || !startTime || !endTime) {
       return { ok: false, error: "請填寫課堂類型與時間" };
@@ -209,7 +258,12 @@ export async function createCoachLessonAction(
       return { ok: false, error: "結束時間必須晚於開始時間" };
     }
 
-    const rateResult = await getCoachRateAmount(coach.id, lessonTypeId);
+    const rateResult = await resolveLessonPay({
+      coachId: coach.id,
+      lessonTypeId,
+      studentId,
+      headcountRaw,
+    });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
     }
@@ -224,18 +278,28 @@ export async function createCoachLessonAction(
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.from("lessons").insert({
-      lesson_type_id: lessonTypeId,
-      starts_at: startsAt,
-      ends_at: endsAt,
-      status: "completed",
-      coach_id: coach.id,
-      earned_amount_hkd: rateResult.amount,
-    });
+    const { data: lesson, error } = await supabase
+      .from("lessons")
+      .insert({
+        lesson_type_id: lessonTypeId,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        status: "completed",
+        coach_id: coach.id,
+        earned_amount_hkd: rateResult.amount,
+        headcount: rateResult.headcount ?? null,
+      })
+      .select("id")
+      .single();
 
-    if (error) {
+    if (error || !lesson) {
       console.error("[createCoachLessonAction]", { error });
       return { ok: false, error: "登記課堂失敗" };
+    }
+
+    const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
+    if (!linkResult.ok) {
+      return linkResult;
     }
 
     revalidateSchedules();
@@ -257,6 +321,8 @@ export async function updateCoachLessonAction(
     const date = String(formData.get("date") ?? "");
     const startTime = String(formData.get("start_time") ?? "");
     const endTime = String(formData.get("end_time") ?? "");
+    const studentId = String(formData.get("student_id") ?? "").trim() || null;
+    const headcountRaw = String(formData.get("headcount") ?? "");
 
     if (!lessonId || !lessonTypeId || !date || !startTime || !endTime) {
       return { ok: false, error: "請填寫完整資料" };
@@ -294,7 +360,12 @@ export async function updateCoachLessonAction(
       return { ok: false, error: "只能修改自己已登記的課堂" };
     }
 
-    const rateResult = await getCoachRateAmount(coach.id, lessonTypeId);
+    const rateResult = await resolveLessonPay({
+      coachId: coach.id,
+      lessonTypeId,
+      studentId,
+      headcountRaw,
+    });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
     }
@@ -317,6 +388,7 @@ export async function updateCoachLessonAction(
         ends_at: endsAt,
         status: "completed",
         earned_amount_hkd: rateResult.amount,
+        headcount: rateResult.headcount ?? null,
       })
       .eq("id", lessonId)
       .eq("status", "completed");
@@ -324,6 +396,11 @@ export async function updateCoachLessonAction(
     if (error) {
       console.error("[updateCoachLessonAction]", { error });
       return { ok: false, error: "更新課堂失敗" };
+    }
+
+    const linkResult = await linkLessonStudent(lessonId, rateResult.studentId);
+    if (!linkResult.ok) {
+      return linkResult;
     }
 
     revalidateSchedules();

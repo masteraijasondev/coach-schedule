@@ -41,6 +41,7 @@ export function SelectField({
   defaultValue,
   allowEmpty,
   emptyLabel = "— 請選擇 —",
+  onChange,
 }: {
   label: string;
   name: string;
@@ -49,6 +50,7 @@ export function SelectField({
   defaultValue?: string;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
 }) {
   return (
     <label className="block space-y-1 text-sm">
@@ -57,6 +59,7 @@ export function SelectField({
         name={name}
         required={required}
         defaultValue={defaultValue ?? ""}
+        onChange={onChange}
         className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500"
       >
         {allowEmpty ? <option value="">{emptyLabel}</option> : null}

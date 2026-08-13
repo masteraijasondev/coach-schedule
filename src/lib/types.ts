@@ -1,4 +1,5 @@
 export type UserRole = "employer" | "coach";
+export type PayMode = "per_student" | "per_head" | "per_session";
 export type LessonStatus = "open" | "assigned" | "completed" | "cancelled";
 export type RequestStatus = "pending" | "approved" | "rejected";
 
@@ -24,12 +25,19 @@ export type LessonType = {
   name: string;
   default_duration_minutes: number;
   active: boolean;
+  pay_mode: PayMode;
   created_at: string;
 };
 
 export type CoachRate = {
   coach_id: string;
   lesson_type_id: string;
+  amount_hkd: number;
+};
+
+export type CoachStudentRate = {
+  coach_id: string;
+  student_id: string;
   amount_hkd: number;
 };
 
@@ -41,6 +49,7 @@ export type Lesson = {
   status: LessonStatus;
   coach_id: string | null;
   earned_amount_hkd: number | null;
+  headcount: number | null;
   notes: string | null;
   created_at: string;
 };
