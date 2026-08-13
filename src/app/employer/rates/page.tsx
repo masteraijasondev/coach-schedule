@@ -31,12 +31,13 @@ export default async function RatesPage() {
 
   function rateUnit(payMode: string) {
     if (payMode === "per_head") return "每人";
+    if (payMode === "per_hour") return "小時";
     return "堂";
   }
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Panel title="設定教練薪資（MIIT 每人 / PTA·Admin 每堂）">
+      <Panel title="設定教練薪資（MIIT 每人 / PTA 每小時 / Admin 每堂）">
         <ActionForm action={upsertCoachRateAction} className="space-y-3">
           <SelectField
             label="教練"

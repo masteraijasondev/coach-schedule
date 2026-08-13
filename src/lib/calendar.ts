@@ -59,6 +59,52 @@ export function formatCellDay(date: Date): string {
   return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd");
 }
 
+/** Payroll period YYYY-MM = 11th of that month through 10th of next month. */
+export function payrollPeriodForDate(dateYmd: string): string {
+  const [y, m, d] = dateYmd.split("-").map(Number);
+  if (d >= 11) {
+    return `${y}-${String(m).padStart(2, "0")}`;
+  }
+  const date = new Date(Date.UTC(y, m - 2, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export function currentPayrollPeriod(): string {
+  return payrollPeriodForDate(hongKongToday());
+}
+
+export function parsePayrollPeriodParam(period?: string): string {
+  if (period && /^\d{4}-\d{2}$/.test(period)) {
+    return period;
+  }
+  return currentPayrollPeriod();
+}
+
+export function payrollPeriodBoundsIso(period: string): {
+  start: string;
+  end: string;
+} {
+  const [y, m] = period.split("-").map(Number);
+  const startLocal = fromZonedTime(
+    `${y}-${String(m).padStart(2, "0")}-11T00:00:00`,
+    TIMEZONE,
+  );
+  const nextY = m === 12 ? y + 1 : y;
+  const nextM = m === 12 ? 1 : m + 1;
+  const endLocal = fromZonedTime(
+    `${nextY}-${String(nextM).padStart(2, "0")}-11T00:00:00`,
+    TIMEZONE,
+  );
+  return { start: startLocal.toISOString(), end: endLocal.toISOString() };
+}
+
+export function payrollPeriodLabel(period: string): string {
+  const [y, m] = period.split("-").map(Number);
+  const nextY = m === 12 ? y + 1 : y;
+  const nextM = m === 12 ? 1 : m + 1;
+  return `${m}月11日 – ${nextM}月10日`;
+}
+
 export function assertCoachLessonDate(dateYmd: string): string | null {
   const zonedToday = toZonedTime(new Date(), TIMEZONE);
   const earliest = format(addDays(zonedToday, -COACH_BACKFILL_DAYS), "yyyy-MM-dd");

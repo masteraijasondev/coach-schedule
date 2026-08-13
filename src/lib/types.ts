@@ -1,5 +1,5 @@
 export type UserRole = "employer" | "coach";
-export type PayMode = "per_student" | "per_head" | "per_session";
+export type PayMode = "per_student" | "per_head" | "per_session" | "per_hour";
 export type LessonStatus = "open" | "assigned" | "completed" | "cancelled";
 export type RequestStatus = "pending" | "approved" | "rejected";
 

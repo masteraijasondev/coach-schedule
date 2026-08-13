@@ -21,7 +21,7 @@ export async function createLessonTypeAction(
     if (!Number.isFinite(duration) || duration <= 0) {
       return { ok: false, error: "預設時長必須大於 0" };
     }
-    if (!["per_student", "per_head", "per_session"].includes(payMode)) {
+    if (!["per_student", "per_head", "per_session", "per_hour"].includes(payMode)) {
       return { ok: false, error: "薪資模式無效" };
     }
 

@@ -13,6 +13,6 @@ insert into public.lesson_types (name, default_duration_minutes, pay_mode)
 values
   ('PT', 60, 'per_student'),
   ('MIIT', 60, 'per_head'),
-  ('PTA', 60, 'per_session'),
+  ('PTA', 60, 'per_hour'),
   ('Admin', 60, 'per_session')
 on conflict (name) do nothing;

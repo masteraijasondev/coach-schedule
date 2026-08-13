@@ -10,7 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 const PAY_MODE_LABELS: Record<string, string> = {
   per_student: "按學生（PT）",
   per_head: "按人數（MIIT）",
-  per_session: "按堂（PTA/Admin）",
+  per_session: "按堂（Admin）",
+  per_hour: "按時數（PTA）",
 };
 
 export default async function LessonTypesPage() {
@@ -42,6 +43,7 @@ export default async function LessonTypesPage() {
               { value: "per_student", label: PAY_MODE_LABELS.per_student },
               { value: "per_head", label: PAY_MODE_LABELS.per_head },
               { value: "per_session", label: PAY_MODE_LABELS.per_session },
+              { value: "per_hour", label: PAY_MODE_LABELS.per_hour },
             ]}
           />
           <SubmitButton>新增</SubmitButton>

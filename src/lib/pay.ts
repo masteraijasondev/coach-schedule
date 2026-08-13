@@ -7,6 +7,7 @@ export async function calculateLessonPay(input: {
   payMode: PayMode;
   studentId?: string | null;
   headcount?: number | null;
+  durationMinutes?: number;
 }): Promise<{ amount: number } | { error: string }> {
   const supabase = await createClient();
 
@@ -55,6 +56,31 @@ export async function calculateLessonPay(input: {
       };
     }
     return { amount: Number(rate.amount_hkd) * count };
+  }
+
+  if (input.payMode === "per_hour") {
+    const minutes = input.durationMinutes ?? 0;
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return { error: "課堂時長無效" };
+    }
+    const { data: rate, error } = await supabase
+      .from("coach_rates")
+      .select("amount_hkd")
+      .eq("coach_id", input.coachId)
+      .eq("lesson_type_id", input.lessonTypeId)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[calculateLessonPay] coach_rates per_hour", { error });
+      return { error: "讀取 PTA 時薪規則失敗" };
+    }
+    if (!rate) {
+      return {
+        error: "尚未設定此教練的 PTA 時薪，無法登記。",
+      };
+    }
+    const hours = minutes / 60;
+    return { amount: Math.round(Number(rate.amount_hkd) * hours * 100) / 100 };
   }
 
   const { data: rate, error } = await supabase

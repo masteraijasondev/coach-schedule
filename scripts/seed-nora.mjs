@@ -90,8 +90,8 @@ const NORA_EMAIL = "nora@gmail.com";
 const NORA_PASSWORD = "TempPass123!";
 const NORA_NAME = "Nora";
 
-const MIIT_PER_HEAD = 100;
-const PTA_PER_SESSION = 200;
+const MIIT_PER_HEAD = 90;
+const PTA_PER_HOUR = 120;
 const ADMIN_PER_SESSION = 300;
 
 const STUDENT_RATES = {
@@ -109,7 +109,6 @@ const STUDENT_RATES = {
   Mimi: 306,
   "Tiff group": 636,
   "Classpass Steven": 228,
-  Junpei: 360,
 };
 
 function hkIso(date, hhmm) {
@@ -131,8 +130,24 @@ function parseEnd(date, startHhmm, endHhmm) {
   return addMinutes(startIso, 60);
 }
 
+function durationHours(date, startHhmm, endHhmm) {
+  const startIso = new Date(hkIso(date, startHhmm)).toISOString();
+  const endIso = parseEnd(date, startHhmm, endHhmm ?? null);
+  return (new Date(endIso).getTime() - new Date(startIso).getTime()) / 3_600_000;
+}
+
 /** @type {Array<{date:string,type:string,student?:string,headcount?:number,start:number,end?:number}>} */
 const LESSONS = [
+  // 2026-05 結算期（5月11日 – 6月10日）
+  { date: "2026-05-22", type: "MIIT", headcount: 2, start: 1900, end: 2000 },
+  { date: "2026-05-24", type: "PT", student: "Edmond", start: 1015, end: 1115 },
+  { date: "2026-05-24", type: "PT", student: "Classpass Steven", start: 1140, end: 1240 },
+  { date: "2026-05-25", type: "PT", student: "Mimi", start: 1800, end: 1900 },
+  { date: "2026-05-25", type: "MIIT", headcount: 4, start: 1900, end: 2000 },
+  { date: "2026-05-25", type: "PT", student: "Kelly", start: 2000, end: 2100 },
+  { date: "2026-05-26", type: "PTA", start: 1830, end: 1930 },
+  { date: "2026-05-26", type: "PTA", student: "Kwankwan", start: 1930, end: 2100 },
+  { date: "2026-05-31", type: "PT", student: "Sam group", start: 1030, end: 1130 },
   { date: "2026-06-01", type: "MIIT", headcount: 3, start: 1900, end: 2000 },
   { date: "2026-06-01", type: "PT", student: "Kelly", start: 2020, end: 2120 },
   { date: "2026-06-02", type: "PT", student: "Tiff group", start: 1830, end: 1930 },
@@ -140,13 +155,14 @@ const LESSONS = [
   { date: "2026-06-02", type: "PT", student: "Chi", start: 2030, end: 2130 },
   { date: "2026-06-05", type: "PT", student: "Pearlie", start: 1830, end: 1930 },
   { date: "2026-06-05", type: "MIIT", headcount: 3, start: 1930, end: 2030 },
-  { date: "2026-06-07", type: "PT", student: "Yauyau", start: 930 },
-  { date: "2026-06-07", type: "PT", student: "Sam group", start: 1030 },
-  { date: "2026-06-07", type: "PT", student: "Classpass Steven", start: 1130 },
-  { date: "2026-06-07", type: "PT", student: "Ivan", start: 1230 },
+  { date: "2026-06-07", type: "PT", student: "Yauyau", start: 930, end: 1030 },
+  { date: "2026-06-07", type: "PT", student: "Sam group", start: 1030, end: 1130 },
+  { date: "2026-06-07", type: "PT", student: "Classpass Steven", start: 1130, end: 1230 },
+  { date: "2026-06-07", type: "PT", student: "Ivan", start: 1230, end: 1330 },
   { date: "2026-06-08", type: "MIIT", headcount: 5, start: 1900, end: 2000 },
-  { date: "2026-06-09", type: "PT", student: "Tiff group", start: 1830 },
-  { date: "2026-06-09", type: "PT", student: "Ivan", start: 2000 },
+  { date: "2026-06-09", type: "PT", student: "Tiff group", start: 1830, end: 1930 },
+  { date: "2026-06-09", type: "PT", student: "Ivan", start: 2000, end: 2100 },
+  // 2026-06 結算期（6月11日 – 7月10日）
   { date: "2026-06-12", type: "MIIT", headcount: 1, start: 1900, end: 2000 },
   { date: "2026-06-12", type: "PT", student: "Yauyau", start: 2000, end: 2100 },
   { date: "2026-06-15", type: "MIIT", headcount: 5, start: 1900, end: 2000 },
@@ -173,14 +189,6 @@ const LESSONS = [
   { date: "2026-07-09", type: "PTA", start: 1830, end: 1930 },
   { date: "2026-07-09", type: "PT", student: "Kelly", start: 1930, end: 2030 },
   { date: "2026-07-09", type: "PT", student: "Chi", start: 2030, end: 2130 },
-  { date: "2026-07-12", type: "Admin", start: 1030, end: 1230 },
-  { date: "2026-07-13", type: "PT", student: "Mimi", start: 1800, end: 1900 },
-  { date: "2026-07-16", type: "PT", student: "Yauyau", start: 1830, end: 1930 },
-  { date: "2026-07-17", type: "MIIT", headcount: 4, start: 1900, end: 2000 },
-  { date: "2026-07-19", type: "PT", student: "Edmond", start: 930, end: 1030 },
-  { date: "2026-07-20", type: "Admin", start: 1800, end: 1900 },
-  { date: "2026-07-23", type: "PT", student: "Junpei", start: 1830, end: 1930 },
-  { date: "2026-07-24", type: "MIIT", headcount: 5, start: 1900, end: 2000 },
 ];
 
 async function ensureMigrationApplied() {
@@ -257,7 +265,7 @@ async function ensureLessonTypes() {
   const specs = [
     { name: "PT", pay_mode: "per_student", default_duration_minutes: 60 },
     { name: "MIIT", pay_mode: "per_head", default_duration_minutes: 60 },
-    { name: "PTA", pay_mode: "per_session", default_duration_minutes: 60 },
+    { name: "PTA", pay_mode: "per_hour", default_duration_minutes: 60 },
     { name: "Admin", pay_mode: "per_session", default_duration_minutes: 60 },
   ];
 
@@ -289,8 +297,9 @@ async function ensureLessonTypes() {
 }
 
 async function ensureStudents() {
+  const names = [...new Set([...Object.keys(STUDENT_RATES), "Kwankwan"])];
   const studentIds = {};
-  for (const name of Object.keys(STUDENT_RATES)) {
+  for (const name of names) {
     const rows = await rest(
       `students?name=eq.${encodeURIComponent(name)}&select=id`,
     );
@@ -322,7 +331,7 @@ async function seedRates(coachId, typeIds, studentIds) {
 
   const coachRates = [
     { lesson_type_id: typeIds.MIIT, amount_hkd: MIIT_PER_HEAD },
-    { lesson_type_id: typeIds.PTA, amount_hkd: PTA_PER_SESSION },
+    { lesson_type_id: typeIds.PTA, amount_hkd: PTA_PER_HOUR },
     { lesson_type_id: typeIds.Admin, amount_hkd: ADMIN_PER_SESSION },
   ];
   for (const rate of coachRates) {
@@ -337,13 +346,22 @@ async function seedRates(coachId, typeIds, studentIds) {
 function earnedAmount(row) {
   if (row.type === "PT") return STUDENT_RATES[row.student];
   if (row.type === "MIIT") return row.headcount * MIIT_PER_HEAD;
-  if (row.type === "PTA") return PTA_PER_SESSION;
+  if (row.type === "PTA") {
+    return Math.round(durationHours(row.date, row.start, row.end ?? null) * PTA_PER_HOUR * 100) / 100;
+  }
   if (row.type === "Admin") return ADMIN_PER_SESSION;
   throw new Error(`Unknown type ${row.type}`);
 }
 
+function payrollPeriodForDate(dateYmd) {
+  const [y, m, d] = dateYmd.split("-").map(Number);
+  if (d >= 11) return `${y}-${String(m).padStart(2, "0")}`;
+  const prev = new Date(Date.UTC(y, m - 2, 1));
+  return `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 async function seedLessons(coachId, typeIds, studentIds) {
-  const rangeStart = encodeURIComponent("2026-06-01T00:00:00+08:00");
+  const rangeStart = encodeURIComponent("2026-05-01T00:00:00+08:00");
   const rangeEnd = encodeURIComponent("2026-08-01T00:00:00+08:00");
   const existingLessons = await rest(
     `lessons?coach_id=eq.${coachId}&starts_at=gte.${rangeStart}&starts_at=lt.${rangeEnd}&select=id`,
@@ -379,7 +397,7 @@ async function seedLessons(coachId, typeIds, studentIds) {
       },
     });
 
-    if (row.student) {
+    if (row.student && studentIds[row.student]) {
       await rest("lesson_students", {
         method: "POST",
         body: {
@@ -390,6 +408,13 @@ async function seedLessons(coachId, typeIds, studentIds) {
       });
     }
   }
+
+  const totals = {};
+  for (const row of LESSONS) {
+    const period = payrollPeriodForDate(row.date);
+    totals[period] = (totals[period] ?? 0) + earnedAmount(row);
+  }
+  console.log("Period totals:", totals);
 }
 
 async function main() {

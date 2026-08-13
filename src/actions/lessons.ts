@@ -80,6 +80,8 @@ async function resolveLessonPay(input: {
   lessonTypeId: string;
   studentId?: string | null;
   headcountRaw?: string;
+  startsAt: string;
+  endsAt: string;
 }): Promise<{ amount: number; studentId?: string; headcount?: number } | { error: string }> {
   const payModeResult = await getLessonTypePayMode(input.lessonTypeId);
   if (typeof payModeResult === "object" && "error" in payModeResult) {
@@ -91,12 +93,17 @@ async function resolveLessonPay(input: {
       ? Number(input.headcountRaw)
       : null;
 
+  const durationMinutes =
+    (new Date(input.endsAt).getTime() - new Date(input.startsAt).getTime()) /
+    60_000;
+
   const payResult = await calculateLessonPay({
     coachId: input.coachId,
     lessonTypeId: input.lessonTypeId,
     payMode: payModeResult,
     studentId: input.studentId,
     headcount,
+    durationMinutes,
   });
 
   if ("error" in payResult) {
@@ -175,6 +182,8 @@ export async function createLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      startsAt,
+      endsAt,
     });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
@@ -263,6 +272,8 @@ export async function createCoachLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      startsAt,
+      endsAt,
     });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
@@ -365,6 +376,8 @@ export async function updateCoachLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      startsAt,
+      endsAt,
     });
     if ("error" in rateResult) {
       return { ok: false, error: rateResult.error };
