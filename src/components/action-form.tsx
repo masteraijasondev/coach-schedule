@@ -3,11 +3,10 @@
 import { useActionState } from "react";
 import type { ActionResult } from "@/lib/types";
 
+type FormState = ActionResult | null;
+
 type Props = {
-  action: (
-    prev: ActionResult | null,
-    formData: FormData,
-  ) => Promise<ActionResult>;
+  action: (prev: FormState, formData: FormData) => Promise<ActionResult>;
   children: React.ReactNode;
   className?: string;
   onSuccess?: () => void;
@@ -15,7 +14,7 @@ type Props = {
 
 export function ActionForm({ action, children, className, onSuccess }: Props) {
   const [state, formAction, pending] = useActionState(
-    async (prev: ActionResult | null, formData: FormData) => {
+    async (prev: FormState, formData: FormData): Promise<FormState> => {
       try {
         const result = await action(prev, formData);
         if (result.ok) {
@@ -35,7 +34,11 @@ export function ActionForm({ action, children, className, onSuccess }: Props) {
           throw error;
         }
         console.error("[ActionForm]", { error });
-        return { ok: false, error: "操作失敗，請再試一次" };
+        const failure: ActionResult = {
+          ok: false,
+          error: "操作失敗，請再試一次",
+        };
+        return failure;
       }
     },
     null,
