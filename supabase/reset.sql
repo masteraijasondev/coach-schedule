@@ -14,5 +14,5 @@ values
   ('PT', 60, 'per_student'),
   ('MIIT', 60, 'per_head'),
   ('PTA', 60, 'per_hour'),
-  ('Admin', 60, 'per_session')
+  ('Admin', 60, 'per_hour')
 on conflict (name) do nothing;

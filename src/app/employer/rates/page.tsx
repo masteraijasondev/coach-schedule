@@ -37,7 +37,7 @@ export default async function RatesPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <Panel title="設定教練薪資（MIIT 每人 / PTA 每小時 / Admin 每堂）">
+      <Panel title="設定教練薪資（MIIT 每人 / PTA·Admin 每小時）">
         <ActionForm action={upsertCoachRateAction} className="space-y-3">
           <SelectField
             label="教練"

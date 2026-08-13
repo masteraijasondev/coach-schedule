@@ -92,7 +92,7 @@ const NORA_NAME = "Nora";
 
 const MIIT_PER_HEAD = 90;
 const PTA_PER_HOUR = 120;
-const ADMIN_PER_SESSION = 300;
+const ADMIN_PER_HOUR = 100;
 
 const STUDENT_RATES = {
   Chi: 300,
@@ -109,6 +109,7 @@ const STUDENT_RATES = {
   Mimi: 306,
   "Tiff group": 636,
   "Classpass Steven": 228,
+  Junpei: 330,
 };
 
 function hkIso(date, hhmm) {
@@ -189,6 +190,28 @@ const LESSONS = [
   { date: "2026-07-09", type: "PTA", start: 1830, end: 1930 },
   { date: "2026-07-09", type: "PT", student: "Kelly", start: 1930, end: 2030 },
   { date: "2026-07-09", type: "PT", student: "Chi", start: 2030, end: 2130 },
+  // 2026-07 結算期（7月11日 – 8月10日）
+  { date: "2026-07-12", type: "Admin", start: 1030, end: 1230 },
+  { date: "2026-07-12", type: "PT", student: "Connie Raymond", start: 1230, end: 1330 },
+  { date: "2026-07-13", type: "PT", student: "Mimi", start: 1800, end: 1900 },
+  { date: "2026-07-13", type: "MIIT", headcount: 5, start: 1900, end: 2000 },
+  { date: "2026-07-13", type: "PT", student: "Kelly", start: 2000, end: 2100 },
+  { date: "2026-07-16", type: "PT", student: "Yauyau", start: 1830, end: 1930 },
+  { date: "2026-07-16", type: "PT", student: "Kelly", start: 1930, end: 2030 },
+  { date: "2026-07-17", type: "MIIT", headcount: 4, start: 1900, end: 2000 },
+  { date: "2026-07-19", type: "PT", student: "Edmond", start: 930, end: 1030 },
+  { date: "2026-07-19", type: "PT", student: "Candy Barry", start: 1130, end: 1230 },
+  { date: "2026-07-19", type: "PT", student: "Chi", start: 1230, end: 1330 },
+  { date: "2026-07-20", type: "Admin", start: 1800, end: 1900 },
+  { date: "2026-07-20", type: "MIIT", headcount: 6, start: 1900, end: 2000 },
+  { date: "2026-07-23", type: "PT", student: "Junpei", start: 1830, end: 1930 },
+  { date: "2026-07-23", type: "PT", student: "Ivan", start: 1945, end: 2045 },
+  { date: "2026-07-24", type: "MIIT", headcount: 5, start: 1900, end: 2000 },
+  { date: "2026-08-02", type: "Admin", start: 1000, end: 1330 },
+  { date: "2026-08-03", type: "MIIT", headcount: 3, start: 1900, end: 2000 },
+  { date: "2026-08-03", type: "PT", student: "Kelly", start: 2000, end: 2100 },
+  { date: "2026-08-06", type: "Admin", start: 1830, end: 2030 },
+  { date: "2026-08-06", type: "PT", student: "Chi", start: 2030, end: 2130 },
 ];
 
 async function ensureMigrationApplied() {
@@ -270,7 +293,7 @@ async function ensureLessonTypes() {
     { name: "PT", pay_mode: "per_student", default_duration_minutes: 60 },
     { name: "MIIT", pay_mode: "per_head", default_duration_minutes: 60 },
     { name: "PTA", pay_mode: "per_hour", default_duration_minutes: 60 },
-    { name: "Admin", pay_mode: "per_session", default_duration_minutes: 60 },
+    { name: "Admin", pay_mode: "per_hour", default_duration_minutes: 60 },
   ];
 
   const typeIds = {};
@@ -336,7 +359,7 @@ async function seedRates(coachId, typeIds, studentIds) {
   const coachRates = [
     { lesson_type_id: typeIds.MIIT, amount_hkd: MIIT_PER_HEAD },
     { lesson_type_id: typeIds.PTA, amount_hkd: PTA_PER_HOUR },
-    { lesson_type_id: typeIds.Admin, amount_hkd: ADMIN_PER_SESSION },
+    { lesson_type_id: typeIds.Admin, amount_hkd: ADMIN_PER_HOUR },
   ];
   for (const rate of coachRates) {
     await rest("coach_rates", {
@@ -353,7 +376,9 @@ function earnedAmount(row) {
   if (row.type === "PTA") {
     return Math.round(durationHours(row.date, row.start, row.end ?? null) * PTA_PER_HOUR * 100) / 100;
   }
-  if (row.type === "Admin") return ADMIN_PER_SESSION;
+  if (row.type === "Admin") {
+    return Math.round(durationHours(row.date, row.start, row.end ?? null) * ADMIN_PER_HOUR * 100) / 100;
+  }
   throw new Error(`Unknown type ${row.type}`);
 }
 
@@ -366,7 +391,7 @@ function payrollPeriodForDate(dateYmd) {
 
 async function seedLessons(coachId, typeIds, studentIds) {
   const rangeStart = encodeURIComponent("2026-05-01T00:00:00+08:00");
-  const rangeEnd = encodeURIComponent("2026-08-01T00:00:00+08:00");
+  const rangeEnd = encodeURIComponent("2026-09-01T00:00:00+08:00");
   const existingLessons = await rest(
     `lessons?coach_id=eq.${coachId}&starts_at=gte.${rangeStart}&starts_at=lt.${rangeEnd}&select=id`,
   );
