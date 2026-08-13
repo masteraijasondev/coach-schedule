@@ -16,11 +16,27 @@ type Props = {
 export function ActionForm({ action, children, className, onSuccess }: Props) {
   const [state, formAction, pending] = useActionState(
     async (prev: ActionResult | null, formData: FormData) => {
-      const result = await action(prev, formData);
-      if (result.ok) {
-        onSuccess?.();
+      try {
+        const result = await action(prev, formData);
+        if (result.ok) {
+          onSuccess?.();
+        }
+        return result;
+      } catch (error) {
+        // Let Next.js redirects (login / change-password) propagate.
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "digest" in error &&
+          String((error as { digest?: string }).digest).startsWith(
+            "NEXT_REDIRECT",
+          )
+        ) {
+          throw error;
+        }
+        console.error("[ActionForm]", { error });
+        return { ok: false, error: "操作失敗，請再試一次" };
       }
-      return result;
     },
     null,
   );

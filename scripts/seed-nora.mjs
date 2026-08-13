@@ -208,25 +208,29 @@ async function ensureNoraUser() {
   const { users } = await authAdmin("users?page=1&per_page=200");
   const existing = users?.find((u) => u.email === NORA_EMAIL);
 
-  const profileBody = {
-    email: NORA_EMAIL,
-    full_name: NORA_NAME,
-    role: "coach",
-    must_change_password: true,
-  };
-
   if (existing) {
     const rows = await rest(`profiles?id=eq.${existing.id}&select=id`);
     if (rows?.[0]) {
+      // Do not reset must_change_password — that traps the user on /change-password.
       await rest(`profiles?id=eq.${existing.id}`, {
         method: "PATCH",
-        body: profileBody,
+        body: {
+          email: NORA_EMAIL,
+          full_name: NORA_NAME,
+          role: "coach",
+        },
         prefer: "return=minimal",
       });
     } else {
       await rest("profiles", {
         method: "POST",
-        body: { id: existing.id, ...profileBody },
+        body: {
+          id: existing.id,
+          email: NORA_EMAIL,
+          full_name: NORA_NAME,
+          role: "coach",
+          must_change_password: true,
+        },
         prefer: "return=minimal",
       });
     }

@@ -82,20 +82,32 @@ export async function changePasswordAction(
     });
 
     if (updateError) {
-      return { ok: false, error: "更新密碼失敗" };
+      console.error("[changePasswordAction] updateUser", {
+        message: updateError.message,
+      });
+      return {
+        ok: false,
+        error:
+          updateError.message.includes("different")
+            ? "新密碼不可與舊密碼相同"
+            : "更新密碼失敗",
+      };
     }
 
-    const { error: profileError } = await supabase
+    const { data: updated, error: profileError } = await supabase
       .from("profiles")
       .update({ must_change_password: false })
-      .eq("id", user.id);
+      .eq("id", user.id)
+      .select("role, must_change_password")
+      .maybeSingle();
 
-    if (profileError) {
+    if (profileError || !updated || updated.must_change_password) {
+      console.error("[changePasswordAction] profile", { profileError, updated });
       return { ok: false, error: "更新帳號狀態失敗" };
     }
 
-    revalidatePath("/");
-    redirect("/");
+    revalidatePath("/", "layout");
+    redirect(updated.role === "employer" ? "/employer" : "/coach");
   } catch (error) {
     if (
       typeof error === "object" &&
