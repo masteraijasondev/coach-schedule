@@ -14,6 +14,22 @@ export function formatMoney(amount: number): string {
   return `${CURRENCY_LABEL} $${Number(amount).toFixed(2)}`;
 }
 
+export function formatHeadcount(
+  actual: number | null | undefined,
+  expected: number | null | undefined,
+): string | null {
+  if (actual == null && expected == null) {
+    return null;
+  }
+  if (expected != null && actual != null) {
+    return `${actual} / ${expected}`;
+  }
+  if (actual != null) {
+    return String(actual);
+  }
+  return `— / ${expected}`;
+}
+
 export function lessonStatusLabel(status: LessonStatus): string {
   switch (status) {
     case "open":

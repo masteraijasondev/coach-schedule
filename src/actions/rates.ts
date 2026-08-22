@@ -13,13 +13,17 @@ export async function upsertCoachStudentRateAction(
     await requireEmployer();
     const coachId = String(formData.get("coach_id") ?? "");
     const studentId = String(formData.get("student_id") ?? "");
-    const amount = Number(formData.get("amount_hkd") ?? NaN);
+    const coachPay = Number(formData.get("amount_hkd") ?? NaN);
+    const studentFee = Number(formData.get("student_fee_hkd") ?? NaN);
 
     if (!coachId || !studentId) {
       return { ok: false, error: "請選擇教練與學生" };
     }
-    if (!Number.isFinite(amount) || amount < 0) {
-      return { ok: false, error: "金額無效" };
+    if (!Number.isFinite(coachPay) || coachPay < 0) {
+      return { ok: false, error: "教練薪資金額無效" };
+    }
+    if (!Number.isFinite(studentFee) || studentFee < 0) {
+      return { ok: false, error: "學生學費金額無效" };
     }
 
     const supabase = await createClient();
@@ -27,21 +31,22 @@ export async function upsertCoachStudentRateAction(
       {
         coach_id: coachId,
         student_id: studentId,
-        amount_hkd: amount,
+        amount_hkd: coachPay,
+        student_fee_hkd: studentFee,
       },
       { onConflict: "coach_id,student_id" },
     );
 
     if (error) {
       console.error("[upsertCoachStudentRateAction]", { error });
-      return { ok: false, error: "儲存學生薪資失敗" };
+      return { ok: false, error: "儲存 PT 費率失敗" };
     }
 
     revalidatePath("/employer/coaches");
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[upsertCoachStudentRateAction] unexpected", { error });
-    return { ok: false, error: "儲存學生薪資時發生錯誤" };
+    return { ok: false, error: "儲存 PT 費率時發生錯誤" };
   }
 }
 

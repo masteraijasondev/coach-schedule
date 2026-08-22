@@ -17,7 +17,12 @@ import {
   parseMonthParam,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
-import { formatDateTime, formatMoney, lessonStatusLabel } from "@/lib/format";
+import {
+  formatDateTime,
+  formatHeadcount,
+  formatMoney,
+  lessonStatusLabel,
+} from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -147,9 +152,10 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                         學生：{studentName.get(linkedStudentId) ?? "—"}
                       </p>
                     ) : null}
-                    {lesson.headcount != null ? (
+                    {formatHeadcount(lesson.headcount, lesson.expected_headcount) ? (
                       <p className="text-sm text-stone-500">
-                        人數：{lesson.headcount}
+                        人數：
+                        {formatHeadcount(lesson.headcount, lesson.expected_headcount)}
                       </p>
                     ) : null}
                     {lesson.earned_amount_hkd != null ? (
@@ -182,6 +188,9 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                       defaultTypeId={lesson.lesson_type_id}
                       defaultStudentId={linkedStudentId}
                       defaultHeadcount={lesson.headcount ?? undefined}
+                      defaultExpectedHeadcount={
+                        lesson.expected_headcount ?? undefined
+                      }
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <TimeSelect

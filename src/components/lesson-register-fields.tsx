@@ -21,6 +21,7 @@ type Props = {
   defaultTypeId?: string;
   defaultStudentId?: string;
   defaultHeadcount?: number;
+  defaultExpectedHeadcount?: number;
 };
 
 export function LessonRegisterFields({
@@ -29,6 +30,7 @@ export function LessonRegisterFields({
   defaultTypeId,
   defaultStudentId,
   defaultHeadcount,
+  defaultExpectedHeadcount,
 }: Props) {
   const [typeId, setTypeId] = useState(defaultTypeId ?? types[0]?.id ?? "");
   const payMode = useMemo(
@@ -56,16 +58,26 @@ export function LessonRegisterFields({
           options={students.map((s) => ({ value: s.id, label: s.name }))}
         />
       ) : null}
-      {payMode === "per_head" ? (
-        <Field
-          label="學生人數"
-          name="headcount"
-          type="number"
-          min="1"
-          step="1"
-          required
-          defaultValue={defaultHeadcount?.toString()}
-        />
+      {payMode === "per_student" || payMode === "per_head" ? (
+        <>
+          <Field
+            label="實際人數"
+            name="headcount"
+            type="number"
+            min="1"
+            step="1"
+            required={payMode === "per_head"}
+            defaultValue={defaultHeadcount?.toString()}
+          />
+          <Field
+            label="應到人數（選填）"
+            name="expected_headcount"
+            type="number"
+            min="1"
+            step="1"
+            defaultValue={defaultExpectedHeadcount?.toString()}
+          />
+        </>
       ) : null}
     </>
   );

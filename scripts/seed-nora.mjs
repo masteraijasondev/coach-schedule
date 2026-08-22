@@ -112,6 +112,10 @@ const STUDENT_RATES = {
   Junpei: 330,
 };
 
+function studentFeeFromCoachPay(coachPay) {
+  return Math.round((coachPay / 0.6) * 100) / 100;
+}
+
 function hkIso(date, hhmm) {
   const h = Math.floor(hhmm / 100);
   const m = hhmm % 100;
@@ -218,9 +222,11 @@ async function ensureMigrationApplied() {
   try {
     await rest("lesson_types?select=pay_mode&limit=1");
     console.log("Migration 004 columns present.");
+    await rest("coach_student_rates?select=student_fee_hkd&limit=1");
+    console.log("Migration 006 columns present.");
   } catch (error) {
     console.error(
-      "Migration 004 not applied. Run supabase/migrations/004_pay_modes.sql in Supabase SQL Editor first.",
+      "Required migrations not applied. Run supabase db push or apply 004 + 006 in Supabase SQL Editor.",
     );
     console.error(error.message);
     process.exit(1);
@@ -351,6 +357,7 @@ async function seedRates(coachId, typeIds, studentIds) {
         coach_id: coachId,
         student_id: studentIds[name],
         amount_hkd: amount,
+        student_fee_hkd: studentFeeFromCoachPay(amount),
       },
       prefer: "resolution=merge-duplicates,return=minimal",
     });
@@ -422,7 +429,12 @@ async function seedLessons(coachId, typeIds, studentIds) {
         status: "completed",
         coach_id: coachId,
         earned_amount_hkd: amount,
+        student_fee_hkd:
+          row.type === "PT" && row.student
+            ? studentFeeFromCoachPay(STUDENT_RATES[row.student])
+            : null,
         headcount: row.headcount ?? null,
+        expected_headcount: row.expected_headcount ?? null,
       },
     });
 

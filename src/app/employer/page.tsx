@@ -12,7 +12,12 @@ import {
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
-import { formatDateTime, formatMoney, lessonStatusLabel } from "@/lib/format";
+import {
+  formatDateTime,
+  formatHeadcount,
+  formatMoney,
+  lessonStatusLabel,
+} from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -159,14 +164,20 @@ export default async function EmployerHomePage({ searchParams }: Props) {
                         學生：{studentName.get(linkedStudentId) ?? "—"}
                       </p>
                     ) : null}
-                    {lesson.headcount != null ? (
+                    {formatHeadcount(lesson.headcount, lesson.expected_headcount) ? (
                       <p className="text-sm text-stone-500">
-                        人數：{lesson.headcount}
+                        人數：
+                        {formatHeadcount(lesson.headcount, lesson.expected_headcount)}
+                      </p>
+                    ) : null}
+                    {lesson.student_fee_hkd != null ? (
+                      <p className="text-sm text-stone-500">
+                        學生學費：{formatMoney(Number(lesson.student_fee_hkd))}
                       </p>
                     ) : null}
                     {lesson.earned_amount_hkd != null ? (
                       <p className="text-sm text-emerald-700">
-                        {formatMoney(Number(lesson.earned_amount_hkd))}
+                        教練薪資：{formatMoney(Number(lesson.earned_amount_hkd))}
                       </p>
                     ) : null}
                   </div>

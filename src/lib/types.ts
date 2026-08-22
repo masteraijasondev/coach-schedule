@@ -39,6 +39,7 @@ export type CoachStudentRate = {
   coach_id: string;
   student_id: string;
   amount_hkd: number;
+  student_fee_hkd: number | null;
 };
 
 export type Lesson = {
@@ -49,7 +50,9 @@ export type Lesson = {
   status: LessonStatus;
   coach_id: string | null;
   earned_amount_hkd: number | null;
+  student_fee_hkd: number | null;
   headcount: number | null;
+  expected_headcount: number | null;
   notes: string | null;
   created_at: string;
 };

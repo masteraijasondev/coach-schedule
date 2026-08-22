@@ -8,7 +8,9 @@ export async function calculateLessonPay(input: {
   studentId?: string | null;
   headcount?: number | null;
   durationMinutes?: number;
-}): Promise<{ amount: number } | { error: string }> {
+}): Promise<
+  { amount: number; studentFeeHkd?: number } | { error: string }
+> {
   const supabase = await createClient();
 
   if (input.payMode === "per_student") {
@@ -17,7 +19,7 @@ export async function calculateLessonPay(input: {
     }
     const { data: rate, error } = await supabase
       .from("coach_student_rates")
-      .select("amount_hkd")
+      .select("amount_hkd, student_fee_hkd")
       .eq("coach_id", input.coachId)
       .eq("student_id", input.studentId)
       .maybeSingle();
@@ -28,16 +30,26 @@ export async function calculateLessonPay(input: {
     }
     if (!rate) {
       return {
-        error: "尚未設定此教練與學生的薪資，無法登記。請僱主先在教練頁面設定。",
+        error:
+          "尚未設定此教練與學生的薪資，無法登記。請僱主先在教練頁面設定。",
       };
     }
-    return { amount: Number(rate.amount_hkd) };
+    if (rate.student_fee_hkd == null) {
+      return {
+        error:
+          "尚未設定此教練與學生的學費，無法登記。請僱主先在教練頁面設定。",
+      };
+    }
+    return {
+      amount: Number(rate.amount_hkd),
+      studentFeeHkd: Number(rate.student_fee_hkd),
+    };
   }
 
   if (input.payMode === "per_head") {
     const count = input.headcount ?? 0;
     if (!Number.isInteger(count) || count <= 0) {
-      return { error: "請輸入有效的學生人數" };
+      return { error: "請輸入有效的實際人數" };
     }
     const { data: rate, error } = await supabase
       .from("coach_rates")

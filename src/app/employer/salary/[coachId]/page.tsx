@@ -8,7 +8,7 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatHeadcount, formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -36,7 +36,9 @@ export default async function EmployerCoachSalaryPage({
       .maybeSingle(),
     supabase
       .from("lessons")
-      .select("id, lesson_type_id, starts_at, earned_amount_hkd")
+      .select(
+        "id, lesson_type_id, starts_at, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount",
+      )
       .eq("coach_id", coachId)
       .eq("status", "completed")
       .gte("starts_at", start)
@@ -48,11 +50,32 @@ export default async function EmployerCoachSalaryPage({
     notFound();
   }
 
-  const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
-  const { data: types } = typeIds.length
-    ? await supabase.from("lesson_types").select("id, name").in("id", typeIds)
-    : { data: [] };
+  const lessonIds = (lessons ?? []).map((l) => l.id);
+  const [{ data: types }, { data: lessonStudents }, { data: students }] =
+    await Promise.all([
+      [...new Set((lessons ?? []).map((l) => l.lesson_type_id))].length
+        ? supabase
+            .from("lesson_types")
+            .select("id, name")
+            .in(
+              "id",
+              [...new Set((lessons ?? []).map((l) => l.lesson_type_id))],
+            )
+        : Promise.resolve({ data: [] }),
+      lessonIds.length
+        ? supabase
+            .from("lesson_students")
+            .select("lesson_id, student_id")
+            .in("lesson_id", lessonIds)
+        : Promise.resolve({ data: [] }),
+      supabase.from("students").select("id, name"),
+    ]);
+
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
+  const studentByLesson = new Map(
+    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
+  );
+  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
@@ -92,21 +115,43 @@ export default async function EmployerCoachSalaryPage({
           </Link>
         </p>
         <ul className="divide-y divide-stone-100">
-          {(lessons ?? []).map((lesson) => (
-            <li key={lesson.id} className="flex justify-between gap-3 py-3">
-              <div>
-                <p className="font-medium">
-                  {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
-                </p>
-                <p className="text-sm text-stone-500">
-                  {formatDateTime(lesson.starts_at)}
-                </p>
-              </div>
-              <p className="text-sm font-medium">
-                {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
-              </p>
-            </li>
-          ))}
+          {(lessons ?? []).map((lesson) => {
+            const linkedStudentId = studentByLesson.get(lesson.id);
+            const headcountLabel = formatHeadcount(
+              lesson.headcount,
+              lesson.expected_headcount,
+            );
+            return (
+              <li key={lesson.id} className="flex justify-between gap-3 py-3">
+                <div>
+                  <p className="font-medium">
+                    {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
+                  </p>
+                  <p className="text-sm text-stone-500">
+                    {formatDateTime(lesson.starts_at)}
+                  </p>
+                  {linkedStudentId ? (
+                    <p className="text-sm text-stone-500">
+                      學生：{studentName.get(linkedStudentId) ?? "—"}
+                    </p>
+                  ) : null}
+                  {headcountLabel ? (
+                    <p className="text-sm text-stone-500">人數：{headcountLabel}</p>
+                  ) : null}
+                </div>
+                <div className="text-right text-sm">
+                  {lesson.student_fee_hkd != null ? (
+                    <p className="text-stone-500">
+                      學費 {formatMoney(Number(lesson.student_fee_hkd))}
+                    </p>
+                  ) : null}
+                  <p className="font-medium">
+                    {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
+                  </p>
+                </div>
+              </li>
+            );
+          })}
           {(lessons ?? []).length === 0 ? (
             <li className="py-3 text-sm text-stone-500">
               此結算期尚無已完成課堂

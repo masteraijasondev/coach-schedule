@@ -27,8 +27,20 @@ function assertFiveMinuteTime(time: string): string | null {
 function revalidateSchedules() {
   revalidatePath("/employer");
   revalidatePath("/employer/lessons");
+  revalidatePath("/employer/salary");
   revalidatePath("/coach");
   revalidatePath("/coach/salary");
+}
+
+function parseOptionalCount(raw: string): number | null {
+  if (raw.trim() === "") {
+    return null;
+  }
+  const count = Number(raw);
+  if (!Number.isInteger(count) || count <= 0) {
+    return null;
+  }
+  return count;
 }
 
 async function assertNoCoachOverlap(
@@ -80,18 +92,41 @@ async function resolveLessonPay(input: {
   lessonTypeId: string;
   studentId?: string | null;
   headcountRaw?: string;
+  expectedHeadcountRaw?: string;
   startsAt: string;
   endsAt: string;
-}): Promise<{ amount: number; studentId?: string; headcount?: number } | { error: string }> {
+}): Promise<
+  | {
+      amount: number;
+      studentId?: string;
+      studentFeeHkd?: number;
+      headcount?: number;
+      expectedHeadcount?: number;
+    }
+  | { error: string }
+> {
   const payModeResult = await getLessonTypePayMode(input.lessonTypeId);
   if (typeof payModeResult === "object" && "error" in payModeResult) {
     return payModeResult;
   }
 
-  const headcount =
-    input.headcountRaw != null && input.headcountRaw !== ""
-      ? Number(input.headcountRaw)
-      : null;
+  const headcount = parseOptionalCount(input.headcountRaw ?? "");
+  const expectedHeadcount = parseOptionalCount(
+    input.expectedHeadcountRaw ?? "",
+  );
+
+  if (
+    (input.headcountRaw ?? "").trim() !== "" &&
+    headcount == null
+  ) {
+    return { error: "實際人數必須為正整數" };
+  }
+  if (
+    (input.expectedHeadcountRaw ?? "").trim() !== "" &&
+    expectedHeadcount == null
+  ) {
+    return { error: "應到人數必須為正整數" };
+  }
 
   const durationMinutes =
     (new Date(input.endsAt).getTime() - new Date(input.startsAt).getTime()) /
@@ -110,10 +145,18 @@ async function resolveLessonPay(input: {
     return payResult;
   }
 
+  if (payModeResult === "per_head" && headcount == null) {
+    return { error: "請輸入實際人數" };
+  }
+
   return {
     amount: payResult.amount,
-    studentId: payModeResult === "per_student" ? input.studentId ?? undefined : undefined,
-    headcount: payModeResult === "per_head" ? headcount ?? undefined : undefined,
+    studentId:
+      payModeResult === "per_student" ? input.studentId ?? undefined : undefined,
+    studentFeeHkd: payResult.studentFeeHkd,
+    headcount:
+      payModeResult === "per_head" || headcount != null ? headcount ?? undefined : undefined,
+    expectedHeadcount: expectedHeadcount ?? undefined,
   };
 }
 
@@ -156,6 +199,7 @@ export async function createLessonAction(
     const notes = String(formData.get("notes") ?? "").trim() || null;
     const studentId = String(formData.get("student_id") ?? "").trim() || null;
     const headcountRaw = String(formData.get("headcount") ?? "");
+    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
 
     if (!lessonTypeId || !date || !startTime || !endTime || !coachId) {
       return { ok: false, error: "請填寫課堂類型、時間與教練" };
@@ -182,6 +226,7 @@ export async function createLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      expectedHeadcountRaw,
       startsAt,
       endsAt,
     });
@@ -204,7 +249,9 @@ export async function createLessonAction(
         status: "completed",
         coach_id: coachId,
         earned_amount_hkd: rateResult.amount,
+        student_fee_hkd: rateResult.studentFeeHkd ?? null,
         headcount: rateResult.headcount ?? null,
+        expected_headcount: rateResult.expectedHeadcount ?? null,
         notes,
       })
       .select("id")
@@ -241,6 +288,7 @@ export async function createCoachLessonAction(
     const endTime = String(formData.get("end_time") ?? "");
     const studentId = String(formData.get("student_id") ?? "").trim() || null;
     const headcountRaw = String(formData.get("headcount") ?? "");
+    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
 
     if (!lessonTypeId || !date || !startTime || !endTime) {
       return { ok: false, error: "請填寫課堂類型與時間" };
@@ -272,6 +320,7 @@ export async function createCoachLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      expectedHeadcountRaw,
       startsAt,
       endsAt,
     });
@@ -298,7 +347,9 @@ export async function createCoachLessonAction(
         status: "completed",
         coach_id: coach.id,
         earned_amount_hkd: rateResult.amount,
+        student_fee_hkd: rateResult.studentFeeHkd ?? null,
         headcount: rateResult.headcount ?? null,
+        expected_headcount: rateResult.expectedHeadcount ?? null,
       })
       .select("id")
       .single();
@@ -334,6 +385,7 @@ export async function updateCoachLessonAction(
     const endTime = String(formData.get("end_time") ?? "");
     const studentId = String(formData.get("student_id") ?? "").trim() || null;
     const headcountRaw = String(formData.get("headcount") ?? "");
+    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
 
     if (!lessonId || !lessonTypeId || !date || !startTime || !endTime) {
       return { ok: false, error: "請填寫完整資料" };
@@ -376,6 +428,7 @@ export async function updateCoachLessonAction(
       lessonTypeId,
       studentId,
       headcountRaw,
+      expectedHeadcountRaw,
       startsAt,
       endsAt,
     });
@@ -401,7 +454,9 @@ export async function updateCoachLessonAction(
         ends_at: endsAt,
         status: "completed",
         earned_amount_hkd: rateResult.amount,
+        student_fee_hkd: rateResult.studentFeeHkd ?? null,
         headcount: rateResult.headcount ?? null,
+        expected_headcount: rateResult.expectedHeadcount ?? null,
       })
       .eq("id", lessonId)
       .eq("status", "completed");

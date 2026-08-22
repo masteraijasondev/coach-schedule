@@ -72,10 +72,10 @@ export default async function CoachesPage() {
         </Panel>
       </div>
 
-      <Panel title="教練 PT 學生薪資（每堂固定金額）">
+      <Panel title="教練 PT 費率（學生學費 + 教練薪資）">
         <ActionForm
           action={upsertCoachStudentRateAction}
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
         >
           <SelectField
             label="教練"
@@ -96,7 +96,15 @@ export default async function CoachesPage() {
             }))}
           />
           <Field
-            label="金額（港幣）"
+            label="學生學費（港幣）"
+            name="student_fee_hkd"
+            type="number"
+            step="0.01"
+            min="0"
+            required
+          />
+          <Field
+            label="教練薪資（港幣）"
             name="amount_hkd"
             type="number"
             step="0.01"
@@ -108,25 +116,41 @@ export default async function CoachesPage() {
           </div>
         </ActionForm>
 
-        <ul className="mt-4 divide-y divide-stone-100">
-          {(studentRates ?? []).map((rate) => (
-            <li
-              key={`${rate.coach_id}-${rate.student_id}`}
-              className="py-3 text-sm"
-            >
-              <span className="font-medium">
-                {coachName.get(rate.coach_id) ?? "教練"} ·{" "}
-                {studentName.get(rate.student_id) ?? "學生"}
-              </span>
-              <span className="ml-2 text-stone-500">
-                {formatMoney(Number(rate.amount_hkd))} / 堂
-              </span>
-            </li>
-          ))}
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-stone-200 text-left text-stone-600">
+                <th className="py-2 pr-3 font-medium">教練</th>
+                <th className="py-2 pr-3 font-medium">學生</th>
+                <th className="py-2 pr-3 font-medium">學生學費</th>
+                <th className="py-2 font-medium">教練薪資</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {(studentRates ?? []).map((rate) => (
+                <tr key={`${rate.coach_id}-${rate.student_id}`}>
+                  <td className="py-3 pr-3">
+                    {coachName.get(rate.coach_id) ?? "教練"}
+                  </td>
+                  <td className="py-3 pr-3">
+                    {studentName.get(rate.student_id) ?? "學生"}
+                  </td>
+                  <td className="py-3 pr-3">
+                    {rate.student_fee_hkd != null
+                      ? formatMoney(Number(rate.student_fee_hkd))
+                      : "—"}
+                  </td>
+                  <td className="py-3">
+                    {formatMoney(Number(rate.amount_hkd))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
           {(studentRates ?? []).length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">尚未設定 PT 學生薪資</li>
+            <p className="py-3 text-sm text-stone-500">尚未設定 PT 費率</p>
           ) : null}
-        </ul>
+        </div>
       </Panel>
     </div>
   );
