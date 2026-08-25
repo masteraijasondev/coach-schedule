@@ -1,0 +1,14 @@
+- generic [active] [ref=f11e1]:
+  - alert [ref=f11e137]
+  - generic [ref=f11e140]:
+    - generic [ref=f11e141]:
+      - heading "教練排班與薪資" [level=1] [ref=f11e142]
+      - paragraph [ref=f11e143]: 請使用機構提供的帳號登入
+    - generic [ref=f11e144]:
+      - generic [ref=f11e145]:
+        - text: 電郵
+        - textbox "電郵" [ref=f11e146]
+      - generic [ref=f11e147]:
+        - text: 密碼
+        - textbox "密碼" [ref=f11e148]
+      - button "登入" [ref=f11e149]

@@ -1,0 +1,251 @@
+- generic [active] [ref=f16e1]:
+  - generic [ref=f16e2]:
+    - banner [ref=f16e3]:
+      - generic [ref=f16e4]:
+        - generic [ref=f16e5]:
+          - paragraph [ref=f16e6]: 僱主管理
+          - paragraph [ref=f16e7]: 僱主
+        - button "登出" [ref=f16e9]
+      - navigation [ref=f16e10]:
+        - link "日曆" [ref=f16e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f16e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f16e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f16e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f16e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f16e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f16e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f16e18]:
+      - generic [ref=f16e19]:
+        - generic [ref=f16e20]:
+          - heading "全體教練日曆" [level=2] [ref=f16e21]
+          - generic [ref=f16e22]:
+            - generic [ref=f16e23]:
+              - link "上月" [ref=f16e24] [cursor=pointer]:
+                - /url: /employer?month=2026-07
+              - paragraph [ref=f16e25]: 2026-08
+              - link "下月" [ref=f16e26] [cursor=pointer]:
+                - /url: /employer?month=2026-09
+            - generic [ref=f16e27]:
+              - generic [ref=f16e28]: 日
+              - generic [ref=f16e29]: 一
+              - generic [ref=f16e30]: 二
+              - generic [ref=f16e31]: 三
+              - generic [ref=f16e32]: 四
+              - generic [ref=f16e33]: 五
+              - generic [ref=f16e34]: 六
+            - generic [ref=f16e35]:
+              - link "26" [ref=f16e36] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-26
+              - link "27" [ref=f16e38] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-27
+              - link "28" [ref=f16e40] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-28
+              - link "29" [ref=f16e42] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-29
+              - link "30" [ref=f16e44] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-30
+              - link "31" [ref=f16e46] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-07-31
+              - link "01" [ref=f16e48] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-01
+              - link "02 1 堂" [ref=f16e50] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-02
+                - generic [ref=f16e51]: "02"
+                - generic [ref=f16e52]: 1 堂
+              - link "03 2 堂" [ref=f16e53] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-03
+                - generic [ref=f16e54]: "03"
+                - generic [ref=f16e55]: 2 堂
+              - link "04" [ref=f16e56] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-04
+              - link "05" [ref=f16e58] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-05
+              - link "06 2 堂" [ref=f16e60] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-06
+                - generic [ref=f16e61]: "06"
+                - generic [ref=f16e62]: 2 堂
+              - link "07" [ref=f16e63] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-07
+              - link "08" [ref=f16e65] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-08
+              - link "09" [ref=f16e67] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-09
+              - link "10" [ref=f16e69] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-10
+              - link "11" [ref=f16e71] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-11
+              - link "12" [ref=f16e73] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-12
+              - link "13" [ref=f16e75] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-13
+              - link "14" [ref=f16e77] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-14
+              - link "15" [ref=f16e79] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-15
+              - link "16" [ref=f16e81] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-16
+              - link "17" [ref=f16e83] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-17
+              - link "18" [ref=f16e85] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-18
+              - link "19" [ref=f16e87] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-19
+              - link "20" [ref=f16e89] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-20
+              - link "21" [ref=f16e91] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-21
+              - link "22" [ref=f16e93] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-22
+              - link "23" [ref=f16e95] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-23
+              - link "24" [ref=f16e97] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-24
+              - link "25" [ref=f16e99] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-25
+              - link "26" [ref=f16e101] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-26
+              - link "27" [ref=f16e103] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-27
+              - link "28" [ref=f16e105] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-28
+              - link "29" [ref=f16e107] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-29
+              - link "30" [ref=f16e109] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-30
+              - link "31" [ref=f16e111] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-08-31
+              - link "01" [ref=f16e113] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-09-01
+              - link "02" [ref=f16e115] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-09-02
+              - link "03" [ref=f16e117] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-09-03
+              - link "04" [ref=f16e119] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-09-04
+              - link "05" [ref=f16e121] [cursor=pointer]:
+                - /url: /employer?month=2026-08&day=2026-09-05
+        - generic [ref=f16e123]:
+          - heading "建立課堂 · 2026-08-25" [level=2] [ref=f16e124]
+          - paragraph [ref=f16e125]: 建立後即計入該教練薪資。PT 需選學生；MIIT 需填人數。
+          - generic [ref=f16e126]:
+            - generic [ref=f16e127]:
+              - text: 教練
+              - combobox "教練" [ref=f16e128]:
+                - option "Nora" [selected]
+            - generic [ref=f16e129]:
+              - text: 課堂類型
+              - combobox "課堂類型" [ref=f16e130]:
+                - option "Admin" [selected]
+                - option "MIIT"
+                - option "PT"
+                - option "PTA"
+                - option "小組課"
+                - option "私人課"
+                - option "體驗課"
+            - generic [ref=f16e131]:
+              - generic [ref=f16e132]:
+                - text: 開始
+                - generic [ref=f16e133]:
+                  - generic [ref=f16e134]: 開始（時）
+                  - combobox "開始 小時" [ref=f16e135]:
+                    - option "00"
+                    - option "01"
+                    - option "02"
+                    - option "03"
+                    - option "04"
+                    - option "05"
+                    - option "06"
+                    - option "07"
+                    - option "08"
+                    - option "09" [selected]
+                    - option "10"
+                    - option "11"
+                    - option "12"
+                    - option "13"
+                    - option "14"
+                    - option "15"
+                    - option "16"
+                    - option "17"
+                    - option "18"
+                    - option "19"
+                    - option "20"
+                    - option "21"
+                    - option "22"
+                    - option "23"
+                  - generic [ref=f16e136]: ":"
+                  - generic [ref=f16e137]: 開始（分）
+                  - combobox "開始 分鐘" [ref=f16e138]:
+                    - option "00" [selected]
+                    - option "05"
+                    - option "10"
+                    - option "15"
+                    - option "20"
+                    - option "25"
+                    - option "30"
+                    - option "35"
+                    - option "40"
+                    - option "45"
+                    - option "50"
+                    - option "55"
+                - paragraph [ref=f16e139]: 以 5 分鐘為單位
+              - generic [ref=f16e140]:
+                - text: 結束
+                - generic [ref=f16e141]:
+                  - generic [ref=f16e142]: 結束（時）
+                  - combobox "結束 小時" [ref=f16e143]:
+                    - option "00"
+                    - option "01"
+                    - option "02"
+                    - option "03"
+                    - option "04"
+                    - option "05"
+                    - option "06"
+                    - option "07"
+                    - option "08"
+                    - option "09" [selected]
+                    - option "10"
+                    - option "11"
+                    - option "12"
+                    - option "13"
+                    - option "14"
+                    - option "15"
+                    - option "16"
+                    - option "17"
+                    - option "18"
+                    - option "19"
+                    - option "20"
+                    - option "21"
+                    - option "22"
+                    - option "23"
+                  - generic [ref=f16e144]: ":"
+                  - generic [ref=f16e145]: 結束（分）
+                  - combobox "結束 分鐘" [ref=f16e146]:
+                    - option "00" [selected]
+                    - option "05"
+                    - option "10"
+                    - option "15"
+                    - option "20"
+                    - option "25"
+                    - option "30"
+                    - option "35"
+                    - option "40"
+                    - option "45"
+                    - option "50"
+                    - option "55"
+                - paragraph [ref=f16e147]: 以 5 分鐘為單位
+            - generic [ref=f16e148]:
+              - text: 備註
+              - textbox "備註" [ref=f16e149]
+            - button "建立" [ref=f16e151]
+        - generic [ref=f16e152]:
+          - heading "2026-08-25 的課堂" [level=2] [ref=f16e153]
+          - list [ref=f16e154]:
+            - listitem [ref=f16e155]: 這天尚未有課堂
+  - alert [ref=f16e156]

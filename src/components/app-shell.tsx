@@ -21,7 +21,7 @@ export function AppShell({
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
             <p className="text-lg font-semibold tracking-tight">{title}</p>
-            <p className="text-sm text-stone-500">{name}</p>
+            <p className="text-2xl font-bold ">{name}</p>
           </div>
           <form action={logoutAction}>
             <button

@@ -1,0 +1,81 @@
+- generic [active] [ref=f17e1]:
+  - generic [ref=f17e2]:
+    - banner [ref=f17e3]:
+      - generic [ref=f17e4]:
+        - generic [ref=f17e5]:
+          - paragraph [ref=f17e6]: 僱主管理
+          - paragraph [ref=f17e7]: 僱主
+        - button "登出" [ref=f17e9]
+      - navigation [ref=f17e10]:
+        - link "日曆" [ref=f17e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f17e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f17e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f17e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f17e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f17e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f17e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f17e18]:
+      - generic [ref=f17e19]:
+        - generic [ref=f17e20]:
+          - heading "新增課堂類型" [level=2] [ref=f17e21]
+          - generic [ref=f17e22]:
+            - generic [ref=f17e23]:
+              - text: 名稱
+              - textbox "名稱" [ref=f17e24]
+            - generic [ref=f17e25]:
+              - text: 預設時長（分鐘）
+              - spinbutton "預設時長（分鐘）" [ref=f17e26]: "60"
+            - generic [ref=f17e27]:
+              - text: 薪資模式
+              - combobox "薪資模式" [ref=f17e28]:
+                - option "按學生（PT）" [selected]
+                - option "按人數（MIIT）"
+                - option "按堂"
+                - option "按時數（PTA/Admin）"
+            - button "新增" [ref=f17e29]
+        - generic [ref=f17e30]:
+          - heading "課堂類型" [level=2] [ref=f17e31]
+          - list [ref=f17e32]:
+            - listitem [ref=f17e33]:
+              - generic [ref=f17e34]:
+                - paragraph [ref=f17e35]: Admin
+                - paragraph [ref=f17e36]: 預設 60 分鐘 · 按時數（PTA/Admin）
+              - button "停用" [ref=f17e38]
+            - listitem [ref=f17e39]:
+              - generic [ref=f17e40]:
+                - paragraph [ref=f17e41]: MIIT
+                - paragraph [ref=f17e42]: 預設 60 分鐘 · 按人數（MIIT）
+              - button "停用" [ref=f17e44]
+            - listitem [ref=f17e45]:
+              - generic [ref=f17e46]:
+                - paragraph [ref=f17e47]: PT
+                - paragraph [ref=f17e48]: 預設 60 分鐘 · 按學生（PT）
+              - button "停用" [ref=f17e50]
+            - listitem [ref=f17e51]:
+              - generic [ref=f17e52]:
+                - paragraph [ref=f17e53]: PTA
+                - paragraph [ref=f17e54]: 預設 60 分鐘 · 按時數（PTA/Admin）
+              - button "停用" [ref=f17e56]
+            - listitem [ref=f17e57]:
+              - generic [ref=f17e58]:
+                - paragraph [ref=f17e59]: 小組課
+                - paragraph [ref=f17e60]: 預設 60 分鐘 · 按堂
+              - button "停用" [ref=f17e62]
+            - listitem [ref=f17e63]:
+              - generic [ref=f17e64]:
+                - paragraph [ref=f17e65]: 私人課
+                - paragraph [ref=f17e66]: 預設 60 分鐘 · 按堂
+              - button "停用" [ref=f17e68]
+            - listitem [ref=f17e69]:
+              - generic [ref=f17e70]:
+                - paragraph [ref=f17e71]: 體驗課
+                - paragraph [ref=f17e72]: 預設 30 分鐘 · 按堂
+              - button "停用" [ref=f17e74]
+  - alert [ref=f17e75]

@@ -65,6 +65,14 @@ export type LessonRequest = {
   created_at: string;
 };
 
+export type Shift = {
+  id: string;
+  coach_id: string;
+  clocked_in_at: string;
+  clocked_out_at: string | null;
+  created_at: string;
+};
+
 export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string };

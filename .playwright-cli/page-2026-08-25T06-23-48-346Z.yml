@@ -1,0 +1,59 @@
+- generic [active] [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - banner [ref=f7e3]:
+      - generic [ref=f7e4]:
+        - generic [ref=f7e5]:
+          - paragraph [ref=f7e6]: 僱主管理
+          - paragraph [ref=f7e7]: 僱主
+        - button "登出" [ref=f7e9]
+      - navigation [ref=f7e10]:
+        - link "日曆" [ref=f7e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f7e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f7e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f7e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f7e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f7e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f7e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f7e18]:
+      - generic [ref=f7e19]:
+        - generic [ref=f7e20]:
+          - heading "設定教練薪資（MIIT 每人 / PTA·Admin 每小時）" [level=2] [ref=f7e21]
+          - generic [ref=f7e22]:
+            - generic [ref=f7e23]:
+              - text: 教練
+              - combobox "教練" [ref=f7e24]:
+                - option "Nora" [selected]
+            - generic [ref=f7e25]:
+              - text: 課堂類型
+              - combobox "課堂類型" [ref=f7e26]:
+                - option "Admin" [selected]
+                - option "MIIT"
+                - option "PT"
+                - option "PTA"
+                - option "小組課"
+                - option "私人課"
+                - option "體驗課"
+            - generic [ref=f7e27]:
+              - text: 金額（港幣）
+              - spinbutton "金額（港幣）" [ref=f7e28]
+            - button "儲存" [ref=f7e29]
+        - generic [ref=f7e30]:
+          - heading "現有規則" [level=2] [ref=f7e31]
+          - list [ref=f7e32]:
+            - listitem [ref=f7e33]:
+              - paragraph [ref=f7e34]: Nora · MIIT
+              - paragraph [ref=f7e35]: 港幣 $90.00 / 每人
+            - listitem [ref=f7e36]:
+              - paragraph [ref=f7e37]: Nora · PTA
+              - paragraph [ref=f7e38]: 港幣 $120.00 / 小時
+            - listitem [ref=f7e39]:
+              - paragraph [ref=f7e40]: Nora · Admin
+              - paragraph [ref=f7e41]: 港幣 $100.00 / 小時
+  - alert [ref=f7e42]

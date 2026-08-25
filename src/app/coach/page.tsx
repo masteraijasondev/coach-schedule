@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   createCoachLessonAction,
   deleteCoachLessonAction,
@@ -11,6 +12,7 @@ import { Panel, SubmitButton } from "@/components/ui";
 import { TimeSelect } from "@/components/time-select";
 import { requireCoach } from "@/lib/auth";
 import {
+  defaultLessonTimeSlot,
   lessonDayKey,
   monthBoundsIso,
   parseDayParam,
@@ -29,6 +31,12 @@ import { formatInTimeZone } from "date-fns-tz";
 type Props = {
   searchParams: Promise<{ month?: string; day?: string }>;
 };
+
+export async function generateMetadata({ }: Props): Promise<Metadata> {
+  return {
+    title: `我的課堂日曆`,
+  };
+}
 
 export default async function CoachCalendarPage({ searchParams }: Props) {
   const coach = await requireCoach();
@@ -75,9 +83,13 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const countsByDay = new Map<string, number>();
+  const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
   for (const lesson of lessons ?? []) {
     const key = lessonDayKey(lesson.starts_at);
     countsByDay.set(key, (countsByDay.get(key) ?? 0) + 1);
+    const list = lessonsByDay.get(key) ?? [];
+    list.push({ id: lesson.id, coachName: coach.full_name });
+    lessonsByDay.set(key, list);
   }
 
   const dayLessons = (lessons ?? []).filter(
@@ -89,6 +101,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     name: t.name,
     pay_mode: t.pay_mode,
   }));
+  const defaultSlot = defaultLessonTimeSlot();
 
   return (
     <div className="space-y-6">
@@ -98,6 +111,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
           selectedDay={day}
           basePath="/coach"
           countsByDay={countsByDay}
+          lessonsByDay={lessonsByDay}
         />
       </Panel>
 
@@ -115,8 +129,18 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
             students={students ?? []}
           />
           <div className="grid grid-cols-2 gap-3">
-            <TimeSelect label="開始" name="start_time" required />
-            <TimeSelect label="結束" name="end_time" required />
+            <TimeSelect
+              label="開始"
+              name="start_time"
+              required
+              defaultValue={defaultSlot.start}
+            />
+            <TimeSelect
+              label="結束"
+              name="end_time"
+              required
+              defaultValue={defaultSlot.end}
+            />
           </div>
           <div className="sm:col-span-2">
             <SubmitButton>加入日曆</SubmitButton>

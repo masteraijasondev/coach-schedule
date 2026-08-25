@@ -14,6 +14,20 @@ export function hongKongToday(): string {
   return formatInTimeZone(new Date(), TIMEZONE, "yyyy-MM-dd");
 }
 
+/** Floor current HK time to the hour; end is +1 hour (e.g. 09:09 → 09:00–10:00). */
+export function defaultLessonTimeSlot(now = new Date()): {
+  start: string;
+  end: string;
+} {
+  const hour = Number(formatInTimeZone(now, TIMEZONE, "H"));
+  if (hour >= 23) {
+    return { start: "23:00", end: "23:55" };
+  }
+  const start = `${String(hour).padStart(2, "0")}:00`;
+  const end = `${String(hour + 1).padStart(2, "0")}:00`;
+  return { start, end };
+}
+
 export function parseMonthParam(month?: string): string {
   if (month && /^\d{4}-\d{2}$/.test(month)) {
     return month;
@@ -113,3 +127,4 @@ export function assertCoachLessonDate(dateYmd: string): string | null {
   }
   return null;
 }
+

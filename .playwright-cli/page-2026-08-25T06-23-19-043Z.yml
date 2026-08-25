@@ -1,0 +1,39 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - generic [ref=f2e4]:
+        - generic [ref=f2e5]:
+          - paragraph [ref=f2e6]: 僱主管理
+          - paragraph [ref=f2e7]: 僱主
+        - button "登出" [ref=f2e9]
+      - navigation [ref=f2e10]:
+        - link "日曆" [ref=f2e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f2e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f2e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f2e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f2e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f2e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f2e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f2e18]:
+      - generic [ref=f2e20]:
+        - heading "薪資 · 2026-08 結算期" [level=2] [ref=f2e21]
+        - generic [ref=f2e22]:
+          - link "上期" [ref=f2e23] [cursor=pointer]:
+            - /url: /employer/salary?month=2026-07
+          - paragraph [ref=f2e24]: 港幣 $0.00
+          - link "下期" [ref=f2e25] [cursor=pointer]:
+            - /url: /employer/salary?month=2026-09
+        - paragraph [ref=f2e26]: 結算期：8月11日 – 9月10日 · 僅計算已完成課堂；金額於登記時凍結。
+        - list [ref=f2e27]:
+          - listitem [ref=f2e28]:
+            - link "Nora" [ref=f2e30] [cursor=pointer]:
+              - /url: /employer/salary/44ddf639-2e97-4ad4-8bec-bb634f0c085f?month=2026-08
+            - paragraph [ref=f2e31]: 港幣 $0.00
+  - alert [ref=f2e32]

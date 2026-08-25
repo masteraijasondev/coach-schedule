@@ -1,0 +1,794 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - paragraph [ref=f1e6]: 僱主管理
+          - paragraph [ref=f1e7]: 僱主
+        - button "登出" [ref=f1e9]
+      - navigation [ref=f1e10]:
+        - link "日曆" [ref=f1e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f1e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f1e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f1e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f1e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f1e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f1e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f1e18]:
+      - generic [ref=f1e19]:
+        - generic [ref=f1e20]:
+          - heading "建立課堂" [level=2] [ref=f1e21]
+          - paragraph [ref=f1e22]: 建立後即計入該教練薪資（需已設定對應課堂類型薪資）。
+          - generic [ref=f1e23]:
+            - generic [ref=f1e24]:
+              - text: 課堂類型
+              - combobox "課堂類型" [ref=f1e25]:
+                - option "Admin（60 分）" [selected]
+                - option "MIIT（60 分）"
+                - option "PT（60 分）"
+                - option "PTA（60 分）"
+                - option "小組課（60 分）"
+                - option "私人課（60 分）"
+                - option "體驗課（30 分）"
+            - generic [ref=f1e26]:
+              - text: 教練
+              - combobox "教練" [ref=f1e27]:
+                - option "Nora" [selected]
+            - generic [ref=f1e28]:
+              - text: 日期
+              - textbox "日期" [ref=f1e29]: 2026-08-25
+            - generic [ref=f1e30]:
+              - generic [ref=f1e31]:
+                - text: 開始
+                - generic [ref=f1e32]:
+                  - generic [ref=f1e33]: 開始（時）
+                  - combobox "開始 小時" [ref=f1e34]:
+                    - option "00"
+                    - option "01"
+                    - option "02"
+                    - option "03"
+                    - option "04"
+                    - option "05"
+                    - option "06"
+                    - option "07"
+                    - option "08"
+                    - option "09" [selected]
+                    - option "10"
+                    - option "11"
+                    - option "12"
+                    - option "13"
+                    - option "14"
+                    - option "15"
+                    - option "16"
+                    - option "17"
+                    - option "18"
+                    - option "19"
+                    - option "20"
+                    - option "21"
+                    - option "22"
+                    - option "23"
+                  - generic [ref=f1e35]: ":"
+                  - generic [ref=f1e36]: 開始（分）
+                  - combobox "開始 分鐘" [ref=f1e37]:
+                    - option "00" [selected]
+                    - option "05"
+                    - option "10"
+                    - option "15"
+                    - option "20"
+                    - option "25"
+                    - option "30"
+                    - option "35"
+                    - option "40"
+                    - option "45"
+                    - option "50"
+                    - option "55"
+                - paragraph [ref=f1e38]: 以 5 分鐘為單位
+              - generic [ref=f1e39]:
+                - text: 結束
+                - generic [ref=f1e40]:
+                  - generic [ref=f1e41]: 結束（時）
+                  - combobox "結束 小時" [ref=f1e42]:
+                    - option "00"
+                    - option "01"
+                    - option "02"
+                    - option "03"
+                    - option "04"
+                    - option "05"
+                    - option "06"
+                    - option "07"
+                    - option "08"
+                    - option "09" [selected]
+                    - option "10"
+                    - option "11"
+                    - option "12"
+                    - option "13"
+                    - option "14"
+                    - option "15"
+                    - option "16"
+                    - option "17"
+                    - option "18"
+                    - option "19"
+                    - option "20"
+                    - option "21"
+                    - option "22"
+                    - option "23"
+                  - generic [ref=f1e43]: ":"
+                  - generic [ref=f1e44]: 結束（分）
+                  - combobox "結束 分鐘" [ref=f1e45]:
+                    - option "00" [selected]
+                    - option "05"
+                    - option "10"
+                    - option "15"
+                    - option "20"
+                    - option "25"
+                    - option "30"
+                    - option "35"
+                    - option "40"
+                    - option "45"
+                    - option "50"
+                    - option "55"
+                - paragraph [ref=f1e46]: 以 5 分鐘為單位
+            - generic [ref=f1e47]:
+              - text: 學生（可多選）
+              - listbox "學生（可多選）" [ref=f1e48]:
+                - option "Candy Barry" [ref=f1e49]
+                - option "Chi" [ref=f1e50]
+                - option "Classpass Steven" [ref=f1e51]
+                - option "Connie Raymond" [ref=f1e52]
+                - option "Edmond" [ref=f1e53]
+                - option "Ivan" [ref=f1e54]
+                - option "Junpei" [ref=f1e55]
+                - option "Kelly" [ref=f1e56]
+                - option "Kwankwan" [ref=f1e57]
+                - option "Mimi" [ref=f1e58]
+                - option "Pearlie" [ref=f1e59]
+                - option "Sam group" [ref=f1e60]
+                - option "Steven" [ref=f1e61]
+                - option "Tiff group" [ref=f1e62]
+                - option "Tiffany Joanna" [ref=f1e63]
+                - option "Yauyau" [ref=f1e64]
+            - generic [ref=f1e65]:
+              - text: 備註
+              - textbox "備註" [ref=f1e66]
+            - button "建立" [ref=f1e68]
+        - generic [ref=f1e69]:
+          - heading "課堂列表" [level=2] [ref=f1e70]
+          - list [ref=f1e71]:
+            - listitem [ref=f1e72]:
+              - generic [ref=f1e73]:
+                - generic [ref=f1e74]:
+                  - paragraph [ref=f1e75]: PT · 已完成
+                  - paragraph [ref=f1e76]: 2026-08-06 20:30 – 21:30
+                  - paragraph [ref=f1e77]: 教練：Nora
+                  - paragraph [ref=f1e78]: 學生：Chi
+                  - paragraph [ref=f1e79]: 港幣 $300.00
+                - button "取消" [ref=f1e81]
+            - listitem [ref=f1e82]:
+              - generic [ref=f1e83]:
+                - generic [ref=f1e84]:
+                  - paragraph [ref=f1e85]: Admin · 已完成
+                  - paragraph [ref=f1e86]: 2026-08-06 18:30 – 20:30
+                  - paragraph [ref=f1e87]: 教練：Nora
+                  - paragraph [ref=f1e88]: 學生：無
+                  - paragraph [ref=f1e89]: 港幣 $200.00
+                - button "取消" [ref=f1e91]
+            - listitem [ref=f1e92]:
+              - generic [ref=f1e93]:
+                - generic [ref=f1e94]:
+                  - paragraph [ref=f1e95]: PT · 已完成
+                  - paragraph [ref=f1e96]: 2026-08-03 20:00 – 21:00
+                  - paragraph [ref=f1e97]: 教練：Nora
+                  - paragraph [ref=f1e98]: 學生：Kelly
+                  - paragraph [ref=f1e99]: 港幣 $360.00
+                - button "取消" [ref=f1e101]
+            - listitem [ref=f1e102]:
+              - generic [ref=f1e103]:
+                - generic [ref=f1e104]:
+                  - paragraph [ref=f1e105]: MIIT · 已完成
+                  - paragraph [ref=f1e106]: 2026-08-03 19:00 – 20:00
+                  - paragraph [ref=f1e107]: 教練：Nora
+                  - paragraph [ref=f1e108]: 學生：無
+                  - paragraph [ref=f1e109]: 港幣 $270.00
+                - button "取消" [ref=f1e111]
+            - listitem [ref=f1e112]:
+              - generic [ref=f1e113]:
+                - generic [ref=f1e114]:
+                  - paragraph [ref=f1e115]: Admin · 已完成
+                  - paragraph [ref=f1e116]: 2026-08-02 10:00 – 13:30
+                  - paragraph [ref=f1e117]: 教練：Nora
+                  - paragraph [ref=f1e118]: 學生：無
+                  - paragraph [ref=f1e119]: 港幣 $350.00
+                - button "取消" [ref=f1e121]
+            - listitem [ref=f1e122]:
+              - generic [ref=f1e123]:
+                - generic [ref=f1e124]:
+                  - paragraph [ref=f1e125]: MIIT · 已完成
+                  - paragraph [ref=f1e126]: 2026-07-24 19:00 – 20:00
+                  - paragraph [ref=f1e127]: 教練：Nora
+                  - paragraph [ref=f1e128]: 學生：無
+                  - paragraph [ref=f1e129]: 港幣 $450.00
+                - button "取消" [ref=f1e131]
+            - listitem [ref=f1e132]:
+              - generic [ref=f1e133]:
+                - generic [ref=f1e134]:
+                  - paragraph [ref=f1e135]: PT · 已完成
+                  - paragraph [ref=f1e136]: 2026-07-23 19:45 – 20:45
+                  - paragraph [ref=f1e137]: 教練：Nora
+                  - paragraph [ref=f1e138]: 學生：Ivan
+                  - paragraph [ref=f1e139]: 港幣 $360.00
+                - button "取消" [ref=f1e141]
+            - listitem [ref=f1e142]:
+              - generic [ref=f1e143]:
+                - generic [ref=f1e144]:
+                  - paragraph [ref=f1e145]: PT · 已完成
+                  - paragraph [ref=f1e146]: 2026-07-23 18:30 – 19:30
+                  - paragraph [ref=f1e147]: 教練：Nora
+                  - paragraph [ref=f1e148]: 學生：Junpei
+                  - paragraph [ref=f1e149]: 港幣 $330.00
+                - button "取消" [ref=f1e151]
+            - listitem [ref=f1e152]:
+              - generic [ref=f1e153]:
+                - generic [ref=f1e154]:
+                  - paragraph [ref=f1e155]: MIIT · 已完成
+                  - paragraph [ref=f1e156]: 2026-07-20 19:00 – 20:00
+                  - paragraph [ref=f1e157]: 教練：Nora
+                  - paragraph [ref=f1e158]: 學生：無
+                  - paragraph [ref=f1e159]: 港幣 $540.00
+                - button "取消" [ref=f1e161]
+            - listitem [ref=f1e162]:
+              - generic [ref=f1e163]:
+                - generic [ref=f1e164]:
+                  - paragraph [ref=f1e165]: Admin · 已完成
+                  - paragraph [ref=f1e166]: 2026-07-20 18:00 – 19:00
+                  - paragraph [ref=f1e167]: 教練：Nora
+                  - paragraph [ref=f1e168]: 學生：無
+                  - paragraph [ref=f1e169]: 港幣 $100.00
+                - button "取消" [ref=f1e171]
+            - listitem [ref=f1e172]:
+              - generic [ref=f1e173]:
+                - generic [ref=f1e174]:
+                  - paragraph [ref=f1e175]: PT · 已完成
+                  - paragraph [ref=f1e176]: 2026-07-19 12:30 – 13:30
+                  - paragraph [ref=f1e177]: 教練：Nora
+                  - paragraph [ref=f1e178]: 學生：Chi
+                  - paragraph [ref=f1e179]: 港幣 $300.00
+                - button "取消" [ref=f1e181]
+            - listitem [ref=f1e182]:
+              - generic [ref=f1e183]:
+                - generic [ref=f1e184]:
+                  - paragraph [ref=f1e185]: PT · 已完成
+                  - paragraph [ref=f1e186]: 2026-07-19 11:30 – 12:30
+                  - paragraph [ref=f1e187]: 教練：Nora
+                  - paragraph [ref=f1e188]: 學生：Candy Barry
+                  - paragraph [ref=f1e189]: 港幣 $450.00
+                - button "取消" [ref=f1e191]
+            - listitem [ref=f1e192]:
+              - generic [ref=f1e193]:
+                - generic [ref=f1e194]:
+                  - paragraph [ref=f1e195]: PT · 已完成
+                  - paragraph [ref=f1e196]: 2026-07-19 09:30 – 10:30
+                  - paragraph [ref=f1e197]: 教練：Nora
+                  - paragraph [ref=f1e198]: 學生：Edmond
+                  - paragraph [ref=f1e199]: 港幣 $270.00
+                - button "取消" [ref=f1e201]
+            - listitem [ref=f1e202]:
+              - generic [ref=f1e203]:
+                - generic [ref=f1e204]:
+                  - paragraph [ref=f1e205]: MIIT · 已完成
+                  - paragraph [ref=f1e206]: 2026-07-17 19:00 – 20:00
+                  - paragraph [ref=f1e207]: 教練：Nora
+                  - paragraph [ref=f1e208]: 學生：無
+                  - paragraph [ref=f1e209]: 港幣 $360.00
+                - button "取消" [ref=f1e211]
+            - listitem [ref=f1e212]:
+              - generic [ref=f1e213]:
+                - generic [ref=f1e214]:
+                  - paragraph [ref=f1e215]: PT · 已完成
+                  - paragraph [ref=f1e216]: 2026-07-16 19:30 – 20:30
+                  - paragraph [ref=f1e217]: 教練：Nora
+                  - paragraph [ref=f1e218]: 學生：Kelly
+                  - paragraph [ref=f1e219]: 港幣 $360.00
+                - button "取消" [ref=f1e221]
+            - listitem [ref=f1e222]:
+              - generic [ref=f1e223]:
+                - generic [ref=f1e224]:
+                  - paragraph [ref=f1e225]: PT · 已完成
+                  - paragraph [ref=f1e226]: 2026-07-16 18:30 – 19:30
+                  - paragraph [ref=f1e227]: 教練：Nora
+                  - paragraph [ref=f1e228]: 學生：Yauyau
+                  - paragraph [ref=f1e229]: 港幣 $450.00
+                - button "取消" [ref=f1e231]
+            - listitem [ref=f1e232]:
+              - generic [ref=f1e233]:
+                - generic [ref=f1e234]:
+                  - paragraph [ref=f1e235]: PT · 已完成
+                  - paragraph [ref=f1e236]: 2026-07-13 20:00 – 21:00
+                  - paragraph [ref=f1e237]: 教練：Nora
+                  - paragraph [ref=f1e238]: 學生：Kelly
+                  - paragraph [ref=f1e239]: 港幣 $360.00
+                - button "取消" [ref=f1e241]
+            - listitem [ref=f1e242]:
+              - generic [ref=f1e243]:
+                - generic [ref=f1e244]:
+                  - paragraph [ref=f1e245]: MIIT · 已完成
+                  - paragraph [ref=f1e246]: 2026-07-13 19:00 – 20:00
+                  - paragraph [ref=f1e247]: 教練：Nora
+                  - paragraph [ref=f1e248]: 學生：無
+                  - paragraph [ref=f1e249]: 港幣 $450.00
+                - button "取消" [ref=f1e251]
+            - listitem [ref=f1e252]:
+              - generic [ref=f1e253]:
+                - generic [ref=f1e254]:
+                  - paragraph [ref=f1e255]: PT · 已完成
+                  - paragraph [ref=f1e256]: 2026-07-13 18:00 – 19:00
+                  - paragraph [ref=f1e257]: 教練：Nora
+                  - paragraph [ref=f1e258]: 學生：Mimi
+                  - paragraph [ref=f1e259]: 港幣 $306.00
+                - button "取消" [ref=f1e261]
+            - listitem [ref=f1e262]:
+              - generic [ref=f1e263]:
+                - generic [ref=f1e264]:
+                  - paragraph [ref=f1e265]: PT · 已完成
+                  - paragraph [ref=f1e266]: 2026-07-12 12:30 – 13:30
+                  - paragraph [ref=f1e267]: 教練：Nora
+                  - paragraph [ref=f1e268]: 學生：Connie Raymond
+                  - paragraph [ref=f1e269]: 港幣 $636.00
+                - button "取消" [ref=f1e271]
+            - listitem [ref=f1e272]:
+              - generic [ref=f1e273]:
+                - generic [ref=f1e274]:
+                  - paragraph [ref=f1e275]: Admin · 已完成
+                  - paragraph [ref=f1e276]: 2026-07-12 10:30 – 12:30
+                  - paragraph [ref=f1e277]: 教練：Nora
+                  - paragraph [ref=f1e278]: 學生：無
+                  - paragraph [ref=f1e279]: 港幣 $200.00
+                - button "取消" [ref=f1e281]
+            - listitem [ref=f1e282]:
+              - generic [ref=f1e283]:
+                - generic [ref=f1e284]:
+                  - paragraph [ref=f1e285]: PT · 已完成
+                  - paragraph [ref=f1e286]: 2026-07-09 20:30 – 21:30
+                  - paragraph [ref=f1e287]: 教練：Nora
+                  - paragraph [ref=f1e288]: 學生：Chi
+                  - paragraph [ref=f1e289]: 港幣 $300.00
+                - button "取消" [ref=f1e291]
+            - listitem [ref=f1e292]:
+              - generic [ref=f1e293]:
+                - generic [ref=f1e294]:
+                  - paragraph [ref=f1e295]: PT · 已完成
+                  - paragraph [ref=f1e296]: 2026-07-09 19:30 – 20:30
+                  - paragraph [ref=f1e297]: 教練：Nora
+                  - paragraph [ref=f1e298]: 學生：Kelly
+                  - paragraph [ref=f1e299]: 港幣 $360.00
+                - button "取消" [ref=f1e301]
+            - listitem [ref=f1e302]:
+              - generic [ref=f1e303]:
+                - generic [ref=f1e304]:
+                  - paragraph [ref=f1e305]: PTA · 已完成
+                  - paragraph [ref=f1e306]: 2026-07-09 18:30 – 19:30
+                  - paragraph [ref=f1e307]: 教練：Nora
+                  - paragraph [ref=f1e308]: 學生：無
+                  - paragraph [ref=f1e309]: 港幣 $120.00
+                - button "取消" [ref=f1e311]
+            - listitem [ref=f1e312]:
+              - generic [ref=f1e313]:
+                - generic [ref=f1e314]:
+                  - paragraph [ref=f1e315]: MIIT · 已完成
+                  - paragraph [ref=f1e316]: 2026-07-06 19:00 – 20:00
+                  - paragraph [ref=f1e317]: 教練：Nora
+                  - paragraph [ref=f1e318]: 學生：無
+                  - paragraph [ref=f1e319]: 港幣 $630.00
+                - button "取消" [ref=f1e321]
+            - listitem [ref=f1e322]:
+              - generic [ref=f1e323]:
+                - generic [ref=f1e324]:
+                  - paragraph [ref=f1e325]: PT · 已完成
+                  - paragraph [ref=f1e326]: 2026-07-06 18:00 – 19:00
+                  - paragraph [ref=f1e327]: 教練：Nora
+                  - paragraph [ref=f1e328]: 學生：Mimi
+                  - paragraph [ref=f1e329]: 港幣 $306.00
+                - button "取消" [ref=f1e331]
+            - listitem [ref=f1e332]:
+              - generic [ref=f1e333]:
+                - generic [ref=f1e334]:
+                  - paragraph [ref=f1e335]: PT · 已完成
+                  - paragraph [ref=f1e336]: 2026-07-05 12:30 – 13:30
+                  - paragraph [ref=f1e337]: 教練：Nora
+                  - paragraph [ref=f1e338]: 學生：Ivan
+                  - paragraph [ref=f1e339]: 港幣 $360.00
+                - button "取消" [ref=f1e341]
+            - listitem [ref=f1e342]:
+              - generic [ref=f1e343]:
+                - generic [ref=f1e344]:
+                  - paragraph [ref=f1e345]: PT · 已完成
+                  - paragraph [ref=f1e346]: 2026-07-05 11:30 – 12:30
+                  - paragraph [ref=f1e347]: 教練：Nora
+                  - paragraph [ref=f1e348]: 學生：Candy Barry
+                  - paragraph [ref=f1e349]: 港幣 $450.00
+                - button "取消" [ref=f1e351]
+            - listitem [ref=f1e352]:
+              - generic [ref=f1e353]:
+                - generic [ref=f1e354]:
+                  - paragraph [ref=f1e355]: PTA · 已完成
+                  - paragraph [ref=f1e356]: 2026-07-05 10:30 – 11:30
+                  - paragraph [ref=f1e357]: 教練：Nora
+                  - paragraph [ref=f1e358]: 學生：無
+                  - paragraph [ref=f1e359]: 港幣 $120.00
+                - button "取消" [ref=f1e361]
+            - listitem [ref=f1e362]:
+              - generic [ref=f1e363]:
+                - generic [ref=f1e364]:
+                  - paragraph [ref=f1e365]: MIIT · 已完成
+                  - paragraph [ref=f1e366]: 2026-07-03 19:00 – 20:00
+                  - paragraph [ref=f1e367]: 教練：Nora
+                  - paragraph [ref=f1e368]: 學生：無
+                  - paragraph [ref=f1e369]: 港幣 $450.00
+                - button "取消" [ref=f1e371]
+            - listitem [ref=f1e372]:
+              - generic [ref=f1e373]:
+                - generic [ref=f1e374]:
+                  - paragraph [ref=f1e375]: PT · 已完成
+                  - paragraph [ref=f1e376]: 2026-06-30 19:30 – 20:30
+                  - paragraph [ref=f1e377]: 教練：Nora
+                  - paragraph [ref=f1e378]: 學生：Pearlie
+                  - paragraph [ref=f1e379]: 港幣 $450.00
+                - button "取消" [ref=f1e381]
+            - listitem [ref=f1e382]:
+              - generic [ref=f1e383]:
+                - generic [ref=f1e384]:
+                  - paragraph [ref=f1e385]: PT · 已完成
+                  - paragraph [ref=f1e386]: 2026-06-30 18:30 – 19:30
+                  - paragraph [ref=f1e387]: 教練：Nora
+                  - paragraph [ref=f1e388]: 學生：Tiffany Joanna
+                  - paragraph [ref=f1e389]: 港幣 $636.00
+                - button "取消" [ref=f1e391]
+            - listitem [ref=f1e392]:
+              - generic [ref=f1e393]:
+                - generic [ref=f1e394]:
+                  - paragraph [ref=f1e395]: PT · 已完成
+                  - paragraph [ref=f1e396]: 2026-06-29 20:00 – 21:00
+                  - paragraph [ref=f1e397]: 教練：Nora
+                  - paragraph [ref=f1e398]: 學生：Yauyau
+                  - paragraph [ref=f1e399]: 港幣 $450.00
+                - button "取消" [ref=f1e401]
+            - listitem [ref=f1e402]:
+              - generic [ref=f1e403]:
+                - generic [ref=f1e404]:
+                  - paragraph [ref=f1e405]: MIIT · 已完成
+                  - paragraph [ref=f1e406]: 2026-06-29 19:00 – 20:00
+                  - paragraph [ref=f1e407]: 教練：Nora
+                  - paragraph [ref=f1e408]: 學生：無
+                  - paragraph [ref=f1e409]: 港幣 $630.00
+                - button "取消" [ref=f1e411]
+            - listitem [ref=f1e412]:
+              - generic [ref=f1e413]:
+                - generic [ref=f1e414]:
+                  - paragraph [ref=f1e415]: PT · 已完成
+                  - paragraph [ref=f1e416]: 2026-06-29 18:00 – 19:00
+                  - paragraph [ref=f1e417]: 教練：Nora
+                  - paragraph [ref=f1e418]: 學生：Mimi
+                  - paragraph [ref=f1e419]: 港幣 $306.00
+                - button "取消" [ref=f1e421]
+            - listitem [ref=f1e422]:
+              - generic [ref=f1e423]:
+                - generic [ref=f1e424]:
+                  - paragraph [ref=f1e425]: PT · 已完成
+                  - paragraph [ref=f1e426]: 2026-06-22 20:00 – 21:00
+                  - paragraph [ref=f1e427]: 教練：Nora
+                  - paragraph [ref=f1e428]: 學生：Kelly
+                  - paragraph [ref=f1e429]: 港幣 $360.00
+                - button "取消" [ref=f1e431]
+            - listitem [ref=f1e432]:
+              - generic [ref=f1e433]:
+                - generic [ref=f1e434]:
+                  - paragraph [ref=f1e435]: MIIT · 已完成
+                  - paragraph [ref=f1e436]: 2026-06-22 19:00 – 20:00
+                  - paragraph [ref=f1e437]: 教練：Nora
+                  - paragraph [ref=f1e438]: 學生：無
+                  - paragraph [ref=f1e439]: 港幣 $90.00
+                - button "取消" [ref=f1e441]
+            - listitem [ref=f1e442]:
+              - generic [ref=f1e443]:
+                - generic [ref=f1e444]:
+                  - paragraph [ref=f1e445]: PT · 已完成
+                  - paragraph [ref=f1e446]: 2026-06-22 18:00 – 19:00
+                  - paragraph [ref=f1e447]: 教練：Nora
+                  - paragraph [ref=f1e448]: 學生：Mimi
+                  - paragraph [ref=f1e449]: 港幣 $306.00
+                - button "取消" [ref=f1e451]
+            - listitem [ref=f1e452]:
+              - generic [ref=f1e453]:
+                - generic [ref=f1e454]:
+                  - paragraph [ref=f1e455]: PT · 已完成
+                  - paragraph [ref=f1e456]: 2026-06-21 11:30 – 12:30
+                  - paragraph [ref=f1e457]: 教練：Nora
+                  - paragraph [ref=f1e458]: 學生：Connie Raymond
+                  - paragraph [ref=f1e459]: 港幣 $636.00
+                - button "取消" [ref=f1e461]
+            - listitem [ref=f1e462]:
+              - generic [ref=f1e463]:
+                - generic [ref=f1e464]:
+                  - paragraph [ref=f1e465]: PT · 已完成
+                  - paragraph [ref=f1e466]: 2026-06-21 10:30 – 11:30
+                  - paragraph [ref=f1e467]: 教練：Nora
+                  - paragraph [ref=f1e468]: 學生：Sam group
+                  - paragraph [ref=f1e469]: 港幣 $810.00
+                - button "取消" [ref=f1e471]
+            - listitem [ref=f1e472]:
+              - generic [ref=f1e473]:
+                - generic [ref=f1e474]:
+                  - paragraph [ref=f1e475]: PT · 已完成
+                  - paragraph [ref=f1e476]: 2026-06-21 09:30 – 10:30
+                  - paragraph [ref=f1e477]: 教練：Nora
+                  - paragraph [ref=f1e478]: 學生：Edmond
+                  - paragraph [ref=f1e479]: 港幣 $270.00
+                - button "取消" [ref=f1e481]
+            - listitem [ref=f1e482]:
+              - generic [ref=f1e483]:
+                - generic [ref=f1e484]:
+                  - paragraph [ref=f1e485]: PT · 已完成
+                  - paragraph [ref=f1e486]: 2026-06-19 20:00 – 21:00
+                  - paragraph [ref=f1e487]: 教練：Nora
+                  - paragraph [ref=f1e488]: 學生：Steven
+                  - paragraph [ref=f1e489]: 港幣 $228.00
+                - button "取消" [ref=f1e491]
+            - listitem [ref=f1e492]:
+              - generic [ref=f1e493]:
+                - generic [ref=f1e494]:
+                  - paragraph [ref=f1e495]: MIIT · 已完成
+                  - paragraph [ref=f1e496]: 2026-06-19 19:00 – 20:00
+                  - paragraph [ref=f1e497]: 教練：Nora
+                  - paragraph [ref=f1e498]: 學生：無
+                  - paragraph [ref=f1e499]: 港幣 $90.00
+                - button "取消" [ref=f1e501]
+            - listitem [ref=f1e502]:
+              - generic [ref=f1e503]:
+                - generic [ref=f1e504]:
+                  - paragraph [ref=f1e505]: PT · 已完成
+                  - paragraph [ref=f1e506]: 2026-06-15 20:00 – 21:00
+                  - paragraph [ref=f1e507]: 教練：Nora
+                  - paragraph [ref=f1e508]: 學生：Yauyau
+                  - paragraph [ref=f1e509]: 港幣 $450.00
+                - button "取消" [ref=f1e511]
+            - listitem [ref=f1e512]:
+              - generic [ref=f1e513]:
+                - generic [ref=f1e514]:
+                  - paragraph [ref=f1e515]: MIIT · 已完成
+                  - paragraph [ref=f1e516]: 2026-06-15 19:00 – 20:00
+                  - paragraph [ref=f1e517]: 教練：Nora
+                  - paragraph [ref=f1e518]: 學生：無
+                  - paragraph [ref=f1e519]: 港幣 $450.00
+                - button "取消" [ref=f1e521]
+            - listitem [ref=f1e522]:
+              - generic [ref=f1e523]:
+                - generic [ref=f1e524]:
+                  - paragraph [ref=f1e525]: PT · 已完成
+                  - paragraph [ref=f1e526]: 2026-06-12 20:00 – 21:00
+                  - paragraph [ref=f1e527]: 教練：Nora
+                  - paragraph [ref=f1e528]: 學生：Yauyau
+                  - paragraph [ref=f1e529]: 港幣 $450.00
+                - button "取消" [ref=f1e531]
+            - listitem [ref=f1e532]:
+              - generic [ref=f1e533]:
+                - generic [ref=f1e534]:
+                  - paragraph [ref=f1e535]: MIIT · 已完成
+                  - paragraph [ref=f1e536]: 2026-06-12 19:00 – 20:00
+                  - paragraph [ref=f1e537]: 教練：Nora
+                  - paragraph [ref=f1e538]: 學生：無
+                  - paragraph [ref=f1e539]: 港幣 $90.00
+                - button "取消" [ref=f1e541]
+            - listitem [ref=f1e542]:
+              - generic [ref=f1e543]:
+                - generic [ref=f1e544]:
+                  - paragraph [ref=f1e545]: PT · 已完成
+                  - paragraph [ref=f1e546]: 2026-06-09 20:00 – 21:00
+                  - paragraph [ref=f1e547]: 教練：Nora
+                  - paragraph [ref=f1e548]: 學生：Ivan
+                  - paragraph [ref=f1e549]: 港幣 $360.00
+                - button "取消" [ref=f1e551]
+            - listitem [ref=f1e552]:
+              - generic [ref=f1e553]:
+                - generic [ref=f1e554]:
+                  - paragraph [ref=f1e555]: PT · 已完成
+                  - paragraph [ref=f1e556]: 2026-06-09 18:30 – 19:30
+                  - paragraph [ref=f1e557]: 教練：Nora
+                  - paragraph [ref=f1e558]: 學生：Tiff group
+                  - paragraph [ref=f1e559]: 港幣 $636.00
+                - button "取消" [ref=f1e561]
+            - listitem [ref=f1e562]:
+              - generic [ref=f1e563]:
+                - generic [ref=f1e564]:
+                  - paragraph [ref=f1e565]: MIIT · 已完成
+                  - paragraph [ref=f1e566]: 2026-06-08 19:00 – 20:00
+                  - paragraph [ref=f1e567]: 教練：Nora
+                  - paragraph [ref=f1e568]: 學生：無
+                  - paragraph [ref=f1e569]: 港幣 $450.00
+                - button "取消" [ref=f1e571]
+            - listitem [ref=f1e572]:
+              - generic [ref=f1e573]:
+                - generic [ref=f1e574]:
+                  - paragraph [ref=f1e575]: PT · 已完成
+                  - paragraph [ref=f1e576]: 2026-06-07 12:30 – 13:30
+                  - paragraph [ref=f1e577]: 教練：Nora
+                  - paragraph [ref=f1e578]: 學生：Ivan
+                  - paragraph [ref=f1e579]: 港幣 $360.00
+                - button "取消" [ref=f1e581]
+            - listitem [ref=f1e582]:
+              - generic [ref=f1e583]:
+                - generic [ref=f1e584]:
+                  - paragraph [ref=f1e585]: PT · 已完成
+                  - paragraph [ref=f1e586]: 2026-06-07 11:30 – 12:30
+                  - paragraph [ref=f1e587]: 教練：Nora
+                  - paragraph [ref=f1e588]: 學生：Classpass Steven
+                  - paragraph [ref=f1e589]: 港幣 $228.00
+                - button "取消" [ref=f1e591]
+            - listitem [ref=f1e592]:
+              - generic [ref=f1e593]:
+                - generic [ref=f1e594]:
+                  - paragraph [ref=f1e595]: PT · 已完成
+                  - paragraph [ref=f1e596]: 2026-06-07 10:30 – 11:30
+                  - paragraph [ref=f1e597]: 教練：Nora
+                  - paragraph [ref=f1e598]: 學生：Sam group
+                  - paragraph [ref=f1e599]: 港幣 $810.00
+                - button "取消" [ref=f1e601]
+            - listitem [ref=f1e602]:
+              - generic [ref=f1e603]:
+                - generic [ref=f1e604]:
+                  - paragraph [ref=f1e605]: PT · 已完成
+                  - paragraph [ref=f1e606]: 2026-06-07 09:30 – 10:30
+                  - paragraph [ref=f1e607]: 教練：Nora
+                  - paragraph [ref=f1e608]: 學生：Yauyau
+                  - paragraph [ref=f1e609]: 港幣 $450.00
+                - button "取消" [ref=f1e611]
+            - listitem [ref=f1e612]:
+              - generic [ref=f1e613]:
+                - generic [ref=f1e614]:
+                  - paragraph [ref=f1e615]: MIIT · 已完成
+                  - paragraph [ref=f1e616]: 2026-06-05 19:30 – 20:30
+                  - paragraph [ref=f1e617]: 教練：Nora
+                  - paragraph [ref=f1e618]: 學生：無
+                  - paragraph [ref=f1e619]: 港幣 $270.00
+                - button "取消" [ref=f1e621]
+            - listitem [ref=f1e622]:
+              - generic [ref=f1e623]:
+                - generic [ref=f1e624]:
+                  - paragraph [ref=f1e625]: PT · 已完成
+                  - paragraph [ref=f1e626]: 2026-06-05 18:30 – 19:30
+                  - paragraph [ref=f1e627]: 教練：Nora
+                  - paragraph [ref=f1e628]: 學生：Pearlie
+                  - paragraph [ref=f1e629]: 港幣 $450.00
+                - button "取消" [ref=f1e631]
+            - listitem [ref=f1e632]:
+              - generic [ref=f1e633]:
+                - generic [ref=f1e634]:
+                  - paragraph [ref=f1e635]: PT · 已完成
+                  - paragraph [ref=f1e636]: 2026-06-02 20:30 – 21:30
+                  - paragraph [ref=f1e637]: 教練：Nora
+                  - paragraph [ref=f1e638]: 學生：Chi
+                  - paragraph [ref=f1e639]: 港幣 $300.00
+                - button "取消" [ref=f1e641]
+            - listitem [ref=f1e642]:
+              - generic [ref=f1e643]:
+                - generic [ref=f1e644]:
+                  - paragraph [ref=f1e645]: PT · 已完成
+                  - paragraph [ref=f1e646]: 2026-06-02 19:30 – 20:30
+                  - paragraph [ref=f1e647]: 教練：Nora
+                  - paragraph [ref=f1e648]: 學生：Yauyau
+                  - paragraph [ref=f1e649]: 港幣 $450.00
+                - button "取消" [ref=f1e651]
+            - listitem [ref=f1e652]:
+              - generic [ref=f1e653]:
+                - generic [ref=f1e654]:
+                  - paragraph [ref=f1e655]: PT · 已完成
+                  - paragraph [ref=f1e656]: 2026-06-02 18:30 – 19:30
+                  - paragraph [ref=f1e657]: 教練：Nora
+                  - paragraph [ref=f1e658]: 學生：Tiff group
+                  - paragraph [ref=f1e659]: 港幣 $636.00
+                - button "取消" [ref=f1e661]
+            - listitem [ref=f1e662]:
+              - generic [ref=f1e663]:
+                - generic [ref=f1e664]:
+                  - paragraph [ref=f1e665]: PT · 已完成
+                  - paragraph [ref=f1e666]: 2026-06-01 20:20 – 21:20
+                  - paragraph [ref=f1e667]: 教練：Nora
+                  - paragraph [ref=f1e668]: 學生：Kelly
+                  - paragraph [ref=f1e669]: 港幣 $360.00
+                - button "取消" [ref=f1e671]
+            - listitem [ref=f1e672]:
+              - generic [ref=f1e673]:
+                - generic [ref=f1e674]:
+                  - paragraph [ref=f1e675]: MIIT · 已完成
+                  - paragraph [ref=f1e676]: 2026-06-01 19:00 – 20:00
+                  - paragraph [ref=f1e677]: 教練：Nora
+                  - paragraph [ref=f1e678]: 學生：無
+                  - paragraph [ref=f1e679]: 港幣 $270.00
+                - button "取消" [ref=f1e681]
+            - listitem [ref=f1e682]:
+              - generic [ref=f1e683]:
+                - generic [ref=f1e684]:
+                  - paragraph [ref=f1e685]: PT · 已完成
+                  - paragraph [ref=f1e686]: 2026-05-31 10:30 – 11:30
+                  - paragraph [ref=f1e687]: 教練：Nora
+                  - paragraph [ref=f1e688]: 學生：Sam group
+                  - paragraph [ref=f1e689]: 港幣 $810.00
+                - button "取消" [ref=f1e691]
+            - listitem [ref=f1e692]:
+              - generic [ref=f1e693]:
+                - generic [ref=f1e694]:
+                  - paragraph [ref=f1e695]: PTA · 已完成
+                  - paragraph [ref=f1e696]: 2026-05-26 19:30 – 21:00
+                  - paragraph [ref=f1e697]: 教練：Nora
+                  - paragraph [ref=f1e698]: 學生：Kwankwan
+                  - paragraph [ref=f1e699]: 港幣 $180.00
+                - button "取消" [ref=f1e701]
+            - listitem [ref=f1e702]:
+              - generic [ref=f1e703]:
+                - generic [ref=f1e704]:
+                  - paragraph [ref=f1e705]: PTA · 已完成
+                  - paragraph [ref=f1e706]: 2026-05-26 18:30 – 19:30
+                  - paragraph [ref=f1e707]: 教練：Nora
+                  - paragraph [ref=f1e708]: 學生：無
+                  - paragraph [ref=f1e709]: 港幣 $120.00
+                - button "取消" [ref=f1e711]
+            - listitem [ref=f1e712]:
+              - generic [ref=f1e713]:
+                - generic [ref=f1e714]:
+                  - paragraph [ref=f1e715]: PT · 已完成
+                  - paragraph [ref=f1e716]: 2026-05-25 20:00 – 21:00
+                  - paragraph [ref=f1e717]: 教練：Nora
+                  - paragraph [ref=f1e718]: 學生：Kelly
+                  - paragraph [ref=f1e719]: 港幣 $360.00
+                - button "取消" [ref=f1e721]
+            - listitem [ref=f1e722]:
+              - generic [ref=f1e723]:
+                - generic [ref=f1e724]:
+                  - paragraph [ref=f1e725]: MIIT · 已完成
+                  - paragraph [ref=f1e726]: 2026-05-25 19:00 – 20:00
+                  - paragraph [ref=f1e727]: 教練：Nora
+                  - paragraph [ref=f1e728]: 學生：無
+                  - paragraph [ref=f1e729]: 港幣 $360.00
+                - button "取消" [ref=f1e731]
+            - listitem [ref=f1e732]:
+              - generic [ref=f1e733]:
+                - generic [ref=f1e734]:
+                  - paragraph [ref=f1e735]: PT · 已完成
+                  - paragraph [ref=f1e736]: 2026-05-25 18:00 – 19:00
+                  - paragraph [ref=f1e737]: 教練：Nora
+                  - paragraph [ref=f1e738]: 學生：Mimi
+                  - paragraph [ref=f1e739]: 港幣 $306.00
+                - button "取消" [ref=f1e741]
+            - listitem [ref=f1e742]:
+              - generic [ref=f1e743]:
+                - generic [ref=f1e744]:
+                  - paragraph [ref=f1e745]: PT · 已完成
+                  - paragraph [ref=f1e746]: 2026-05-24 11:40 – 12:40
+                  - paragraph [ref=f1e747]: 教練：Nora
+                  - paragraph [ref=f1e748]: 學生：Classpass Steven
+                  - paragraph [ref=f1e749]: 港幣 $228.00
+                - button "取消" [ref=f1e751]
+            - listitem [ref=f1e752]:
+              - generic [ref=f1e753]:
+                - generic [ref=f1e754]:
+                  - paragraph [ref=f1e755]: PT · 已完成
+                  - paragraph [ref=f1e756]: 2026-05-24 10:15 – 11:15
+                  - paragraph [ref=f1e757]: 教練：Nora
+                  - paragraph [ref=f1e758]: 學生：Edmond
+                  - paragraph [ref=f1e759]: 港幣 $270.00
+                - button "取消" [ref=f1e761]
+            - listitem [ref=f1e762]:
+              - generic [ref=f1e763]:
+                - generic [ref=f1e764]:
+                  - paragraph [ref=f1e765]: MIIT · 已完成
+                  - paragraph [ref=f1e766]: 2026-05-22 19:00 – 20:00
+                  - paragraph [ref=f1e767]: 教練：Nora
+                  - paragraph [ref=f1e768]: 學生：無
+                  - paragraph [ref=f1e769]: 港幣 $180.00
+                - button "取消" [ref=f1e771]
+  - alert [ref=f1e772]

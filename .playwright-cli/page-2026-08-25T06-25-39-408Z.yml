@@ -1,0 +1,166 @@
+- generic [active] [ref=f11e1]:
+  - generic [ref=f11e2]:
+    - banner [ref=f11e3]:
+      - generic [ref=f11e4]:
+        - generic [ref=f11e5]:
+          - paragraph [ref=f11e6]: 僱主管理
+          - paragraph [ref=f11e7]: 僱主
+        - button "登出" [ref=f11e9]
+      - navigation [ref=f11e10]:
+        - link "日曆" [ref=f11e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f11e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f11e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f11e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f11e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f11e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f11e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f11e18]:
+      - generic [ref=f11e19]:
+        - generic [ref=f11e20]:
+          - generic [ref=f11e21]:
+            - heading "新增教練帳號" [level=2] [ref=f11e22]
+            - generic [ref=f11e23]:
+              - generic [ref=f11e24]:
+                - text: 姓名
+                - textbox "姓名" [ref=f11e25]
+              - generic [ref=f11e26]:
+                - text: 電郵
+                - textbox "電郵" [ref=f11e27]
+              - generic [ref=f11e28]:
+                - text: 臨時密碼
+                - textbox "臨時密碼" [ref=f11e29]
+              - paragraph [ref=f11e30]: 教練首次登入必須更改密碼。
+              - button "建立帳號" [ref=f11e31]
+          - generic [ref=f11e32]:
+            - heading "教練列表" [level=2] [ref=f11e33]
+            - list [ref=f11e34]:
+              - listitem [ref=f11e35]:
+                - generic [ref=f11e36]:
+                  - paragraph [ref=f11e37]: Nora
+                  - paragraph [ref=f11e38]: nora@gmail.com
+                - generic [ref=f11e39]: 已啟用
+        - generic [ref=f11e40]:
+          - heading "教練 PT 費率（學生學費 + 教練薪資）" [level=2] [ref=f11e41]
+          - generic [ref=f11e42]:
+            - generic [ref=f11e43]:
+              - text: 教練
+              - combobox "教練" [ref=f11e44]:
+                - option "Nora" [selected]
+            - generic [ref=f11e45]:
+              - text: 學生
+              - combobox "學生" [ref=f11e46]:
+                - option "Candy Barry" [selected]
+                - option "Chi"
+                - option "Classpass Steven"
+                - option "Connie Raymond"
+                - option "Edmond"
+                - option "Ivan"
+                - option "Junpei"
+                - option "Kelly"
+                - option "Kwankwan"
+                - option "Mimi"
+                - option "Pearlie"
+                - option "Playwright Test Student"
+                - option "Sam group"
+                - option "Steven"
+                - option "Tiff group"
+                - option "Tiffany Joanna"
+                - option "Yauyau"
+            - generic [ref=f11e47]:
+              - text: 學生學費（港幣）
+              - spinbutton "學生學費（港幣）" [ref=f11e48]
+            - generic [ref=f11e49]:
+              - text: 教練薪資（港幣）
+              - spinbutton "教練薪資（港幣）" [ref=f11e50]
+            - button "儲存" [ref=f11e52]
+          - table [ref=f11e54]:
+            - rowgroup [ref=f11e55]:
+              - row [ref=f11e56]:
+                - columnheader "教練" [ref=f11e57]
+                - columnheader "學生" [ref=f11e58]
+                - columnheader "學生學費" [ref=f11e59]
+                - columnheader "教練薪資" [ref=f11e60]
+            - rowgroup [ref=f11e61]:
+              - row [ref=f11e62]:
+                - cell "Nora" [ref=f11e63]
+                - cell "Chi" [ref=f11e64]
+                - cell "—" [ref=f11e65]
+                - cell "港幣 $300.00" [ref=f11e66]
+              - row [ref=f11e67]:
+                - cell "Nora" [ref=f11e68]
+                - cell "Ivan" [ref=f11e69]
+                - cell "—" [ref=f11e70]
+                - cell "港幣 $360.00" [ref=f11e71]
+              - row [ref=f11e72]:
+                - cell "Nora" [ref=f11e73]
+                - cell "Pearlie" [ref=f11e74]
+                - cell "—" [ref=f11e75]
+                - cell "港幣 $450.00" [ref=f11e76]
+              - row [ref=f11e77]:
+                - cell "Nora" [ref=f11e78]
+                - cell "Yauyau" [ref=f11e79]
+                - cell "—" [ref=f11e80]
+                - cell "港幣 $450.00" [ref=f11e81]
+              - row [ref=f11e82]:
+                - cell "Nora" [ref=f11e83]
+                - cell "Steven" [ref=f11e84]
+                - cell "—" [ref=f11e85]
+                - cell "港幣 $228.00" [ref=f11e86]
+              - row [ref=f11e87]:
+                - cell "Nora" [ref=f11e88]
+                - cell "Edmond" [ref=f11e89]
+                - cell "—" [ref=f11e90]
+                - cell "港幣 $270.00" [ref=f11e91]
+              - row [ref=f11e92]:
+                - cell "Nora" [ref=f11e93]
+                - cell "Sam group" [ref=f11e94]
+                - cell "—" [ref=f11e95]
+                - cell "港幣 $810.00" [ref=f11e96]
+              - row [ref=f11e97]:
+                - cell "Nora" [ref=f11e98]
+                - cell "Connie Raymond" [ref=f11e99]
+                - cell "—" [ref=f11e100]
+                - cell "港幣 $636.00" [ref=f11e101]
+              - row [ref=f11e102]:
+                - cell "Nora" [ref=f11e103]
+                - cell "Kelly" [ref=f11e104]
+                - cell "—" [ref=f11e105]
+                - cell "港幣 $360.00" [ref=f11e106]
+              - row [ref=f11e107]:
+                - cell "Nora" [ref=f11e108]
+                - cell "Tiffany Joanna" [ref=f11e109]
+                - cell "—" [ref=f11e110]
+                - cell "港幣 $636.00" [ref=f11e111]
+              - row [ref=f11e112]:
+                - cell "Nora" [ref=f11e113]
+                - cell "Candy Barry" [ref=f11e114]
+                - cell "—" [ref=f11e115]
+                - cell "港幣 $450.00" [ref=f11e116]
+              - row [ref=f11e117]:
+                - cell "Nora" [ref=f11e118]
+                - cell "Mimi" [ref=f11e119]
+                - cell "—" [ref=f11e120]
+                - cell "港幣 $306.00" [ref=f11e121]
+              - row [ref=f11e122]:
+                - cell "Nora" [ref=f11e123]
+                - cell "Tiff group" [ref=f11e124]
+                - cell "—" [ref=f11e125]
+                - cell "港幣 $636.00" [ref=f11e126]
+              - row [ref=f11e127]:
+                - cell "Nora" [ref=f11e128]
+                - cell "Classpass Steven" [ref=f11e129]
+                - cell "—" [ref=f11e130]
+                - cell "港幣 $228.00" [ref=f11e131]
+              - row [ref=f11e132]:
+                - cell "Nora" [ref=f11e133]
+                - cell "Junpei" [ref=f11e134]
+                - cell "—" [ref=f11e135]
+                - cell "港幣 $330.00" [ref=f11e136]
+  - alert [ref=f11e137]

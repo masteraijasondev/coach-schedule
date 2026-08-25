@@ -1,7 +1,6 @@
 "use server";
 
 import { requireEmployer } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";

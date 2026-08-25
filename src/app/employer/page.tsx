@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { cancelLessonAction, createLessonAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { LessonRegisterFields } from "@/components/lesson-register-fields";
@@ -23,6 +24,12 @@ import { createClient } from "@/lib/supabase/server";
 type Props = {
   searchParams: Promise<{ month?: string; day?: string }>;
 };
+
+export async function generateMetadata({  }: Props): Promise<Metadata> {
+  return {
+    title: `全體教練日曆`,
+  };
+}
 
 export default async function EmployerHomePage({ searchParams }: Props) {
   await requireEmployer();
@@ -78,9 +85,14 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const coachMap = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
   const countsByDay = new Map<string, number>();
+  const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
   for (const lesson of lessons ?? []) {
     const key = lessonDayKey(lesson.starts_at);
     countsByDay.set(key, (countsByDay.get(key) ?? 0) + 1);
+    const coachName = lesson.coach_id ? coachMap.get(lesson.coach_id) ?? "—" : "—";
+    const list = lessonsByDay.get(key) ?? [];
+    list.push({ id: lesson.id, coachName });
+    lessonsByDay.set(key, list);
   }
 
   const dayLessons = (lessons ?? []).filter(
@@ -101,6 +113,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
           selectedDay={day}
           basePath="/employer"
           countsByDay={countsByDay}
+          lessonsByDay={lessonsByDay}
         />
       </Panel>
 

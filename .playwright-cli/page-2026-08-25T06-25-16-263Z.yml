@@ -1,0 +1,87 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e2]:
+    - banner [ref=f10e3]:
+      - generic [ref=f10e4]:
+        - generic [ref=f10e5]:
+          - paragraph [ref=f10e6]: 僱主管理
+          - paragraph [ref=f10e7]: 僱主
+        - button "登出" [ref=f10e9]
+      - navigation [ref=f10e10]:
+        - link "日曆" [ref=f10e11] [cursor=pointer]:
+          - /url: /employer
+        - link "課堂列表" [ref=f10e12] [cursor=pointer]:
+          - /url: /employer/lessons
+        - link "薪資" [ref=f10e13] [cursor=pointer]:
+          - /url: /employer/salary
+        - link "教練" [ref=f10e14] [cursor=pointer]:
+          - /url: /employer/coaches
+        - link "學生" [ref=f10e15] [cursor=pointer]:
+          - /url: /employer/students
+        - link "課堂類型" [ref=f10e16] [cursor=pointer]:
+          - /url: /employer/lesson-types
+        - link "薪資規則" [ref=f10e17] [cursor=pointer]:
+          - /url: /employer/rates
+    - main [ref=f10e18]:
+      - generic [ref=f10e19]:
+        - generic [ref=f10e20]:
+          - heading "新增學生" [level=2] [ref=f10e21]
+          - generic [ref=f10e22]:
+            - generic [ref=f10e23]:
+              - text: 姓名
+              - textbox "姓名" [ref=f10e24]
+            - generic [ref=f10e25]:
+              - text: 備註
+              - textbox "備註" [ref=f10e26]
+            - button "新增" [ref=f10e27]
+        - generic [ref=f10e28]:
+          - heading "學生列表" [level=2] [ref=f10e29]
+          - list [ref=f10e30]:
+            - listitem [ref=f10e31]:
+              - paragraph [ref=f10e33]: Candy Barry
+              - button "停用" [ref=f10e35]
+            - listitem [ref=f10e36]:
+              - paragraph [ref=f10e38]: Chi
+              - button "停用" [ref=f10e40]
+            - listitem [ref=f10e41]:
+              - paragraph [ref=f10e43]: Classpass Steven
+              - button "停用" [ref=f10e45]
+            - listitem [ref=f10e46]:
+              - paragraph [ref=f10e48]: Connie Raymond
+              - button "停用" [ref=f10e50]
+            - listitem [ref=f10e51]:
+              - paragraph [ref=f10e53]: Edmond
+              - button "停用" [ref=f10e55]
+            - listitem [ref=f10e56]:
+              - paragraph [ref=f10e58]: Ivan
+              - button "停用" [ref=f10e60]
+            - listitem [ref=f10e61]:
+              - paragraph [ref=f10e63]: Junpei
+              - button "停用" [ref=f10e65]
+            - listitem [ref=f10e66]:
+              - paragraph [ref=f10e68]: Kelly
+              - button "停用" [ref=f10e70]
+            - listitem [ref=f10e71]:
+              - paragraph [ref=f10e73]: Kwankwan
+              - button "停用" [ref=f10e75]
+            - listitem [ref=f10e76]:
+              - paragraph [ref=f10e78]: Mimi
+              - button "停用" [ref=f10e80]
+            - listitem [ref=f10e81]:
+              - paragraph [ref=f10e83]: Pearlie
+              - button "停用" [ref=f10e85]
+            - listitem [ref=f10e86]:
+              - paragraph [ref=f10e88]: Sam group
+              - button "停用" [ref=f10e90]
+            - listitem [ref=f10e91]:
+              - paragraph [ref=f10e93]: Steven
+              - button "停用" [ref=f10e95]
+            - listitem [ref=f10e96]:
+              - paragraph [ref=f10e98]: Tiff group
+              - button "停用" [ref=f10e100]
+            - listitem [ref=f10e101]:
+              - paragraph [ref=f10e103]: Tiffany Joanna
+              - button "停用" [ref=f10e105]
+            - listitem [ref=f10e106]:
+              - paragraph [ref=f10e108]: Yauyau
+              - button "停用" [ref=f10e110]
+  - alert [ref=f10e111]
