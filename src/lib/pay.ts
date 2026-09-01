@@ -9,7 +9,7 @@ export async function calculateLessonPay(input: {
   headcount?: number | null;
   durationMinutes?: number;
 }): Promise<
-  { amount: number; studentFeeHkd?: number } | { error: string }
+  { amount: number | null; studentFeeHkd?: number | null } | { error: string }
 > {
   const supabase = await createClient();
 
@@ -29,20 +29,12 @@ export async function calculateLessonPay(input: {
       return { error: "讀取學生薪資規則失敗" };
     }
     if (!rate) {
-      return {
-        error:
-          "尚未設定此教練與學生的薪資，無法登記。請僱主先在教練頁面設定。",
-      };
-    }
-    if (rate.student_fee_hkd == null) {
-      return {
-        error:
-          "尚未設定此教練與學生的學費，無法登記。請僱主先在教練頁面設定。",
-      };
+      return { amount: null, studentFeeHkd: null };
     }
     return {
       amount: Number(rate.amount_hkd),
-      studentFeeHkd: Number(rate.student_fee_hkd),
+      studentFeeHkd:
+        rate.student_fee_hkd == null ? null : Number(rate.student_fee_hkd),
     };
   }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cancelLessonAction, createLessonAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
+import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
 import { LessonRegisterFields } from "@/components/lesson-register-fields";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -15,8 +16,8 @@ import {
 } from "@/lib/calendar";
 import {
   formatDateTime,
-  formatHeadcount,
-  formatMoney,
+  formatLessonSizeLabel,
+  formatMoneyOrPending,
   lessonStatusLabel,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -83,6 +84,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   );
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
+  const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const coachMap = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
   const countsByDay = new Map<string, number>();
   const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
@@ -119,7 +121,8 @@ export default async function EmployerHomePage({ searchParams }: Props) {
 
       <Panel title={`建立課堂 · ${day}`}>
         <p className="mb-3 text-sm text-stone-500">
-          建立後即計入該教練薪資。PT 需選學生；MIIT 需填人數。
+          PT 必須選學生與 1:1／1:2／1:3；未有價錢可先建立，之後在下方改金額。MIIT
+          需填人數。PTA／Admin 只需類型與時間。
         </p>
         <ActionForm
           action={createLessonAction}
@@ -154,6 +157,11 @@ export default async function EmployerHomePage({ searchParams }: Props) {
         <ul className="divide-y divide-stone-100">
           {dayLessons.map((lesson) => {
             const linkedStudentId = studentByLesson.get(lesson.id);
+            const sizeLabel = formatLessonSizeLabel(
+              payModeByType.get(lesson.lesson_type_id),
+              lesson.headcount,
+              lesson.expected_headcount,
+            );
             return (
               <li key={lesson.id} className="space-y-2 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -177,22 +185,23 @@ export default async function EmployerHomePage({ searchParams }: Props) {
                         學生：{studentName.get(linkedStudentId) ?? "—"}
                       </p>
                     ) : null}
-                    {formatHeadcount(lesson.headcount, lesson.expected_headcount) ? (
+                    {sizeLabel ? (
+                      <p className="text-sm text-stone-500">{sizeLabel}</p>
+                    ) : null}
+                    {payModeByType.get(lesson.lesson_type_id) === "per_student" ? (
                       <p className="text-sm text-stone-500">
-                        人數：
-                        {formatHeadcount(lesson.headcount, lesson.expected_headcount)}
+                        學生學費：{formatMoneyOrPending(lesson.student_fee_hkd)}
                       </p>
                     ) : null}
-                    {lesson.student_fee_hkd != null ? (
-                      <p className="text-sm text-stone-500">
-                        學生學費：{formatMoney(Number(lesson.student_fee_hkd))}
-                      </p>
-                    ) : null}
-                    {lesson.earned_amount_hkd != null ? (
-                      <p className="text-sm text-emerald-700">
-                        教練薪資：{formatMoney(Number(lesson.earned_amount_hkd))}
-                      </p>
-                    ) : null}
+                    <p
+                      className={
+                        lesson.earned_amount_hkd == null
+                          ? "text-sm text-amber-700"
+                          : "text-sm text-emerald-700"
+                      }
+                    >
+                      教練薪資：{formatMoneyOrPending(lesson.earned_amount_hkd)}
+                    </p>
                   </div>
                   {lesson.status !== "cancelled" ? (
                     <ServerActionButton
@@ -204,6 +213,21 @@ export default async function EmployerHomePage({ searchParams }: Props) {
                     </ServerActionButton>
                   ) : null}
                 </div>
+                {lesson.status !== "cancelled" ? (
+                  <EmployerLessonFeeForm
+                    lessonId={lesson.id}
+                    studentFeeHkd={
+                      lesson.student_fee_hkd == null
+                        ? null
+                        : Number(lesson.student_fee_hkd)
+                    }
+                    earnedAmountHkd={
+                      lesson.earned_amount_hkd == null
+                        ? null
+                        : Number(lesson.earned_amount_hkd)
+                    }
+                  />
+                ) : null}
               </li>
             );
           })}

@@ -87,6 +87,21 @@ async function getLessonTypePayMode(
   return data.pay_mode as PayMode;
 }
 
+const PT_RATIOS = new Set([1, 2, 3]);
+
+function parseOptionalMoney(
+  raw: string,
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (raw.trim() === "") {
+    return { ok: true, value: null };
+  }
+  const amount = Number(raw);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return { ok: false, error: "金額無效" };
+  }
+  return { ok: true, value: amount };
+}
+
 async function resolveLessonPay(input: {
   coachId: string;
   lessonTypeId: string;
@@ -97,9 +112,9 @@ async function resolveLessonPay(input: {
   endsAt: string;
 }): Promise<
   | {
-      amount: number;
+      amount: number | null;
       studentId?: string;
-      studentFeeHkd?: number;
+      studentFeeHkd?: number | null;
       headcount?: number;
       expectedHeadcount?: number;
     }
@@ -115,17 +130,32 @@ async function resolveLessonPay(input: {
     input.expectedHeadcountRaw ?? "",
   );
 
-  if (
-    (input.headcountRaw ?? "").trim() !== "" &&
-    headcount == null
-  ) {
-    return { error: "實際人數必須為正整數" };
+  if ((input.headcountRaw ?? "").trim() !== "" && headcount == null) {
+    return {
+      error:
+        payModeResult === "per_student"
+          ? "請選擇 1:1、1:2 或 1:3"
+          : "實際人數必須為正整數",
+    };
   }
   if (
     (input.expectedHeadcountRaw ?? "").trim() !== "" &&
     expectedHeadcount == null
   ) {
     return { error: "應到人數必須為正整數" };
+  }
+
+  if (payModeResult === "per_student") {
+    if (!input.studentId) {
+      return { error: "請選擇學生" };
+    }
+    if (headcount == null || !PT_RATIOS.has(headcount)) {
+      return { error: "請選擇 1:1、1:2 或 1:3" };
+    }
+  }
+
+  if (payModeResult === "per_head" && headcount == null) {
+    return { error: "請輸入實際人數" };
   }
 
   const durationMinutes =
@@ -136,17 +166,13 @@ async function resolveLessonPay(input: {
     coachId: input.coachId,
     lessonTypeId: input.lessonTypeId,
     payMode: payModeResult,
-    studentId: input.studentId,
-    headcount,
+    studentId: payModeResult === "per_student" ? input.studentId : undefined,
+    headcount: payModeResult === "per_head" ? headcount : undefined,
     durationMinutes,
   });
 
   if ("error" in payResult) {
     return payResult;
-  }
-
-  if (payModeResult === "per_head" && headcount == null) {
-    return { error: "請輸入實際人數" };
   }
 
   return {
@@ -155,8 +181,11 @@ async function resolveLessonPay(input: {
       payModeResult === "per_student" ? input.studentId ?? undefined : undefined,
     studentFeeHkd: payResult.studentFeeHkd,
     headcount:
-      payModeResult === "per_head" || headcount != null ? headcount ?? undefined : undefined,
-    expectedHeadcount: expectedHeadcount ?? undefined,
+      payModeResult === "per_student" || payModeResult === "per_head"
+        ? headcount ?? undefined
+        : undefined,
+    expectedHeadcount:
+      payModeResult === "per_head" ? expectedHeadcount ?? undefined : undefined,
   };
 }
 
@@ -164,12 +193,20 @@ async function linkLessonStudent(
   lessonId: string,
   studentId: string | undefined,
 ): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error: deleteError } = await supabase
+    .from("lesson_students")
+    .delete()
+    .eq("lesson_id", lessonId);
+
+  if (deleteError) {
+    console.error("[linkLessonStudent] delete", { error: deleteError });
+    return { ok: false, error: "連結學生失敗" };
+  }
+
   if (!studentId) {
     return { ok: true, data: undefined };
   }
-
-  const supabase = await createClient();
-  await supabase.from("lesson_students").delete().eq("lesson_id", lessonId);
 
   const { error } = await supabase.from("lesson_students").insert({
     lesson_id: lessonId,
@@ -446,6 +483,20 @@ export async function updateCoachLessonAction(
       return { ok: false, error: overlapError };
     }
 
+    const { data: existingLink } = await supabase
+      .from("lesson_students")
+      .select("student_id")
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
+
+    const sameStudent =
+      (rateResult.studentId ?? null) === (existingLink?.student_id ?? null);
+    const earnedAmount =
+      rateResult.amount ?? (sameStudent ? lesson.earned_amount_hkd : null);
+    const studentFee =
+      rateResult.studentFeeHkd ??
+      (sameStudent ? lesson.student_fee_hkd : null);
+
     const { error } = await supabase
       .from("lessons")
       .update({
@@ -453,8 +504,8 @@ export async function updateCoachLessonAction(
         starts_at: startsAt,
         ends_at: endsAt,
         status: "completed",
-        earned_amount_hkd: rateResult.amount,
-        student_fee_hkd: rateResult.studentFeeHkd ?? null,
+        earned_amount_hkd: earnedAmount,
+        student_fee_hkd: studentFee,
         headcount: rateResult.headcount ?? null,
         expected_headcount: rateResult.expectedHeadcount ?? null,
       })
@@ -512,6 +563,101 @@ export async function deleteCoachLessonAction(
   } catch (error) {
     console.error("[deleteCoachLessonAction] unexpected", { error });
     return { ok: false, error: "刪除課堂時發生錯誤" };
+  }
+}
+
+export async function updateLessonFeesAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireEmployer();
+    const lessonId = String(formData.get("lesson_id") ?? "");
+    const studentFeeResult = parseOptionalMoney(
+      String(formData.get("student_fee_hkd") ?? ""),
+    );
+    const coachPayResult = parseOptionalMoney(
+      String(formData.get("earned_amount_hkd") ?? ""),
+    );
+
+    if (!lessonId) {
+      return { ok: false, error: "找不到課堂" };
+    }
+    if (!studentFeeResult.ok) {
+      return { ok: false, error: "學生學費金額無效" };
+    }
+    if (!coachPayResult.ok) {
+      return { ok: false, error: "教練薪資金額無效" };
+    }
+    const studentFee = studentFeeResult.value;
+    const coachPay = coachPayResult.value;
+
+    const supabase = await createClient();
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("id, coach_id, status, earned_amount_hkd, student_fee_hkd")
+      .eq("id", lessonId)
+      .single();
+
+    if (!lesson || lesson.status === "cancelled") {
+      return { ok: false, error: "無法更新此課堂金額" };
+    }
+
+    const { error } = await supabase
+      .from("lessons")
+      .update({
+        student_fee_hkd: studentFee,
+        earned_amount_hkd: coachPay,
+      })
+      .eq("id", lessonId);
+
+    if (error) {
+      console.error("[updateLessonFeesAction]", { error });
+      return { ok: false, error: "更新金額失敗" };
+    }
+
+    const wasUnpriced =
+      lesson.student_fee_hkd == null && lesson.earned_amount_hkd == null;
+    if (
+      wasUnpriced &&
+      studentFee != null &&
+      coachPay != null &&
+      lesson.coach_id
+    ) {
+      const { data: link } = await supabase
+        .from("lesson_students")
+        .select("student_id")
+        .eq("lesson_id", lessonId)
+        .maybeSingle();
+
+      if (link) {
+        const { error: rateError } = await supabase
+          .from("coach_student_rates")
+          .upsert(
+            {
+              coach_id: lesson.coach_id,
+              student_id: link.student_id,
+              amount_hkd: coachPay,
+              student_fee_hkd: studentFee,
+            },
+            { onConflict: "coach_id,student_id" },
+          );
+
+        if (rateError) {
+          console.error("[updateLessonFeesAction] upsert rate", {
+            error: rateError,
+          });
+          return { ok: false, error: "課堂金額已更新，但未能寫入預設費率" };
+        }
+      }
+    }
+
+    revalidateSchedules();
+    revalidatePath("/employer/coaches");
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[updateLessonFeesAction] unexpected", { error });
+    return { ok: false, error: "更新金額時發生錯誤" };
   }
 }
 

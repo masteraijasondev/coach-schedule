@@ -7,7 +7,7 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -32,9 +32,10 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
 
   const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
   const { data: types } = typeIds.length
-    ? await supabase.from("lesson_types").select("id, name").in("id", typeIds)
+    ? await supabase.from("lesson_types").select("id, name, pay_mode").in("id", typeIds)
     : { data: [] };
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
+  const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
@@ -66,7 +67,13 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
           結算期：{payrollPeriodLabel(period)} · 僅計算已完成課堂；金額於登記時凍結。
         </p>
         <ul className="divide-y divide-stone-100">
-          {(lessons ?? []).map((lesson) => (
+          {(lessons ?? []).map((lesson) => {
+            const sizeLabel = formatLessonSizeLabel(
+              payModeByType.get(lesson.lesson_type_id),
+              lesson.headcount,
+              lesson.expected_headcount,
+            );
+            return (
             <li key={lesson.id} className="flex justify-between gap-3 py-3">
               <div>
                 <p className="font-medium">
@@ -75,12 +82,22 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="text-sm text-stone-500">
                   {formatDateTime(lesson.starts_at)}
                 </p>
+                {sizeLabel ? (
+                  <p className="text-sm text-stone-500">{sizeLabel}</p>
+                ) : null}
               </div>
-              <p className="text-sm font-medium">
-                {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
+              <p
+                className={
+                  lesson.earned_amount_hkd == null
+                    ? "text-sm font-medium text-amber-700"
+                    : "text-sm font-medium"
+                }
+              >
+                {formatMoneyOrPending(lesson.earned_amount_hkd)}
               </p>
             </li>
-          ))}
+            );
+          })}
           {(lessons ?? []).length === 0 ? (
             <li className="py-3 text-sm text-stone-500">此結算期尚無已完成課堂</li>
           ) : null}

@@ -22,8 +22,8 @@ import {
 import { TIMEZONE } from "@/lib/constants";
 import {
   formatDateTime,
-  formatHeadcount,
-  formatMoney,
+  formatLessonSizeLabel,
+  formatMoneyOrPending,
   lessonStatusLabel,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -83,6 +83,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   );
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
+  const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const countsByDay = new Map<string, number>();
   const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
   for (const lesson of lessons ?? []) {
@@ -118,7 +119,8 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
 
       <Panel title={`登記課堂 · ${day}`}>
         <p className="mb-3 text-sm text-stone-500">
-          登記後即計入薪資。PT 需選學生；MIIT 需填人數；PTA/Admin 只需類型與時間。
+          PT 必須選學生與 1:1／1:2／1:3；未有價錢亦可先登記，由僱主後補。MIIT
+          需填人數。PTA／Admin 只需類型與時間。
         </p>
         <ActionForm
           action={createCoachLessonAction}
@@ -161,6 +163,11 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
             const linkedStudentId = studentByLesson.get(lesson.id);
             const canDelete =
               lesson.status === "completed" || lesson.status === "assigned";
+            const sizeLabel = formatLessonSizeLabel(
+              payModeByType.get(lesson.lesson_type_id),
+              lesson.headcount,
+              lesson.expected_headcount,
+            );
             return (
               <li key={lesson.id} className="space-y-3 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -177,17 +184,18 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                         學生：{studentName.get(linkedStudentId) ?? "—"}
                       </p>
                     ) : null}
-                    {formatHeadcount(lesson.headcount, lesson.expected_headcount) ? (
-                      <p className="text-sm text-stone-500">
-                        人數：
-                        {formatHeadcount(lesson.headcount, lesson.expected_headcount)}
-                      </p>
+                    {sizeLabel ? (
+                      <p className="text-sm text-stone-500">{sizeLabel}</p>
                     ) : null}
-                    {lesson.earned_amount_hkd != null ? (
-                      <p className="text-sm text-emerald-700">
-                        {formatMoney(Number(lesson.earned_amount_hkd))}
-                      </p>
-                    ) : null}
+                    <p
+                      className={
+                        lesson.earned_amount_hkd == null
+                          ? "text-sm text-amber-700"
+                          : "text-sm text-emerald-700"
+                      }
+                    >
+                      {formatMoneyOrPending(lesson.earned_amount_hkd)}
+                    </p>
                   </div>
                   {canDelete ? (
                     <ServerActionButton
@@ -208,6 +216,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                     <input type="hidden" name="lesson_id" value={lesson.id} />
                     <input type="hidden" name="date" value={day} />
                     <LessonRegisterFields
+                      key={lesson.id}
                       types={typeOptions}
                       students={students ?? []}
                       defaultTypeId={lesson.lesson_type_id}
