@@ -130,104 +130,143 @@ export default async function CoachShiftPage({ searchParams }: Props) {
           </p>
         </Panel>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {days.map((date, dayIndex) => {
-            const dayAvailabilities = byDate.get(date) ?? [];
-            const suggestedStart = defaultStartMinute(date, now);
-            return (
-              <Panel
-                key={date}
-                title={`星期${WEEKDAY_LABELS[dayIndex]} · ${date}`}
-              >
-                <div className="space-y-3">
-                  {dayAvailabilities.map((availability) => {
-                    const editable = canEditAvailability(availability, now);
-                    if (!editable) {
-                      return (
-                        <div
-                          key={availability.id}
-                          className="rounded-md bg-stone-100 px-3 py-2 text-sm"
-                        >
-                          <p className="font-medium">
-                            {formatAvailabilityTime(
-                              availability.start_minute,
-                            )}
-                            {" – "}
-                            {formatAvailabilityTime(availability.end_minute)}
-                          </p>
-                          <p className="text-xs text-stone-500">
-                            已開始，不能修改
-                          </p>
-                        </div>
-                      );
-                    }
-                    return (
-                      <div
-                        key={availability.id}
-                        className="space-y-2 rounded-md border border-stone-200 p-3"
-                      >
-                        <ActionForm
-                          action={saveAvailabilityAction}
-                          className="space-y-2"
-                        >
-                          <input
-                            type="hidden"
-                            name="availability_id"
-                            value={availability.id}
-                          />
-                          <input
-                            type="hidden"
-                            name="available_date"
-                            value={date}
-                          />
-                          <AvailabilityTimeFields
-                            defaultStartMinute={availability.start_minute}
-                            defaultEndMinute={availability.end_minute}
-                          />
-                          <SubmitButton>儲存修改</SubmitButton>
-                        </ActionForm>
-                        <ServerActionButton
-                          action={deleteAvailabilityAction.bind(
-                            null,
-                            availability.id,
-                          )}
-                          confirmMessage="確定刪除此可返工時段？"
-                          className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 disabled:opacity-60"
-                        >
-                          刪除
-                        </ServerActionButton>
-                      </div>
-                    );
-                  })}
-                  {dayAvailabilities.length === 0 ? (
-                    <p className="text-sm text-stone-500">尚未提交時段</p>
-                  ) : null}
-                </div>
-
-                {suggestedStart != null ? (
-                  <ActionForm
-                    action={saveAvailabilityAction}
-                    className="space-y-3 border-t border-stone-100 pt-4"
+        <Panel title="每週日曆">
+          <div className="overflow-x-auto">
+            <div className="grid min-w-[1260px] grid-cols-7 overflow-hidden rounded-lg border border-stone-200">
+              {days.map((date, dayIndex) => {
+                const dayAvailabilities = byDate.get(date) ?? [];
+                const suggestedStart = defaultStartMinute(date, now);
+                const isToday = date === hongKongToday();
+                return (
+                  <section
+                    key={date}
+                    className="min-h-80 border-l border-stone-200 first:border-l-0"
                   >
-                    <input
-                      type="hidden"
-                      name="available_date"
-                      value={date}
-                    />
-                    <AvailabilityTimeFields
-                      defaultStartMinute={suggestedStart}
-                      defaultEndMinute={Math.min(
-                        suggestedStart + DEFAULT_DURATION_MINUTES,
-                        MINUTES_PER_DAY,
-                      )}
-                    />
-                    <SubmitButton>新增時段</SubmitButton>
-                  </ActionForm>
-                ) : null}
-              </Panel>
-            );
-          })}
-        </div>
+                    <div
+                      className={`border-b border-stone-200 px-3 py-3 text-center ${
+                        isToday ? "bg-sky-100" : "bg-stone-50"
+                      }`}
+                    >
+                      <p className="font-semibold">
+                        星期{WEEKDAY_LABELS[dayIndex]}
+                      </p>
+                      <p className="text-xs text-stone-500">{date.slice(5)}</p>
+                    </div>
+
+                    <div className="space-y-3 p-2">
+                      {dayAvailabilities.map((availability) => {
+                        const editable = canEditAvailability(
+                          availability,
+                          now,
+                        );
+                        const timeLabel = `${formatAvailabilityTime(
+                          availability.start_minute,
+                        )} – ${formatAvailabilityTime(
+                          availability.end_minute,
+                        )}`;
+
+                        if (!editable) {
+                          return (
+                            <div
+                              key={availability.id}
+                              className="rounded-md bg-stone-100 px-2 py-2 text-sm"
+                            >
+                              <p className="font-medium">{timeLabel}</p>
+                              <p className="text-xs text-stone-500">已開始</p>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <details
+                            key={availability.id}
+                            className="rounded-md bg-sky-100 text-sm text-sky-950"
+                          >
+                            <summary className="cursor-pointer list-none px-2 py-2 font-medium">
+                              {timeLabel}
+                              <span className="ml-1 text-xs font-normal">
+                                修改
+                              </span>
+                            </summary>
+                            <div className="space-y-2 border-t border-sky-200 bg-white p-2 text-stone-900">
+                              <ActionForm
+                                action={saveAvailabilityAction}
+                                className="space-y-2"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="availability_id"
+                                  value={availability.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="available_date"
+                                  value={date}
+                                />
+                                <AvailabilityTimeFields
+                                  defaultStartMinute={
+                                    availability.start_minute
+                                  }
+                                  defaultEndMinute={availability.end_minute}
+                                />
+                                <SubmitButton>儲存</SubmitButton>
+                              </ActionForm>
+                              <ServerActionButton
+                                action={deleteAvailabilityAction.bind(
+                                  null,
+                                  availability.id,
+                                )}
+                                confirmMessage="確定刪除此可返工時段？"
+                                className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 disabled:opacity-60"
+                              >
+                                刪除
+                              </ServerActionButton>
+                            </div>
+                          </details>
+                        );
+                      })}
+
+                      {dayAvailabilities.length === 0 ? (
+                        <p className="py-4 text-center text-sm text-stone-400">
+                          —
+                        </p>
+                      ) : null}
+
+                      {suggestedStart != null ? (
+                        <details className="rounded-md border border-dashed border-stone-300 bg-white text-sm">
+                          <summary className="cursor-pointer list-none px-2 py-2 text-center font-medium text-stone-600">
+                            ＋ 新增時段
+                          </summary>
+                          <ActionForm
+                            action={saveAvailabilityAction}
+                            className="space-y-3 border-t border-stone-200 p-2"
+                          >
+                            <input
+                              type="hidden"
+                              name="available_date"
+                              value={date}
+                            />
+                            <AvailabilityTimeFields
+                              defaultStartMinute={suggestedStart}
+                              defaultEndMinute={Math.min(
+                                suggestedStart + DEFAULT_DURATION_MINUTES,
+                                MINUTES_PER_DAY,
+                              )}
+                            />
+                            <SubmitButton>新增</SubmitButton>
+                          </ActionForm>
+                        </details>
+                      ) : null}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          </div>
+          <p className="text-xs text-stone-400">
+            手機可左右滑動日曆；點擊時段可修改。
+          </p>
+        </Panel>
       )}
     </div>
   );
