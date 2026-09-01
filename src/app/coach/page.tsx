@@ -5,6 +5,7 @@ import {
   updateCoachLessonAction,
 } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
+import { CoachAvailabilityCalendar } from "@/components/coach-availability-calendar";
 import { LessonRegisterFields } from "@/components/lesson-register-fields";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -29,7 +30,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatInTimeZone } from "date-fns-tz";
 
 type Props = {
-  searchParams: Promise<{ month?: string; day?: string }>;
+  searchParams: Promise<{ month?: string; day?: string; week?: string }>;
 };
 
 export async function generateMetadata({ }: Props): Promise<Metadata> {
@@ -243,6 +244,15 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
           ) : null}
         </ul>
       </Panel>
+
+      <section id="availability" className="scroll-mt-4">
+        <CoachAvailabilityCalendar
+          coachId={coach.id}
+          weekParam={params.week}
+          month={month}
+          day={day}
+        />
+      </section>
     </div>
   );
 }

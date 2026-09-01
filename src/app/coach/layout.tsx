@@ -3,7 +3,6 @@ import { requireCoach } from "@/lib/auth";
 
 const items = [
   { href: "/coach", label: "日曆" },
-  { href: "/coach/shift", label: "可返工時間" },
   { href: "/coach/salary", label: "薪資" },
 ];
 
