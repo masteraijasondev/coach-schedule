@@ -14,6 +14,35 @@ export function hongKongToday(): string {
   return formatInTimeZone(new Date(), TIMEZONE, "yyyy-MM-dd");
 }
 
+export function addDaysToYmd(dateYmd: string, days: number): string {
+  const [year, month, day] = dateYmd.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
+  return date.toISOString().slice(0, 10);
+}
+
+export function availabilityWeekStarts(now = new Date()): string[] {
+  const today = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const currentMonday = addDaysToYmd(today, -((weekday + 6) % 7));
+  return Array.from({ length: 4 }, (_, index) =>
+    addDaysToYmd(currentMonday, index * 7),
+  );
+}
+
+export function parseAvailabilityWeekParam(
+  week: string | undefined,
+  now = new Date(),
+): string {
+  const starts = availabilityWeekStarts(now);
+  return week && starts.includes(week) ? week : starts[1];
+}
+
+export function availabilityWeekDays(weekStart: string): string[] {
+  return Array.from({ length: 7 }, (_, index) =>
+    addDaysToYmd(weekStart, index),
+  );
+}
+
 /** Floor current HK time to the hour; end is +1 hour (e.g. 09:09 → 09:00–10:00). */
 export function defaultLessonTimeSlot(now = new Date()): {
   start: string;

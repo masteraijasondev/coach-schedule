@@ -65,12 +65,14 @@ export type LessonRequest = {
   created_at: string;
 };
 
-export type Shift = {
+export type StaffAvailability = {
   id: string;
   coach_id: string;
-  clocked_in_at: string;
-  clocked_out_at: string | null;
+  available_date: string;
+  start_minute: number;
+  end_minute: number;
   created_at: string;
+  updated_at: string;
 };
 
 export type ActionResult<T = void> =

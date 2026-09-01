@@ -1,174 +1,234 @@
-import { clockInAction, clockOutAction } from "@/actions/shifts";
+import {
+  deleteAvailabilityAction,
+  saveAvailabilityAction,
+} from "@/actions/availability";
+import { ActionForm } from "@/components/action-form";
+import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
-import { Panel } from "@/components/ui";
+import { Panel, SubmitButton } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
-import { hongKongToday } from "@/lib/calendar";
+import {
+  availabilityWeekDays,
+  availabilityWeekStarts,
+  hongKongToday,
+  parseAvailabilityWeekParam,
+} from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
-import { formatDateTime } from "@/lib/format";
+import { formatAvailabilityTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import type { StaffAvailability } from "@/lib/types";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import Link from "next/link";
 
-const HISTORY_DAYS = 14;
+const WEEKDAY_LABELS = ["一", "二", "三", "四", "五", "六", "日"];
+const DEFAULT_START_MINUTE = 9 * 60;
+const DEFAULT_DURATION_MINUTES = 60;
+const MINUTES_PER_DAY = 1440;
 
-function historyRangeStartIso(): string {
-  const today = hongKongToday();
-  const [y, m, d] = today.split("-").map(Number);
-  const start = new Date(Date.UTC(y, m - 1, d - (HISTORY_DAYS - 1)));
-  const ymd = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}-${String(start.getUTCDate()).padStart(2, "0")}`;
-  return fromZonedTime(`${ymd}T00:00:00`, TIMEZONE).toISOString();
+type Props = {
+  searchParams: Promise<{ week?: string }>;
+};
+
+function availabilityStartsAt(
+  date: string,
+  startMinute: number,
+): Date {
+  const hour = String(Math.floor(startMinute / 60)).padStart(2, "0");
+  const minute = String(startMinute % 60).padStart(2, "0");
+  return fromZonedTime(`${date}T${hour}:${minute}:00`, TIMEZONE);
 }
 
-function formatDuration(
-  clockedInAt: string,
-  clockedOutAt: string | null,
-): string | null {
-  if (!clockedOutAt) {
+function canEditAvailability(
+  availability: StaffAvailability,
+  now: Date,
+): boolean {
+  return availabilityStartsAt(
+    availability.available_date,
+    availability.start_minute,
+  ) > now;
+}
+
+function defaultStartMinute(date: string, now: Date): number | null {
+  if (date < hongKongToday()) {
     return null;
   }
-  const minutes = Math.round(
-    (new Date(clockedOutAt).getTime() - new Date(clockedInAt).getTime()) /
-      60_000,
-  );
-  if (minutes < 60) {
-    return `${minutes} 分鐘`;
+  if (date > hongKongToday()) {
+    return DEFAULT_START_MINUTE;
   }
-  const hours = Math.floor(minutes / 60);
-  const rem = minutes % 60;
-  return rem === 0 ? `${hours} 小時` : `${hours} 小時 ${rem} 分鐘`;
+  const hour = Number(formatInTimeZone(now, TIMEZONE, "H"));
+  const minute = Number(formatInTimeZone(now, TIMEZONE, "m"));
+  const nextSlot = (Math.floor((hour * 60 + minute) / 30) + 1) * 30;
+  return nextSlot < MINUTES_PER_DAY ? nextSlot : null;
 }
 
-export default async function CoachShiftPage() {
+export default async function CoachShiftPage({ searchParams }: Props) {
   const coach = await requireCoach();
+  const params = await searchParams;
+  const week = parseAvailabilityWeekParam(params.week);
+  const weekStarts = availabilityWeekStarts();
+  const days = availabilityWeekDays(week);
+  const weekEnd = days[6];
+  const now = new Date();
   const supabase = await createClient();
-  const today = hongKongToday();
-  const todayStart = fromZonedTime(`${today}T00:00:00`, TIMEZONE).toISOString();
-  const historyStart = historyRangeStartIso();
+  const { data: availabilities, error } = await supabase
+    .from("staff_availabilities")
+    .select(
+      "id, coach_id, available_date, start_minute, end_minute, created_at, updated_at",
+    )
+    .eq("coach_id", coach.id)
+    .gte("available_date", week)
+    .lte("available_date", weekEnd)
+    .order("available_date")
+    .order("start_minute");
 
-  const [{ data: openShift }, { data: recentShifts }] = await Promise.all([
-    supabase
-      .from("shifts")
-      .select("id, coach_id, clocked_in_at, clocked_out_at, created_at")
-      .eq("coach_id", coach.id)
-      .is("clocked_out_at", null)
-      .maybeSingle(),
-    supabase
-      .from("shifts")
-      .select("id, coach_id, clocked_in_at, clocked_out_at, created_at")
-      .eq("coach_id", coach.id)
-      .gte("clocked_in_at", historyStart)
-      .order("clocked_in_at", { ascending: false }),
-  ]);
+  if (error) {
+    console.error("[CoachShiftPage] load availability", {
+      error,
+      coachId: coach.id,
+      week,
+    });
+  }
 
-  const todayShifts = (recentShifts ?? []).filter(
-    (shift) => shift.clocked_in_at >= todayStart,
-  );
+  const byDate = new Map<string, StaffAvailability[]>();
+  for (const availability of (availabilities ?? []) as StaffAvailability[]) {
+    const rows = byDate.get(availability.available_date) ?? [];
+    rows.push(availability);
+    byDate.set(availability.available_date, rows);
+  }
 
   return (
     <div className="space-y-6">
-      <Panel title="報更">
+      <Panel title="提交可返工時間">
         <p className="text-sm text-stone-500">
-          到場按「報到」，放工按「下班」。時間以香港時間記錄。
+          選擇指定日期及時段，每次新增、修改或刪除都會即時儲存。時間以
+          30 分鐘為單位。
         </p>
-        {openShift ? (
-          <div className="space-y-4 rounded-md border border-emerald-200 bg-emerald-50 p-4">
-            <div>
-              <p className="text-sm font-medium text-emerald-900">目前已報到</p>
-              <p className="mt-1 text-stone-700">
-                報到時間：{formatDateTime(openShift.clocked_in_at)}
-              </p>
-            </div>
-            <ServerActionButton
-              action={clockOutAction}
-              className="rounded-md bg-stone-900 px-5 py-3 text-base font-medium text-white hover:bg-stone-800 disabled:opacity-60"
+        <div className="flex flex-wrap gap-2">
+          {weekStarts.map((weekStart, index) => (
+            <Link
+              key={weekStart}
+              href={`/coach/shift?week=${weekStart}`}
+              className={`rounded-md px-3 py-2 text-sm ${
+                weekStart === week
+                  ? "bg-stone-900 text-white"
+                  : "border border-stone-200 bg-white text-stone-700"
+              }`}
             >
-              下班
-            </ServerActionButton>
-          </div>
-        ) : (
-          <div className="space-y-4 rounded-md border border-stone-200 bg-stone-50 p-4">
-            <p className="text-sm text-stone-600">尚未報到</p>
-            <ServerActionButton
-              action={clockInAction}
-              className="rounded-md bg-stone-900 px-5 py-3 text-base font-medium text-white hover:bg-stone-800 disabled:opacity-60"
-            >
-              報到
-            </ServerActionButton>
-          </div>
-        )}
+              {index === 0 ? "本週" : `第 ${index + 1} 週`} · {weekStart.slice(5)}
+            </Link>
+          ))}
+        </div>
+        <p className="text-sm font-medium">
+          {week} – {weekEnd}
+        </p>
       </Panel>
 
-      <Panel title={`今日報更 · ${today}`}>
-        <ul className="divide-y divide-stone-100">
-          {todayShifts.map((shift) => {
-            const duration = formatDuration(
-              shift.clocked_in_at,
-              shift.clocked_out_at,
-            );
+      {error ? (
+        <Panel title="未能載入">
+          <p className="text-sm text-red-700">
+            無法讀取可返工時間，請稍後再試。
+          </p>
+        </Panel>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {days.map((date, dayIndex) => {
+            const dayAvailabilities = byDate.get(date) ?? [];
+            const suggestedStart = defaultStartMinute(date, now);
             return (
-              <li key={shift.id} className="py-3 text-sm">
-                <p className="font-medium">
-                  {formatInTimeZone(shift.clocked_in_at, TIMEZONE, "HH:mm")}
-                  {" – "}
-                  {shift.clocked_out_at
-                    ? formatInTimeZone(shift.clocked_out_at, TIMEZONE, "HH:mm")
-                    : "進行中"}
-                </p>
-                {duration ? (
-                  <p className="text-stone-500">時長：{duration}</p>
-                ) : null}
-              </li>
-            );
-          })}
-          {todayShifts.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">今日尚未有報更紀錄</li>
-          ) : null}
-        </ul>
-      </Panel>
-
-      <Panel title={`近 ${HISTORY_DAYS} 日紀錄`}>
-        <ul className="divide-y divide-stone-100">
-          {(recentShifts ?? []).map((shift) => {
-            const duration = formatDuration(
-              shift.clocked_in_at,
-              shift.clocked_out_at,
-            );
-            const day = formatInTimeZone(
-              shift.clocked_in_at,
-              TIMEZONE,
-              "yyyy-MM-dd",
-            );
-            return (
-              <li
-                key={shift.id}
-                className="flex flex-wrap items-baseline justify-between gap-2 py-3 text-sm"
+              <Panel
+                key={date}
+                title={`星期${WEEKDAY_LABELS[dayIndex]} · ${date}`}
               >
-                <div>
-                  <p className="font-medium">{day}</p>
-                  <p className="text-stone-500">
-                    {formatInTimeZone(shift.clocked_in_at, TIMEZONE, "HH:mm")}
-                    {" – "}
-                    {shift.clocked_out_at
-                      ? formatInTimeZone(
-                          shift.clocked_out_at,
-                          TIMEZONE,
-                          "HH:mm",
-                        )
-                      : "進行中"}
-                  </p>
+                <div className="space-y-3">
+                  {dayAvailabilities.map((availability) => {
+                    const editable = canEditAvailability(availability, now);
+                    if (!editable) {
+                      return (
+                        <div
+                          key={availability.id}
+                          className="rounded-md bg-stone-100 px-3 py-2 text-sm"
+                        >
+                          <p className="font-medium">
+                            {formatAvailabilityTime(
+                              availability.start_minute,
+                            )}
+                            {" – "}
+                            {formatAvailabilityTime(availability.end_minute)}
+                          </p>
+                          <p className="text-xs text-stone-500">
+                            已開始，不能修改
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={availability.id}
+                        className="space-y-2 rounded-md border border-stone-200 p-3"
+                      >
+                        <ActionForm
+                          action={saveAvailabilityAction}
+                          className="space-y-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="availability_id"
+                            value={availability.id}
+                          />
+                          <input
+                            type="hidden"
+                            name="available_date"
+                            value={date}
+                          />
+                          <AvailabilityTimeFields
+                            defaultStartMinute={availability.start_minute}
+                            defaultEndMinute={availability.end_minute}
+                          />
+                          <SubmitButton>儲存修改</SubmitButton>
+                        </ActionForm>
+                        <ServerActionButton
+                          action={deleteAvailabilityAction.bind(
+                            null,
+                            availability.id,
+                          )}
+                          confirmMessage="確定刪除此可返工時段？"
+                          className="rounded-md border border-red-200 px-3 py-2 text-sm text-red-700 disabled:opacity-60"
+                        >
+                          刪除
+                        </ServerActionButton>
+                      </div>
+                    );
+                  })}
+                  {dayAvailabilities.length === 0 ? (
+                    <p className="text-sm text-stone-500">尚未提交時段</p>
+                  ) : null}
                 </div>
-                {duration ? (
-                  <p className="text-stone-500">{duration}</p>
-                ) : (
-                  <p className="text-emerald-700">進行中</p>
-                )}
-              </li>
+
+                {suggestedStart != null ? (
+                  <ActionForm
+                    action={saveAvailabilityAction}
+                    className="space-y-3 border-t border-stone-100 pt-4"
+                  >
+                    <input
+                      type="hidden"
+                      name="available_date"
+                      value={date}
+                    />
+                    <AvailabilityTimeFields
+                      defaultStartMinute={suggestedStart}
+                      defaultEndMinute={Math.min(
+                        suggestedStart + DEFAULT_DURATION_MINUTES,
+                        MINUTES_PER_DAY,
+                      )}
+                    />
+                    <SubmitButton>新增時段</SubmitButton>
+                  </ActionForm>
+                ) : null}
+              </Panel>
             );
           })}
-          {(recentShifts ?? []).length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">尚無報更紀錄</li>
-          ) : null}
-        </ul>
-      </Panel>
+        </div>
+      )}
     </div>
   );
 }

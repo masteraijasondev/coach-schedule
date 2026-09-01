@@ -14,6 +14,15 @@ export function formatMoney(amount: number): string {
   return `${CURRENCY_LABEL} $${Number(amount).toFixed(2)}`;
 }
 
+export function formatAvailabilityTime(minutes: number): string {
+  if (minutes === 1440) {
+    return "24:00";
+  }
+  const hour = Math.floor(minutes / 60);
+  const minute = minutes % 60;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
 export function formatHeadcount(
   actual: number | null | undefined,
   expected: number | null | undefined,
