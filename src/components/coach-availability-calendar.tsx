@@ -152,12 +152,18 @@ export async function CoachAvailabilityCalendar({
                 return (
                   <section
                     key={date}
-                    className="min-h-80 border-l border-stone-200 first:border-l-0"
+                    className={`min-h-80 border-l border-stone-200 first:border-l-0 ${
+                      dayAvailabilities.length > 0
+                        ? "bg-white"
+                        : "bg-stone-100"
+                    }`}
                   >
                     <div
                       className={`border-b border-stone-200 px-3 py-3 text-center ${
-                        date === today ? "bg-sky-100" : "bg-stone-50"
-                      }`}
+                        dayAvailabilities.length > 0
+                          ? "bg-white"
+                          : "bg-stone-200"
+                      } ${date === today ? "ring-2 ring-inset ring-sky-400" : ""}`}
                     >
                       <p className="font-semibold">
                         星期{WEEKDAY_LABELS[dayIndex]}
@@ -238,8 +244,8 @@ export async function CoachAvailabilityCalendar({
                       })}
 
                       {dayAvailabilities.length === 0 ? (
-                        <p className="py-4 text-center text-sm text-stone-400">
-                          —
+                        <p className="py-4 text-center text-sm font-medium text-stone-500">
+                          未報
                         </p>
                       ) : null}
 
@@ -275,7 +281,7 @@ export async function CoachAvailabilityCalendar({
             </div>
           </div>
           <p className="text-xs text-stone-400">
-            手機可左右滑動日曆；點擊時段可修改。
+            灰色代表未報；白色代表已提交可返工時間。手機可左右滑動日曆。
           </p>
         </Panel>
       )}
