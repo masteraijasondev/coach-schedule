@@ -11,10 +11,12 @@ import { requireEmployer } from "@/lib/auth";
 import {
   lessonDayKey,
   monthBoundsIso,
+  monthGridDateRange,
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
 import {
+  formatAvailabilityTime,
   formatDateTime,
   formatLessonSizeLabel,
   formatMoneyOrPending,
@@ -38,6 +40,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const month = parseMonthParam(params.month);
   const day = parseDayParam(params.day, month);
   const { start, end } = monthBoundsIso(month);
+  const gridRange = monthGridDateRange(month);
 
   const supabase = await createClient();
   const [
@@ -45,6 +48,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
     { data: types },
     { data: coaches },
     { data: students },
+    { data: availabilities },
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -68,6 +72,12 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .select("id, name")
       .eq("active", true)
       .order("name"),
+    supabase
+      .from("staff_availabilities")
+      .select("id, coach_id, available_date, start_minute, end_minute")
+      .gte("available_date", gridRange.start)
+      .lte("available_date", gridRange.end)
+      .order("start_minute"),
   ]);
 
   const lessonIds = (lessons ?? []).map((l) => l.id);
@@ -101,6 +111,51 @@ export default async function EmployerHomePage({ searchParams }: Props) {
     (lesson) => lessonDayKey(lesson.starts_at) === day,
   );
 
+  const availabilityByDay = new Map<
+    string,
+    { id: string; label: string; coachName: string }[]
+  >();
+  for (const availability of availabilities ?? []) {
+    const coachName = coachMap.get(availability.coach_id) ?? "—";
+    const list = availabilityByDay.get(availability.available_date) ?? [];
+    if (!list.some((entry) => entry.id === availability.coach_id)) {
+      list.push({
+        id: availability.coach_id,
+        label: coachName,
+        coachName,
+      });
+      availabilityByDay.set(availability.available_date, list);
+    }
+  }
+
+  const dayAvailabilityByCoach = new Map<
+    string,
+    {
+      coachName: string;
+      slots: { id: string; start: number; end: number }[];
+    }
+  >();
+  for (const availability of availabilities ?? []) {
+    if (availability.available_date !== day) {
+      continue;
+    }
+    const coachName = coachMap.get(availability.coach_id) ?? "—";
+    const existing = dayAvailabilityByCoach.get(availability.coach_id);
+    const group = existing ?? {
+      coachName,
+      slots: [] as { id: string; start: number; end: number }[],
+    };
+    group.slots.push({
+      id: availability.id,
+      start: availability.start_minute,
+      end: availability.end_minute,
+    });
+    dayAvailabilityByCoach.set(availability.coach_id, group);
+  }
+  const dayAvailabilities = [...dayAvailabilityByCoach.entries()].map(
+    ([coachId, group]) => ({ coachId, ...group }),
+  );
+
   const typeOptions = (types ?? []).map((t) => ({
     id: t.id,
     name: t.name,
@@ -116,6 +171,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
           basePath="/employer"
           countsByDay={countsByDay}
           lessonsByDay={lessonsByDay}
+          availabilityByDay={availabilityByDay}
         />
       </Panel>
 
@@ -233,6 +289,32 @@ export default async function EmployerHomePage({ searchParams }: Props) {
           })}
           {dayLessons.length === 0 ? (
             <li className="py-3 text-sm text-stone-500">這天尚未有課堂</li>
+          ) : null}
+        </ul>
+      </Panel>
+
+      <Panel title={`${day} 可返工`}>
+        <ul className="divide-y divide-stone-100">
+          {dayAvailabilities.map((group) => (
+            <li key={group.coachId} className="py-3">
+              <p className="font-medium">{group.coachName}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {group.slots.map((slot) => (
+                  <span
+                    key={slot.id}
+                    className="rounded-md border border-dashed border-sky-300 bg-sky-50 px-2 py-1 text-sm text-sky-900"
+                  >
+                    {formatAvailabilityTime(slot.start)}–
+                    {formatAvailabilityTime(slot.end)}
+                  </span>
+                ))}
+              </div>
+            </li>
+          ))}
+          {dayAvailabilities.length === 0 ? (
+            <li className="py-3 text-sm text-stone-500">
+              這天尚未有人報可返工
+            </li>
           ) : null}
         </ul>
       </Panel>

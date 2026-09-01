@@ -19,16 +19,41 @@ const COACH_BADGE_CLASSES = [
   "bg-orange-100 text-orange-900",
 ];
 
-function getCoachBadgeClass(coachName: string): string {
+const COACH_AVAILABILITY_BADGE_CLASSES = [
+  "border border-dashed border-amber-300 bg-amber-50 text-amber-800",
+  "border border-dashed border-emerald-300 bg-emerald-50 text-emerald-800",
+  "border border-dashed border-sky-300 bg-sky-50 text-sky-800",
+  "border border-dashed border-rose-300 bg-rose-50 text-rose-800",
+  "border border-dashed border-violet-300 bg-violet-50 text-violet-800",
+  "border border-dashed border-lime-300 bg-lime-50 text-lime-800",
+  "border border-dashed border-cyan-300 bg-cyan-50 text-cyan-800",
+  "border border-dashed border-orange-300 bg-orange-50 text-orange-800",
+];
+
+function coachColorIndex(coachName: string): number {
   let hash = 0;
   for (let index = 0; index < coachName.length; index += 1) {
     hash = (hash * 31 + coachName.charCodeAt(index)) >>> 0;
   }
-  return COACH_BADGE_CLASSES[hash % COACH_BADGE_CLASSES.length];
+  return hash % COACH_BADGE_CLASSES.length;
+}
+
+function getCoachBadgeClass(coachName: string): string {
+  return COACH_BADGE_CLASSES[coachColorIndex(coachName)];
+}
+
+function getCoachAvailabilityBadgeClass(coachName: string): string {
+  return COACH_AVAILABILITY_BADGE_CLASSES[coachColorIndex(coachName)];
 }
 
 type CalendarLesson = {
   id: string;
+  coachName: string;
+};
+
+type CalendarAvailability = {
+  id: string;
+  label: string;
   coachName: string;
 };
 
@@ -38,6 +63,7 @@ type Props = {
   basePath: string;
   countsByDay: Map<string, number>;
   lessonsByDay: Map<string, CalendarLesson[]>;
+  availabilityByDay?: Map<string, CalendarAvailability[]>;
 };
 
 export function MonthCalendar({
@@ -46,6 +72,7 @@ export function MonthCalendar({
   basePath,
   countsByDay,
   lessonsByDay,
+  availabilityByDay,
 }: Props) {
   const cells = getMonthCells(month);
   const today = hongKongToday();
@@ -69,9 +96,12 @@ export function MonthCalendar({
           下月
         </Link>
       </div>
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-stone-500">
+      <p className="text-xs text-stone-500">
+        實心標籤為課堂；虛線標籤為已報可返工。
+      </p>
+      <div className="grid grid-cols-7 gap-1 text-center text-sm text-stone-500">
         {WEEKDAYS.map((d) => (
-          <div key={d} className="py-1">
+          <div key={d} className="py-1 border-2 rounded-2xl">
             {d}
           </div>
         ))}
@@ -82,6 +112,7 @@ export function MonthCalendar({
           const inMonth = day.startsWith(month);
           const count = countsByDay.get(day) ?? 0;
           const lessons = lessonsByDay.get(day) ?? [];
+          const availabilities = availabilityByDay?.get(day) ?? [];
           const selected = day === selectedDay;
           const isToday = day === today;
 
@@ -114,6 +145,25 @@ export function MonthCalendar({
                   ))}
                   {lessons.length > 2 ? (
                     <div>+{lessons.length - 2} 位教練</div>
+                  ) : null}
+                </div>
+              ) : null}
+              {availabilities.length > 0 ? (
+                <div className="mt-1 space-y-0.5">
+                  {availabilities.slice(0, 2).map((availability) => (
+                    <div
+                      key={availability.id}
+                      className={`rounded-md px-1 py-0.5 text-center text-[10px] font-medium ${getCoachAvailabilityBadgeClass(
+                        availability.coachName,
+                      )}`}
+                    >
+                      {availability.label}
+                    </div>
+                  ))}
+                  {availabilities.length > 2 ? (
+                    <div className="text-[10px] text-stone-500">
+                      +{availabilities.length - 2} 可返工
+                    </div>
                   ) : null}
                 </div>
               ) : null}

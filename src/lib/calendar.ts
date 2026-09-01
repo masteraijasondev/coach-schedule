@@ -102,6 +102,17 @@ export function formatCellDay(date: Date): string {
   return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd");
 }
 
+export function monthGridDateRange(month: string): {
+  start: string;
+  end: string;
+} {
+  const cells = getMonthCells(month);
+  return {
+    start: formatCellDay(cells[0]),
+    end: formatCellDay(cells[cells.length - 1]),
+  };
+}
+
 /** Payroll period YYYY-MM = 11th of that month through 10th of next month. */
 export function payrollPeriodForDate(dateYmd: string): string {
   const [y, m, d] = dateYmd.split("-").map(Number);

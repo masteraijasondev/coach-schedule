@@ -15,6 +15,8 @@ const MINUTES_PER_DAY = 1440;
 const TIME_STEP_MINUTES = 30;
 
 function revalidateAvailabilityPages() {
+  revalidatePath("/coach");
+  revalidatePath("/employer");
   revalidatePath("/coach/shift");
   revalidatePath("/employer/availability");
 }

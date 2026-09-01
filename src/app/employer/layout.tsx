@@ -3,7 +3,6 @@ import { requireEmployer } from "@/lib/auth";
 
 const items = [
   { href: "/employer", label: "日曆" },
-  { href: "/employer/availability", label: "員工可返工時間" },
   { href: "/employer/lessons", label: "課堂列表" },
   { href: "/employer/salary", label: "薪資" },
   { href: "/employer/coaches", label: "教練" },

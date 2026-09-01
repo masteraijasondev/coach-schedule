@@ -16,6 +16,7 @@ import {
   defaultLessonTimeSlot,
   lessonDayKey,
   monthBoundsIso,
+  monthGridDateRange,
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
@@ -45,29 +46,40 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const month = parseMonthParam(params.month);
   const day = parseDayParam(params.day, month);
   const { start, end } = monthBoundsIso(month);
+  const gridRange = monthGridDateRange(month);
 
   const supabase = await createClient();
-  const [{ data: lessons }, { data: types }, { data: students }] =
-    await Promise.all([
-      supabase
-        .from("lessons")
-        .select("*")
-        .eq("coach_id", coach.id)
-        .neq("status", "cancelled")
-        .gte("starts_at", start)
-        .lt("starts_at", end)
-        .order("starts_at", { ascending: true }),
-      supabase
-        .from("lesson_types")
-        .select("id, name, pay_mode")
-        .eq("active", true)
-        .order("name"),
-      supabase
-        .from("students")
-        .select("id, name")
-        .eq("active", true)
-        .order("name"),
-    ]);
+  const [
+    { data: lessons },
+    { data: types },
+    { data: students },
+    { data: availabilities },
+  ] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select("*")
+      .eq("coach_id", coach.id)
+      .neq("status", "cancelled")
+      .gte("starts_at", start)
+      .lt("starts_at", end)
+      .order("starts_at", { ascending: true }),
+    supabase
+      .from("lesson_types")
+      .select("id, name, pay_mode")
+      .eq("active", true)
+      .order("name"),
+    supabase
+      .from("students")
+      .select("id, name")
+      .eq("active", true)
+      .order("name"),
+    supabase
+      .from("staff_availabilities")
+      .select("id, coach_id, available_date")
+      .eq("coach_id", coach.id)
+      .gte("available_date", gridRange.start)
+      .lte("available_date", gridRange.end),
+  ]);
 
   const lessonIds = (lessons ?? []).map((l) => l.id);
   const { data: lessonStudents } =
@@ -94,6 +106,23 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     lessonsByDay.set(key, list);
   }
 
+  const availabilityByDay = new Map<
+    string,
+    { id: string; label: string; coachName: string }[]
+  >();
+  for (const availability of availabilities ?? []) {
+    if (availabilityByDay.has(availability.available_date)) {
+      continue;
+    }
+    availabilityByDay.set(availability.available_date, [
+      {
+        id: coach.id,
+        label: "可返工",
+        coachName: coach.full_name,
+      },
+    ]);
+  }
+
   const dayLessons = (lessons ?? []).filter(
     (lesson) => lessonDayKey(lesson.starts_at) === day,
   );
@@ -114,6 +143,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
           basePath="/coach"
           countsByDay={countsByDay}
           lessonsByDay={lessonsByDay}
+          availabilityByDay={availabilityByDay}
         />
       </Panel>
 
