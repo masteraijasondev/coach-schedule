@@ -55,6 +55,7 @@ type CalendarAvailability = {
   id: string;
   label: string;
   coachName: string;
+  variant?: "slot" | "leave";
 };
 
 type Props = {
@@ -97,7 +98,7 @@ export function MonthCalendar({
         </Link>
       </div>
       <p className="text-xs text-stone-500">
-        實心標籤為課堂；虛線標籤為已報可返工。
+        實心標籤為課堂；虛線標籤為可返工時段；粉紅為放假。點選日期可展開當天全部時段。
       </p>
       <div className="grid grid-cols-7 gap-1 text-center text-sm text-stone-500">
         {WEEKDAYS.map((d) => (
@@ -106,7 +107,7 @@ export function MonthCalendar({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 items-start gap-1">
         {cells.map((cell) => {
           const day = formatCellDay(cell);
           const inMonth = day.startsWith(month);
@@ -115,13 +116,19 @@ export function MonthCalendar({
           const availabilities = availabilityByDay?.get(day) ?? [];
           const selected = day === selectedDay;
           const isToday = day === today;
+          const visibleAvailabilities = selected
+            ? availabilities
+            : availabilities.slice(0, 2);
+          const hiddenAvailabilityCount = selected
+            ? 0
+            : Math.max(0, availabilities.length - 2);
 
           return (
             <Link
               key={day}
               href={`${basePath}?month=${month}&day=${day}`}
               className={[
-                "min-h-14 rounded-md border p-1 text-left transition",
+                "flex min-h-14 w-full flex-col rounded-md border p-1 text-left transition",
                 inMonth
                   ? "border-stone-200 bg-white"
                   : "border-transparent bg-stone-50 text-stone-400",
@@ -150,19 +157,23 @@ export function MonthCalendar({
               ) : null}
               {availabilities.length > 0 ? (
                 <div className="mt-1 space-y-0.5">
-                  {availabilities.slice(0, 2).map((availability) => (
+                  {visibleAvailabilities.map((availability) => (
                     <div
                       key={availability.id}
-                      className={`rounded-md px-1 py-0.5 text-center text-[10px] font-medium ${getCoachAvailabilityBadgeClass(
-                        availability.coachName,
-                      )}`}
+                      className={`rounded-md px-1 py-0.5 text-center text-[10px] font-medium ${
+                        availability.variant === "leave"
+                          ? "border border-dashed border-rose-400 bg-rose-50 text-rose-800"
+                          : getCoachAvailabilityBadgeClass(
+                              availability.coachName,
+                            )
+                      }`}
                     >
                       {availability.label}
                     </div>
                   ))}
-                  {availabilities.length > 2 ? (
-                    <div className="text-[10px] text-stone-500">
-                      +{availabilities.length - 2} 可返工
+                  {hiddenAvailabilityCount > 0 ? (
+                    <div className="text-[10px] font-medium text-stone-600 underline">
+                      +{hiddenAvailabilityCount} 時段
                     </div>
                   ) : null}
                 </div>

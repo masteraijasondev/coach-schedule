@@ -49,6 +49,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
     { data: coaches },
     { data: students },
     { data: availabilities },
+    { data: leaves },
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -78,6 +79,11 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .gte("available_date", gridRange.start)
       .lte("available_date", gridRange.end)
       .order("start_minute"),
+    supabase
+      .from("staff_leaves")
+      .select("id, coach_id, leave_date")
+      .gte("leave_date", gridRange.start)
+      .lte("leave_date", gridRange.end),
   ]);
 
   const lessonIds = (lessons ?? []).map((l) => l.id);
@@ -111,21 +117,40 @@ export default async function EmployerHomePage({ searchParams }: Props) {
     (lesson) => lessonDayKey(lesson.starts_at) === day,
   );
 
+  const leaveByCoachDate = new Set(
+    (leaves ?? []).map((leave) => `${leave.coach_id}:${leave.leave_date}`),
+  );
   const availabilityByDay = new Map<
     string,
-    { id: string; label: string; coachName: string }[]
+    { id: string; label: string; coachName: string; variant?: "slot" | "leave" }[]
   >();
+  for (const leave of leaves ?? []) {
+    const coachName = coachMap.get(leave.coach_id) ?? "—";
+    const list = availabilityByDay.get(leave.leave_date) ?? [];
+    list.push({
+      id: leave.id,
+      label: `${coachName} 放假`,
+      coachName,
+      variant: "leave",
+    });
+    availabilityByDay.set(leave.leave_date, list);
+  }
   for (const availability of availabilities ?? []) {
+    if (
+      leaveByCoachDate.has(
+        `${availability.coach_id}:${availability.available_date}`,
+      )
+    ) {
+      continue;
+    }
     const coachName = coachMap.get(availability.coach_id) ?? "—";
     const list = availabilityByDay.get(availability.available_date) ?? [];
-    if (!list.some((entry) => entry.id === availability.coach_id)) {
-      list.push({
-        id: availability.coach_id,
-        label: coachName,
-        coachName,
-      });
-      availabilityByDay.set(availability.available_date, list);
-    }
+    list.push({
+      id: availability.id,
+      label: `${coachName} ${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+      coachName,
+    });
+    availabilityByDay.set(availability.available_date, list);
   }
 
   const dayAvailabilityByCoach = new Map<
@@ -137,6 +162,9 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   >();
   for (const availability of availabilities ?? []) {
     if (availability.available_date !== day) {
+      continue;
+    }
+    if (leaveByCoachDate.has(`${availability.coach_id}:${day}`)) {
       continue;
     }
     const coachName = coachMap.get(availability.coach_id) ?? "—";
@@ -155,6 +183,13 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const dayAvailabilities = [...dayAvailabilityByCoach.entries()].map(
     ([coachId, group]) => ({ coachId, ...group }),
   );
+  const dayLeaves = (leaves ?? [])
+    .filter((leave) => leave.leave_date === day)
+    .map((leave) => ({
+      id: leave.id,
+      coachId: leave.coach_id,
+      coachName: coachMap.get(leave.coach_id) ?? "—",
+    }));
 
   const typeOptions = (types ?? []).map((t) => ({
     id: t.id,
@@ -293,8 +328,14 @@ export default async function EmployerHomePage({ searchParams }: Props) {
         </ul>
       </Panel>
 
-      <Panel title={`${day} 可返工`}>
+      <Panel title={`${day} 可返工／放假`}>
         <ul className="divide-y divide-stone-100">
+          {dayLeaves.map((leave) => (
+            <li key={leave.id} className="py-3">
+              <p className="font-medium">{leave.coachName}</p>
+              <p className="mt-1 text-sm text-rose-800">全日放假</p>
+            </li>
+          ))}
           {dayAvailabilities.map((group) => (
             <li key={group.coachId} className="py-3">
               <p className="font-medium">{group.coachName}</p>
@@ -311,9 +352,9 @@ export default async function EmployerHomePage({ searchParams }: Props) {
               </div>
             </li>
           ))}
-          {dayAvailabilities.length === 0 ? (
+          {dayLeaves.length === 0 && dayAvailabilities.length === 0 ? (
             <li className="py-3 text-sm text-stone-500">
-              這天尚未有人報可返工
+              這天尚未有人報可返工或放假
             </li>
           ) : null}
         </ul>

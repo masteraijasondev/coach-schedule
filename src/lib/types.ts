@@ -75,6 +75,13 @@ export type StaffAvailability = {
   updated_at: string;
 };
 
+export type StaffLeave = {
+  id: string;
+  coach_id: string;
+  leave_date: string;
+  created_at: string;
+};
+
 export type ActionResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string };

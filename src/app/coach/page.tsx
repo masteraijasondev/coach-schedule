@@ -22,6 +22,7 @@ import {
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import {
+  formatAvailabilityTime,
   formatDateTime,
   formatLessonSizeLabel,
   formatMoneyOrPending,
@@ -54,6 +55,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     { data: types },
     { data: students },
     { data: availabilities },
+    { data: leaves },
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -75,10 +77,17 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       .order("name"),
     supabase
       .from("staff_availabilities")
-      .select("id, coach_id, available_date")
+      .select("id, coach_id, available_date, start_minute, end_minute")
       .eq("coach_id", coach.id)
       .gte("available_date", gridRange.start)
-      .lte("available_date", gridRange.end),
+      .lte("available_date", gridRange.end)
+      .order("start_minute"),
+    supabase
+      .from("staff_leaves")
+      .select("id, coach_id, leave_date")
+      .eq("coach_id", coach.id)
+      .gte("leave_date", gridRange.start)
+      .lte("leave_date", gridRange.end),
   ]);
 
   const lessonIds = (lessons ?? []).map((l) => l.id);
@@ -106,21 +115,34 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     lessonsByDay.set(key, list);
   }
 
+  const leaveDates = new Set(
+    (leaves ?? []).map((leave) => leave.leave_date),
+  );
   const availabilityByDay = new Map<
     string,
-    { id: string; label: string; coachName: string }[]
+    { id: string; label: string; coachName: string; variant?: "slot" | "leave" }[]
   >();
-  for (const availability of availabilities ?? []) {
-    if (availabilityByDay.has(availability.available_date)) {
-      continue;
-    }
-    availabilityByDay.set(availability.available_date, [
+  for (const leave of leaves ?? []) {
+    availabilityByDay.set(leave.leave_date, [
       {
-        id: coach.id,
-        label: "可返工",
+        id: leave.id,
+        label: "放假",
         coachName: coach.full_name,
+        variant: "leave",
       },
     ]);
+  }
+  for (const availability of availabilities ?? []) {
+    if (leaveDates.has(availability.available_date)) {
+      continue;
+    }
+    const list = availabilityByDay.get(availability.available_date) ?? [];
+    list.push({
+      id: availability.id,
+      label: `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+      coachName: coach.full_name,
+    });
+    availabilityByDay.set(availability.available_date, list);
   }
 
   const dayLessons = (lessons ?? []).filter(
