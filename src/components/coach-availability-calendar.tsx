@@ -10,9 +10,10 @@ import { ServerActionButton } from "@/components/server-action-button";
 import { Panel, SubmitButton } from "@/components/ui";
 import {
   availabilityWeekDays,
-  availabilityWeekStarts,
+  availabilityWeekStart,
   hongKongToday,
   parseAvailabilityWeekParam,
+  shiftAvailabilityWeek,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import { formatAvailabilityTime } from "@/lib/format";
@@ -79,7 +80,9 @@ export async function CoachAvailabilityCalendar({
   day: string;
 }) {
   const week = parseAvailabilityWeekParam(weekParam);
-  const weekStarts = availabilityWeekStarts();
+  const currentWeek = availabilityWeekStart();
+  const prevWeek = shiftAvailabilityWeek(week, -1);
+  const nextWeek = shiftAvailabilityWeek(week, 1);
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
   const now = new Date();
@@ -133,24 +136,31 @@ export async function CoachAvailabilityCalendar({
           選擇指定日期及時段，或報全日放假。每次新增、修改或刪除都會即時儲存。時間以
           30 分鐘為單位。
         </p>
-        <div className="flex flex-wrap gap-2">
-          {weekStarts.map((weekStart, index) => (
-            <Link
-              key={weekStart}
-              href={coachWeekHref(weekStart, month, day)}
-              className={`rounded-md px-3 py-2 text-sm ${
-                weekStart === week
-                  ? "bg-stone-900 text-white"
-                  : "border border-stone-200 bg-white text-stone-700"
-              }`}
-            >
-              {index === 0 ? "本週" : `第 ${index + 1} 週`} · {weekStart.slice(5)}
-            </Link>
-          ))}
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href={coachWeekHref(prevWeek, month, day)}
+            className="text-sm text-stone-600 underline"
+          >
+            上週
+          </Link>
+          <p className="text-sm font-medium">
+            {week} – {weekEnd}
+          </p>
+          <Link
+            href={coachWeekHref(nextWeek, month, day)}
+            className="text-sm text-stone-600 underline"
+          >
+            下週
+          </Link>
         </div>
-        <p className="text-sm font-medium">
-          {week} – {weekEnd}
-        </p>
+        {week !== currentWeek ? (
+          <Link
+            href={coachWeekHref(currentWeek, month, day)}
+            className="text-sm text-stone-600 underline"
+          >
+            返回本週
+          </Link>
+        ) : null}
       </Panel>
 
       {error || leavesError ? (

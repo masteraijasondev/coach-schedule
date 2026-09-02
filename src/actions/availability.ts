@@ -1,10 +1,7 @@
 "use server";
 
 import { requireCoach } from "@/lib/auth";
-import {
-  availabilityWeekStarts,
-  hongKongToday,
-} from "@/lib/calendar";
+import { hongKongToday } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
@@ -48,13 +45,8 @@ function validateAvailabilityInput(
     return "請選擇有效的開始及結束時間";
   }
 
-  const weekStarts = availabilityWeekStarts();
-  const [firstWeek] = weekStarts;
-  const lastAllowedDate = new Date(`${weekStarts[3]}T00:00:00Z`);
-  lastAllowedDate.setUTCDate(lastAllowedDate.getUTCDate() + 6);
-  const lastDate = lastAllowedDate.toISOString().slice(0, 10);
-  if (date < hongKongToday() || date < firstWeek || date > lastDate) {
-    return "只可提交本週起計四星期內的可返工時間";
+  if (date < hongKongToday()) {
+    return "只可提交今天或未來的可返工時間";
   }
 
   const startHour = String(Math.floor(startMinute / 60)).padStart(2, "0");
@@ -77,8 +69,8 @@ function availabilityDatabaseError(message: string): string {
   ) {
     return "只可新增或修改尚未開始的時段";
   }
-  if (message.includes("four-week window")) {
-    return "只可提交本週起計四星期內的可返工或放假";
+  if (message.includes("in the past")) {
+    return "只可提交今天或未來的可返工或放假";
   }
   if (message.includes("not found")) {
     return "找不到此時段，請重新整理後再試";
@@ -93,13 +85,8 @@ function validateLeaveDate(date: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return "日期無效";
   }
-  const weekStarts = availabilityWeekStarts();
-  const [firstWeek] = weekStarts;
-  const lastAllowedDate = new Date(`${weekStarts[3]}T00:00:00Z`);
-  lastAllowedDate.setUTCDate(lastAllowedDate.getUTCDate() + 6);
-  const lastDate = lastAllowedDate.toISOString().slice(0, 10);
-  if (date < hongKongToday() || date < firstWeek || date > lastDate) {
-    return "只可提交本週起計四星期內的放假";
+  if (date < hongKongToday()) {
+    return "只可提交今天或未來的放假";
   }
   return null;
 }

@@ -209,41 +209,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
           availabilityByDay={availabilityByDay}
         />
       </Panel>
-
-      <Panel title={`建立課堂 · ${day}`}>
-        <p className="mb-3 text-sm text-stone-500">
-          PT 必須選學生與 1:1／1:2／1:3；未有價錢可先建立，之後在下方改金額。MIIT
-          需填人數。PTA／Admin 只需類型與時間。
-        </p>
-        <ActionForm
-          action={createLessonAction}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          <input type="hidden" name="date" value={day} />
-          <SelectField
-            label="教練"
-            name="coach_id"
-            required
-            options={(coaches ?? []).map((c) => ({
-              value: c.id,
-              label: c.full_name,
-            }))}
-          />
-          <LessonRegisterFields
-            types={typeOptions}
-            students={students ?? []}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <TimeSelect label="開始" name="start_time" required />
-            <TimeSelect label="結束" name="end_time" required />
-          </div>
-          <Field label="備註" name="notes" />
-          <div className="sm:col-span-2">
-            <SubmitButton>建立</SubmitButton>
-          </div>
-        </ActionForm>
-      </Panel>
-
+      
       <Panel title={`${day} 的課堂`}>
         <ul className="divide-y divide-stone-100">
           {dayLessons.map((lesson) => {

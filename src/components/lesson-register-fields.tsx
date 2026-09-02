@@ -37,6 +37,16 @@ function defaultPtRatio(headcount?: number): string {
   return "1";
 }
 
+function resolveDefaultTypeId(
+  types: LessonTypeOption[],
+  defaultTypeId?: string,
+): string {
+  if (defaultTypeId) {
+    return defaultTypeId;
+  }
+  return types.find((t) => t.name === "PT")?.id ?? types[0]?.id ?? "";
+}
+
 export function LessonRegisterFields({
   types,
   students,
@@ -45,7 +55,8 @@ export function LessonRegisterFields({
   defaultHeadcount,
   defaultExpectedHeadcount,
 }: Props) {
-  const [typeId, setTypeId] = useState(defaultTypeId ?? types[0]?.id ?? "");
+  const resolvedDefaultTypeId = resolveDefaultTypeId(types, defaultTypeId);
+  const [typeId, setTypeId] = useState(resolvedDefaultTypeId);
   const payMode = useMemo(
     () => types.find((t) => t.id === typeId)?.pay_mode ?? "per_session",
     [types, typeId],
@@ -57,7 +68,7 @@ export function LessonRegisterFields({
         label="課堂類型"
         name="lesson_type_id"
         required
-        defaultValue={defaultTypeId}
+        defaultValue={resolvedDefaultTypeId}
         options={types.map((t) => ({ value: t.id, label: t.name }))}
         onChange={(e) => setTypeId(e.currentTarget.value)}
       />

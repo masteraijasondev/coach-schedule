@@ -20,21 +20,28 @@ export function addDaysToYmd(dateYmd: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
-export function availabilityWeekStarts(now = new Date()): string[] {
-  const today = formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
-  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
-  const currentMonday = addDaysToYmd(today, -((weekday + 6) % 7));
-  return Array.from({ length: 4 }, (_, index) =>
-    addDaysToYmd(currentMonday, index * 7),
-  );
+export function availabilityWeekStart(dateYmd?: string, now = new Date()): string {
+  const anchor =
+    dateYmd ?? formatInTimeZone(now, TIMEZONE, "yyyy-MM-dd");
+  const weekday = new Date(`${anchor}T00:00:00Z`).getUTCDay();
+  return addDaysToYmd(anchor, -((weekday + 6) % 7));
 }
 
 export function parseAvailabilityWeekParam(
   week: string | undefined,
   now = new Date(),
 ): string {
-  const starts = availabilityWeekStarts(now);
-  return week && starts.includes(week) ? week : starts[1];
+  if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
+    return availabilityWeekStart(week, now);
+  }
+  return availabilityWeekStart(undefined, now);
+}
+
+export function shiftAvailabilityWeek(
+  weekStart: string,
+  deltaWeeks: number,
+): string {
+  return addDaysToYmd(weekStart, deltaWeeks * 7);
 }
 
 export function availabilityWeekDays(weekStart: string): string[] {

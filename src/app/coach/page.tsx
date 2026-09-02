@@ -169,11 +169,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         />
       </Panel>
 
-      <Panel title={`登記課堂 · ${day}`}>
-        <p className="mb-3 text-sm text-stone-500">
-          PT 必須選學生與 1:1／1:2／1:3；未有價錢亦可先登記，由僱主後補。MIIT
-          需填人數。PTA／Admin 只需類型與時間。
-        </p>
+      <Panel title={`登記課堂 · ${day}`}> 
         <ActionForm
           action={createCoachLessonAction}
           className="grid gap-3 sm:grid-cols-2"
