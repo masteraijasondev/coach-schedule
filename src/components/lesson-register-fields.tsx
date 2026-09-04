@@ -22,6 +22,7 @@ type Props = {
   defaultStudentId?: string;
   defaultHeadcount?: number;
   defaultExpectedHeadcount?: number;
+  onTypeChange?: (typeId: string) => void;
 };
 
 const PT_RATIO_OPTIONS = [
@@ -54,6 +55,7 @@ export function LessonRegisterFields({
   defaultStudentId,
   defaultHeadcount,
   defaultExpectedHeadcount,
+  onTypeChange,
 }: Props) {
   const resolvedDefaultTypeId = resolveDefaultTypeId(types, defaultTypeId);
   const [typeId, setTypeId] = useState(resolvedDefaultTypeId);
@@ -70,7 +72,11 @@ export function LessonRegisterFields({
         required
         defaultValue={resolvedDefaultTypeId}
         options={types.map((t) => ({ value: t.id, label: t.name }))}
-        onChange={(e) => setTypeId(e.currentTarget.value)}
+        onChange={(e) => {
+          const next = e.currentTarget.value;
+          setTypeId(next);
+          onTypeChange?.(next);
+        }}
       />
       {payMode === "per_student" ? (
         <>

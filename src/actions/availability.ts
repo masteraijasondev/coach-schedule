@@ -79,10 +79,10 @@ function availabilityDatabaseError(message: string): string {
     return "當日已報放假，請先取消放假再報可返工";
   }
   if (message.includes("locked by an assigned lesson")) {
-    return "此時段已有派工，不可修改或刪除可返工時間";
+    return "此時段已有派更，不可修改或刪除可返工時間";
   }
   if (message.includes("assigned work")) {
-    return "當日已有派工，不可報放假";
+    return "當日已有派更，不可報放假";
   }
   return "儲存可返工時間失敗";
 }

@@ -26,7 +26,7 @@ async function assertCoachAvailabilityCovers(
   }
 
   if (data !== true) {
-    return "派工時段必須完全落在該教練已報可返工範圍內（放假日不可派）";
+    return "派更時段必須完全落在該教練已報可返工範圍內（放假日不可派）";
   }
 
   return null;
@@ -328,7 +328,7 @@ export async function createLessonAction(
 
     if (error || !lesson) {
       console.error("[createLessonAction]", { error });
-      return { ok: false, error: "派工失敗" };
+      return { ok: false, error: "派更失敗" };
     }
 
     const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
@@ -340,7 +340,7 @@ export async function createLessonAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createLessonAction] unexpected", { error });
-    return { ok: false, error: "派工時發生錯誤" };
+    return { ok: false, error: "派更時發生錯誤" };
   }
 }
 
@@ -364,19 +364,19 @@ export async function confirmLessonAction(
         return { ok: false, error: "課堂已開始，無法確認；請聯絡僱主取消或重派" };
       }
       if (error.message.includes("pending assignments")) {
-        return { ok: false, error: "只有待確認的派工可以確認" };
+        return { ok: false, error: "只有待確認的派更可以確認" };
       }
       if (error.message.includes("not found")) {
         return { ok: false, error: "找不到課堂" };
       }
-      return { ok: false, error: "確認派工失敗" };
+      return { ok: false, error: "確認派更失敗" };
     }
 
     revalidateSchedules();
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[confirmLessonAction] unexpected", { error });
-    return { ok: false, error: "確認派工時發生錯誤" };
+    return { ok: false, error: "確認派更時發生錯誤" };
   }
 }
 

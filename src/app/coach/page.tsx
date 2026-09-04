@@ -153,7 +153,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     <div className="space-y-6">
       <Panel title="我的課堂日曆">
         <p className="mb-3 text-sm text-stone-500">
-          請先提交可返工時間。僱主派工後會顯示「待員工確認」；確認後才計入薪資。
+          請先提交可返工時間。僱主派更後會顯示「待員工確認」；確認後才計入薪資。
         </p>
         <MonthCalendar
           month={month}
@@ -216,10 +216,10 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                   {canConfirm ? (
                     <ServerActionButton
                       action={confirmLessonAction.bind(null, lesson.id)}
-                      confirmMessage="確定接受此派工？確認後將計入薪資。"
+                      confirmMessage="確定接受此派更？確認後將計入薪資。"
                       className="rounded-md bg-stone-900 px-3 py-1.5 text-sm text-white disabled:opacity-60"
                     >
-                      確認派工
+                      確認派更
                     </ServerActionButton>
                   ) : null}
                 </div>
@@ -227,7 +227,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
             );
           })}
           {dayLessons.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">這天尚未有派工</li>
+            <li className="py-3 text-sm text-stone-500">這天尚未有派更</li>
           ) : null}
         </ul>
       </Panel>

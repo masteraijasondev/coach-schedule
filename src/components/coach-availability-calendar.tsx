@@ -310,7 +310,7 @@ export async function CoachAvailabilityCalendar({
                                 >
                                   <p className="font-medium">{timeLabel}</p>
                                   <p className="text-xs text-stone-500">
-                                    {locked ? "已有派工，不可修改" : "已開始"}
+                                    {locked ? "已有派更，不可修改" : "已開始"}
                                   </p>
                                 </div>
                               );
@@ -401,7 +401,7 @@ export async function CoachAvailabilityCalendar({
                               </details>
                               {hasAssigned ? (
                                 <p className="text-center text-xs text-stone-500">
-                                  當日已有派工，不可報放假
+                                  當日已有派更，不可報放假
                                 </p>
                               ) : (
                                 <ServerActionButton
