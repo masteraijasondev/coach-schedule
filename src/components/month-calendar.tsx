@@ -49,6 +49,7 @@ function getCoachAvailabilityBadgeClass(coachName: string): string {
 type CalendarLesson = {
   id: string;
   coachName: string;
+  status?: string;
 };
 
 type CalendarAvailability = {
@@ -142,9 +143,14 @@ export function MonthCalendar({
                       key={lesson.id}
                       className={`rounded-md px-1 py-0.5 text-center text-[10px] font-semibold ${getCoachBadgeClass(
                         lesson.coachName,
-                      )}`}
+                      )} ${
+                        lesson.status === "assigned"
+                          ? "border border-dashed opacity-80"
+                          : ""
+                      }`}
                     >
                       {lesson.coachName}
+                      {lesson.status === "assigned" ? " ·待確認" : ""}
                     </div>
                   ))}
                   {lessons.length > 2 ? (

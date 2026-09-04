@@ -1,14 +1,12 @@
 import {
-  addDays,
   eachDayOfInterval,
   endOfMonth,
   endOfWeek,
-  format,
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
-import { COACH_BACKFILL_DAYS, TIMEZONE } from "@/lib/constants";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { TIMEZONE } from "@/lib/constants";
 
 export function hongKongToday(): string {
   return formatInTimeZone(new Date(), TIMEZONE, "yyyy-MM-dd");
@@ -164,14 +162,5 @@ export function payrollPeriodLabel(period: string): string {
   const nextY = m === 12 ? y + 1 : y;
   const nextM = m === 12 ? 1 : m + 1;
   return `${m}月11日 – ${nextM}月10日`;
-}
-
-export function assertCoachLessonDate(dateYmd: string): string | null {
-  const zonedToday = toZonedTime(new Date(), TIMEZONE);
-  const earliest = format(addDays(zonedToday, -COACH_BACKFILL_DAYS), "yyyy-MM-dd");
-  if (dateYmd < earliest) {
-    return `只能登記近 ${COACH_BACKFILL_DAYS} 天內的課堂（可含未來）`;
-  }
-  return null;
 }
 

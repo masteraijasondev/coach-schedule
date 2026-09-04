@@ -71,9 +71,9 @@ export function lessonStatusLabel(status: LessonStatus): string {
     case "open":
       return "開放申請";
     case "assigned":
-      return "已指派";
+      return "待員工確認";
     case "completed":
-      return "已完成";
+      return "已確認";
     case "cancelled":
       return "已取消";
     default:

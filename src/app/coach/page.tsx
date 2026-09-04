@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
-import {
-  createCoachLessonAction,
-  deleteCoachLessonAction,
-  updateCoachLessonAction,
-} from "@/actions/lessons";
-import { ActionForm } from "@/components/action-form";
+import { confirmLessonAction } from "@/actions/lessons";
 import { CoachAvailabilityCalendar } from "@/components/coach-availability-calendar";
-import { LessonRegisterFields } from "@/components/lesson-register-fields";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
-import { Panel, SubmitButton } from "@/components/ui";
-import { TimeSelect } from "@/components/time-select";
+import { Panel } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
 import {
-  defaultLessonTimeSlot,
   lessonDayKey,
   monthBoundsIso,
   monthGridDateRange,
@@ -35,7 +27,7 @@ type Props = {
   searchParams: Promise<{ month?: string; day?: string; week?: string }>;
 };
 
-export async function generateMetadata({ }: Props): Promise<Metadata> {
+export async function generateMetadata({}: Props): Promise<Metadata> {
   return {
     title: `我的課堂日曆`,
   };
@@ -106,12 +98,19 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const countsByDay = new Map<string, number>();
-  const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
+  const lessonsByDay = new Map<
+    string,
+    { id: string; coachName: string; status?: string }[]
+  >();
   for (const lesson of lessons ?? []) {
     const key = lessonDayKey(lesson.starts_at);
     countsByDay.set(key, (countsByDay.get(key) ?? 0) + 1);
     const list = lessonsByDay.get(key) ?? [];
-    list.push({ id: lesson.id, coachName: coach.full_name });
+    list.push({
+      id: lesson.id,
+      coachName: coach.full_name,
+      status: lesson.status,
+    });
     lessonsByDay.set(key, list);
   }
 
@@ -148,17 +147,14 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const dayLessons = (lessons ?? []).filter(
     (lesson) => lessonDayKey(lesson.starts_at) === day,
   );
-
-  const typeOptions = (types ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    pay_mode: t.pay_mode,
-  }));
-  const defaultSlot = defaultLessonTimeSlot();
+  const now = new Date();
 
   return (
     <div className="space-y-6">
       <Panel title="我的課堂日曆">
+        <p className="mb-3 text-sm text-stone-500">
+          請先提交可返工時間。僱主派工後會顯示「待員工確認」；確認後才計入薪資。
+        </p>
         <MonthCalendar
           month={month}
           selectedDay={day}
@@ -169,48 +165,14 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         />
       </Panel>
 
-      <Panel title={`登記課堂 · ${day}`}> 
-        <ActionForm
-          action={createCoachLessonAction}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          <input type="hidden" name="date" value={day} />
-          <LessonRegisterFields
-            types={typeOptions}
-            students={students ?? []}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <TimeSelect
-              label="開始"
-              name="start_time"
-              required
-              defaultValue={defaultSlot.start}
-            />
-            <TimeSelect
-              label="結束"
-              name="end_time"
-              required
-              defaultValue={defaultSlot.end}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <SubmitButton>加入日曆</SubmitButton>
-          </div>
-        </ActionForm>
-      </Panel>
-
       <Panel title={`${day} 的課堂`}>
         <ul className="divide-y divide-stone-100">
           {dayLessons.map((lesson) => {
-            const startTime = formatInTimeZone(
-              lesson.starts_at,
-              TIMEZONE,
-              "HH:mm",
-            );
             const endTime = formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm");
             const linkedStudentId = studentByLesson.get(lesson.id);
-            const canDelete =
-              lesson.status === "completed" || lesson.status === "assigned";
+            const canConfirm =
+              lesson.status === "assigned" &&
+              new Date(lesson.starts_at) > now;
             const sizeLabel = formatLessonSizeLabel(
               payModeByType.get(lesson.lesson_type_id),
               lesson.headcount,
@@ -244,60 +206,28 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                     >
                       {formatMoneyOrPending(lesson.earned_amount_hkd)}
                     </p>
+                    {lesson.status === "assigned" &&
+                    new Date(lesson.starts_at) <= now ? (
+                      <p className="mt-1 text-sm text-amber-700">
+                        已過開始時間，無法確認；請聯絡僱主取消或重派。
+                      </p>
+                    ) : null}
                   </div>
-                  {canDelete ? (
+                  {canConfirm ? (
                     <ServerActionButton
-                      action={deleteCoachLessonAction.bind(null, lesson.id)}
-                      confirmMessage="確定刪除此課堂？薪資將一併移除。"
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 disabled:opacity-60"
+                      action={confirmLessonAction.bind(null, lesson.id)}
+                      confirmMessage="確定接受此派工？確認後將計入薪資。"
+                      className="rounded-md bg-stone-900 px-3 py-1.5 text-sm text-white disabled:opacity-60"
                     >
-                      刪除
+                      確認派工
                     </ServerActionButton>
                   ) : null}
                 </div>
-
-                {lesson.status === "completed" ? (
-                  <ActionForm
-                    action={updateCoachLessonAction}
-                    className="grid gap-3 rounded-md border border-stone-100 bg-stone-50 p-3 sm:grid-cols-2"
-                  >
-                    <input type="hidden" name="lesson_id" value={lesson.id} />
-                    <input type="hidden" name="date" value={day} />
-                    <LessonRegisterFields
-                      key={lesson.id}
-                      types={typeOptions}
-                      students={students ?? []}
-                      defaultTypeId={lesson.lesson_type_id}
-                      defaultStudentId={linkedStudentId}
-                      defaultHeadcount={lesson.headcount ?? undefined}
-                      defaultExpectedHeadcount={
-                        lesson.expected_headcount ?? undefined
-                      }
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <TimeSelect
-                        label="開始"
-                        name="start_time"
-                        required
-                        defaultValue={startTime}
-                      />
-                      <TimeSelect
-                        label="結束"
-                        name="end_time"
-                        required
-                        defaultValue={endTime}
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <SubmitButton>更新</SubmitButton>
-                    </div>
-                  </ActionForm>
-                ) : null}
               </li>
             );
           })}
           {dayLessons.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">這天尚未有課堂</li>
+            <li className="py-3 text-sm text-stone-500">這天尚未有派工</li>
           ) : null}
         </ul>
       </Panel>

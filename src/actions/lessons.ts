@@ -2,12 +2,35 @@
 
 import { fromZonedTime } from "date-fns-tz";
 import { requireCoach, requireEmployer } from "@/lib/auth";
-import { assertCoachLessonDate } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import { calculateLessonPay } from "@/lib/pay";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, PayMode } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+
+async function assertCoachAvailabilityCovers(
+  coachId: string,
+  startsAt: string,
+  endsAt: string,
+): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("coach_availability_covers", {
+    p_coach_id: coachId,
+    p_starts_at: startsAt,
+    p_ends_at: endsAt,
+  });
+
+  if (error) {
+    console.error("[assertCoachAvailabilityCovers]", { error });
+    return "無法檢查可返工時間";
+  }
+
+  if (data !== true) {
+    return "派工時段必須完全落在該教練已報可返工範圍內（放假日不可派）";
+  }
+
+  return null;
+}
 
 function parseHongKongDateTime(date: string, time: string): Date {
   return fromZonedTime(`${date}T${time}:00`, TIMEZONE);
@@ -271,6 +294,15 @@ export async function createLessonAction(
       return { ok: false, error: rateResult.error };
     }
 
+    const coverError = await assertCoachAvailabilityCovers(
+      coachId,
+      startsAt,
+      endsAt,
+    );
+    if (coverError) {
+      return { ok: false, error: coverError };
+    }
+
     const overlapError = await assertNoCoachOverlap(coachId, startsAt, endsAt);
     if (overlapError) {
       return { ok: false, error: overlapError };
@@ -283,7 +315,7 @@ export async function createLessonAction(
         lesson_type_id: lessonTypeId,
         starts_at: startsAt,
         ends_at: endsAt,
-        status: "completed",
+        status: "assigned",
         coach_id: coachId,
         earned_amount_hkd: rateResult.amount,
         student_fee_hkd: rateResult.studentFeeHkd ?? null,
@@ -296,7 +328,7 @@ export async function createLessonAction(
 
     if (error || !lesson) {
       console.error("[createLessonAction]", { error });
-      return { ok: false, error: "建立課堂失敗" };
+      return { ok: false, error: "派工失敗" };
     }
 
     const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
@@ -308,261 +340,43 @@ export async function createLessonAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createLessonAction] unexpected", { error });
-    return { ok: false, error: "建立課堂時發生錯誤" };
+    return { ok: false, error: "派工時發生錯誤" };
   }
 }
 
-export async function createCoachLessonAction(
-  _prev: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  try {
-    const coach = await requireCoach();
-
-    const lessonTypeId = String(formData.get("lesson_type_id") ?? "");
-    const date = String(formData.get("date") ?? "");
-    const startTime = String(formData.get("start_time") ?? "");
-    const endTime = String(formData.get("end_time") ?? "");
-    const studentId = String(formData.get("student_id") ?? "").trim() || null;
-    const headcountRaw = String(formData.get("headcount") ?? "");
-    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
-
-    if (!lessonTypeId || !date || !startTime || !endTime) {
-      return { ok: false, error: "請填寫課堂類型與時間" };
-    }
-
-    const dateError = assertCoachLessonDate(date);
-    if (dateError) {
-      return { ok: false, error: dateError };
-    }
-
-    const startTimeError = assertFiveMinuteTime(startTime);
-    if (startTimeError) {
-      return { ok: false, error: startTimeError };
-    }
-    const endTimeError = assertFiveMinuteTime(endTime);
-    if (endTimeError) {
-      return { ok: false, error: endTimeError };
-    }
-
-    const startsAt = parseHongKongDateTime(date, startTime).toISOString();
-    const endsAt = parseHongKongDateTime(date, endTime).toISOString();
-
-    if (new Date(endsAt) <= new Date(startsAt)) {
-      return { ok: false, error: "結束時間必須晚於開始時間" };
-    }
-
-    const rateResult = await resolveLessonPay({
-      coachId: coach.id,
-      lessonTypeId,
-      studentId,
-      headcountRaw,
-      expectedHeadcountRaw,
-      startsAt,
-      endsAt,
-    });
-    if ("error" in rateResult) {
-      return { ok: false, error: rateResult.error };
-    }
-
-    const overlapError = await assertNoCoachOverlap(
-      coach.id,
-      startsAt,
-      endsAt,
-    );
-    if (overlapError) {
-      return { ok: false, error: overlapError };
-    }
-
-    const supabase = await createClient();
-    const { data: lesson, error } = await supabase
-      .from("lessons")
-      .insert({
-        lesson_type_id: lessonTypeId,
-        starts_at: startsAt,
-        ends_at: endsAt,
-        status: "completed",
-        coach_id: coach.id,
-        earned_amount_hkd: rateResult.amount,
-        student_fee_hkd: rateResult.studentFeeHkd ?? null,
-        headcount: rateResult.headcount ?? null,
-        expected_headcount: rateResult.expectedHeadcount ?? null,
-      })
-      .select("id")
-      .single();
-
-    if (error || !lesson) {
-      console.error("[createCoachLessonAction]", { error });
-      return { ok: false, error: "登記課堂失敗" };
-    }
-
-    const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
-    if (!linkResult.ok) {
-      return linkResult;
-    }
-
-    revalidateSchedules();
-    return { ok: true, data: undefined };
-  } catch (error) {
-    console.error("[createCoachLessonAction] unexpected", { error });
-    return { ok: false, error: "登記課堂時發生錯誤" };
-  }
-}
-
-export async function updateCoachLessonAction(
-  _prev: ActionResult | null,
-  formData: FormData,
-): Promise<ActionResult> {
-  try {
-    const coach = await requireCoach();
-    const lessonId = String(formData.get("lesson_id") ?? "");
-    const lessonTypeId = String(formData.get("lesson_type_id") ?? "");
-    const date = String(formData.get("date") ?? "");
-    const startTime = String(formData.get("start_time") ?? "");
-    const endTime = String(formData.get("end_time") ?? "");
-    const studentId = String(formData.get("student_id") ?? "").trim() || null;
-    const headcountRaw = String(formData.get("headcount") ?? "");
-    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
-
-    if (!lessonId || !lessonTypeId || !date || !startTime || !endTime) {
-      return { ok: false, error: "請填寫完整資料" };
-    }
-
-    const dateError = assertCoachLessonDate(date);
-    if (dateError) {
-      return { ok: false, error: dateError };
-    }
-
-    const startTimeError = assertFiveMinuteTime(startTime);
-    if (startTimeError) {
-      return { ok: false, error: startTimeError };
-    }
-    const endTimeError = assertFiveMinuteTime(endTime);
-    if (endTimeError) {
-      return { ok: false, error: endTimeError };
-    }
-
-    const startsAt = parseHongKongDateTime(date, startTime).toISOString();
-    const endsAt = parseHongKongDateTime(date, endTime).toISOString();
-
-    if (new Date(endsAt) <= new Date(startsAt)) {
-      return { ok: false, error: "結束時間必須晚於開始時間" };
-    }
-
-    const supabase = await createClient();
-    const { data: lesson } = await supabase
-      .from("lessons")
-      .select("*")
-      .eq("id", lessonId)
-      .single();
-
-    if (!lesson || lesson.coach_id !== coach.id || lesson.status !== "completed") {
-      return { ok: false, error: "只能修改自己已登記的課堂" };
-    }
-
-    const rateResult = await resolveLessonPay({
-      coachId: coach.id,
-      lessonTypeId,
-      studentId,
-      headcountRaw,
-      expectedHeadcountRaw,
-      startsAt,
-      endsAt,
-    });
-    if ("error" in rateResult) {
-      return { ok: false, error: rateResult.error };
-    }
-
-    const overlapError = await assertNoCoachOverlap(
-      coach.id,
-      startsAt,
-      endsAt,
-      lessonId,
-    );
-    if (overlapError) {
-      return { ok: false, error: overlapError };
-    }
-
-    const { data: existingLink } = await supabase
-      .from("lesson_students")
-      .select("student_id")
-      .eq("lesson_id", lessonId)
-      .maybeSingle();
-
-    const sameStudent =
-      (rateResult.studentId ?? null) === (existingLink?.student_id ?? null);
-    const earnedAmount =
-      rateResult.amount ?? (sameStudent ? lesson.earned_amount_hkd : null);
-    const studentFee =
-      rateResult.studentFeeHkd ??
-      (sameStudent ? lesson.student_fee_hkd : null);
-
-    const { error } = await supabase
-      .from("lessons")
-      .update({
-        lesson_type_id: lessonTypeId,
-        starts_at: startsAt,
-        ends_at: endsAt,
-        status: "completed",
-        earned_amount_hkd: earnedAmount,
-        student_fee_hkd: studentFee,
-        headcount: rateResult.headcount ?? null,
-        expected_headcount: rateResult.expectedHeadcount ?? null,
-      })
-      .eq("id", lessonId)
-      .eq("status", "completed");
-
-    if (error) {
-      console.error("[updateCoachLessonAction]", { error });
-      return { ok: false, error: "更新課堂失敗" };
-    }
-
-    const linkResult = await linkLessonStudent(lessonId, rateResult.studentId);
-    if (!linkResult.ok) {
-      return linkResult;
-    }
-
-    revalidateSchedules();
-    return { ok: true, data: undefined };
-  } catch (error) {
-    console.error("[updateCoachLessonAction] unexpected", { error });
-    return { ok: false, error: "更新課堂時發生錯誤" };
-  }
-}
-
-export async function deleteCoachLessonAction(
+export async function confirmLessonAction(
   lessonId: string,
 ): Promise<ActionResult> {
   try {
-    const coach = await requireCoach();
-    const supabase = await createClient();
-
-    const { data: lesson } = await supabase
-      .from("lessons")
-      .select("id, coach_id, status")
-      .eq("id", lessonId)
-      .single();
-
-    if (
-      !lesson ||
-      lesson.coach_id !== coach.id ||
-      (lesson.status !== "completed" && lesson.status !== "assigned")
-    ) {
-      return { ok: false, error: "只能刪除自己的課堂" };
+    await requireCoach();
+    if (!lessonId) {
+      return { ok: false, error: "找不到課堂" };
     }
 
-    const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("confirm_staff_lesson", {
+      p_id: lessonId,
+    });
 
     if (error) {
-      console.error("[deleteCoachLessonAction]", { error });
-      return { ok: false, error: "刪除課堂失敗" };
+      console.error("[confirmLessonAction]", { error, lessonId });
+      if (error.message.includes("already started")) {
+        return { ok: false, error: "課堂已開始，無法確認；請聯絡僱主取消或重派" };
+      }
+      if (error.message.includes("pending assignments")) {
+        return { ok: false, error: "只有待確認的派工可以確認" };
+      }
+      if (error.message.includes("not found")) {
+        return { ok: false, error: "找不到課堂" };
+      }
+      return { ok: false, error: "確認派工失敗" };
     }
 
     revalidateSchedules();
     return { ok: true, data: undefined };
   } catch (error) {
-    console.error("[deleteCoachLessonAction] unexpected", { error });
-    return { ok: false, error: "刪除課堂時發生錯誤" };
+    console.error("[confirmLessonAction] unexpected", { error });
+    return { ok: false, error: "確認派工時發生錯誤" };
   }
 }
 

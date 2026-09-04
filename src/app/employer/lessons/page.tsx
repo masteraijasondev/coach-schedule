@@ -63,10 +63,9 @@ export default async function LessonsPage() {
 
   return (
     <div className="space-y-6">
-      <Panel title="建立課堂">
+      <Panel title="派工">
         <p className="mb-3 text-sm text-stone-500">
-          PT 必須選學生與 1:1／1:2／1:3；未有價錢可先建立。MIIT 需填人數。PTA／Admin
-          只需類型與時間。
+          時段必須完全落在該教練已報可返工範圍內；放假日不可派。派工後為「待員工確認」，員工確認後才計入薪資。金額可後補。
         </p>
         <ActionForm action={createLessonAction} className="grid gap-3 sm:grid-cols-2">
           <SelectField
@@ -93,12 +92,12 @@ export default async function LessonsPage() {
           </div>
           <Field label="備註" name="notes" />
           <div className="sm:col-span-2">
-            <SubmitButton>建立</SubmitButton>
+            <SubmitButton>派工</SubmitButton>
           </div>
         </ActionForm>
       </Panel>
 
-      <Panel title="課堂列表">
+      <Panel title="派工列表">
         <ul className="divide-y divide-stone-100">
           {(lessons ?? []).map((lesson) => {
             const sizeLabel = formatLessonSizeLabel(

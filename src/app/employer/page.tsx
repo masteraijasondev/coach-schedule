@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { cancelLessonAction, createLessonAction } from "@/actions/lessons";
-import { ActionForm } from "@/components/action-form";
+import { cancelLessonAction } from "@/actions/lessons";
 import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
-import { LessonRegisterFields } from "@/components/lesson-register-fields";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
-import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
-import { TimeSelect } from "@/components/time-select";
+import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import {
   lessonDayKey,
@@ -103,13 +100,16 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const coachMap = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
   const countsByDay = new Map<string, number>();
-  const lessonsByDay = new Map<string, { id: string; coachName: string }[]>();
+  const lessonsByDay = new Map<
+    string,
+    { id: string; coachName: string; status?: string }[]
+  >();
   for (const lesson of lessons ?? []) {
     const key = lessonDayKey(lesson.starts_at);
     countsByDay.set(key, (countsByDay.get(key) ?? 0) + 1);
     const coachName = lesson.coach_id ? coachMap.get(lesson.coach_id) ?? "—" : "—";
     const list = lessonsByDay.get(key) ?? [];
-    list.push({ id: lesson.id, coachName });
+    list.push({ id: lesson.id, coachName, status: lesson.status });
     lessonsByDay.set(key, list);
   }
 
@@ -190,12 +190,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       coachId: leave.coach_id,
       coachName: coachMap.get(leave.coach_id) ?? "—",
     }));
-
-  const typeOptions = (types ?? []).map((t) => ({
-    id: t.id,
-    name: t.name,
-    pay_mode: t.pay_mode,
-  }));
 
   return (
     <div className="space-y-6">

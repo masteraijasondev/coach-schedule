@@ -68,7 +68,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 僅計算已完成課堂；金額於登記時凍結。
+          結算期：{payrollPeriodLabel(period)} · 僅計算已確認課堂；未填金額暫不計入總額。
         </p>
         <ul className="divide-y divide-stone-100">
           {(coaches ?? []).map((coach) => {

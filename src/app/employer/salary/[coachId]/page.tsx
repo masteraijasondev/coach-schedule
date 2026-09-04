@@ -188,7 +188,7 @@ export default async function EmployerCoachSalaryPage({
           })}
           {(lessons ?? []).length === 0 ? (
             <li className="py-3 text-sm text-stone-500">
-              此結算期尚無已完成課堂
+              此結算期尚無已確認課堂
             </li>
           ) : null}
         </ul>
