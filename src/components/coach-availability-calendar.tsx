@@ -9,7 +9,7 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { Panel, SubmitButton } from "@/components/ui";
 import {
-  addDaysToYmd,
+  availabilityWeekBoundsIso,
   availabilityWeekDays,
   availabilityWeekStart,
   hongKongToday,
@@ -130,6 +130,8 @@ export async function CoachAvailabilityCalendar({
   const nextWeek = shiftAvailabilityWeek(week, 1);
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
+  const { start: weekStartIso, end: weekEndIso } =
+    availabilityWeekBoundsIso(week);
   const now = new Date();
   const today = hongKongToday();
   const supabase = await createClient();
@@ -159,14 +161,8 @@ export async function CoachAvailabilityCalendar({
       .select("starts_at, ends_at")
       .eq("coach_id", coachId)
       .in("status", ["assigned", "completed"])
-      .gte("starts_at", fromZonedTime(`${week}T00:00:00`, TIMEZONE).toISOString())
-      .lt(
-        "starts_at",
-        fromZonedTime(
-          `${addDaysToYmd(weekEnd, 1)}T00:00:00`,
-          TIMEZONE,
-        ).toISOString(),
-      ),
+      .gte("starts_at", weekStartIso)
+      .lt("starts_at", weekEndIso),
   ]);
 
   if (error || leavesError) {

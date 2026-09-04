@@ -8,10 +8,12 @@ export function EmployerCoachPicker({
   coaches,
   selectedCoachId,
   week,
+  listWeek,
 }: {
   coaches: { id: string; full_name: string }[];
   selectedCoachId?: string;
   week?: string;
+  listWeek?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -34,6 +36,9 @@ export function EmployerCoachPicker({
               const query = new URLSearchParams({ coach: coachId });
               if (week) {
                 query.set("week", week);
+              }
+              if (listWeek) {
+                query.set("listWeek", listWeek);
               }
               router.push(`/employer/lessons?${query.toString()}`);
             });

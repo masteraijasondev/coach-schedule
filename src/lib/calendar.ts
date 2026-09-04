@@ -48,6 +48,18 @@ export function availabilityWeekDays(weekStart: string): string[] {
   );
 }
 
+export function availabilityWeekBoundsIso(weekStart: string): {
+  start: string;
+  end: string;
+} {
+  const startLocal = fromZonedTime(`${weekStart}T00:00:00`, TIMEZONE);
+  const endLocal = fromZonedTime(
+    `${addDaysToYmd(weekStart, 7)}T00:00:00`,
+    TIMEZONE,
+  );
+  return { start: startLocal.toISOString(), end: endLocal.toISOString() };
+}
+
 /** Floor current HK time to the hour; end is +1 hour (e.g. 09:09 → 09:00–10:00). */
 export function defaultLessonTimeSlot(now = new Date()): {
   start: string;

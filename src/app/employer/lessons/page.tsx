@@ -6,6 +6,7 @@ import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import {
+  availabilityWeekBoundsIso,
   availabilityWeekDays,
   availabilityWeekStart,
   hongKongToday,
@@ -20,21 +21,45 @@ import {
 } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 
 type Props = {
-  searchParams: Promise<{ coach?: string; week?: string }>;
+  searchParams: Promise<{ coach?: string; week?: string; listWeek?: string }>;
 };
+
+function lessonsHref(
+  coachId: string,
+  opts: { week?: string; listWeek?: string },
+) {
+  const query = new URLSearchParams({ coach: coachId });
+  if (opts.week) {
+    query.set("week", opts.week);
+  }
+  if (opts.listWeek) {
+    query.set("listWeek", opts.listWeek);
+  }
+  return `/employer/lessons?${query.toString()}`;
+}
 
 export default async function LessonsPage({ searchParams }: Props) {
   await requireEmployer();
   const params = await searchParams;
   const today = hongKongToday();
   const week = parseAvailabilityWeekParam(params.week);
+  const listWeek = parseAvailabilityWeekParam(params.listWeek);
   const currentWeek = availabilityWeekStart();
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
   const prevWeek = shiftAvailabilityWeek(week, -1);
   const nextWeek = shiftAvailabilityWeek(week, 1);
+  const listWeekDays = availabilityWeekDays(listWeek);
+  const listWeekEnd = listWeekDays[6];
+  const prevListWeek = shiftAvailabilityWeek(listWeek, -1);
+  const nextListWeek = shiftAvailabilityWeek(listWeek, 1);
+  const { start: listWeekStartIso, end: listWeekEndIso } =
+    availabilityWeekBoundsIso(listWeek);
+  const preservedWeek = params.week ? week : undefined;
+  const preservedListWeek = params.listWeek ? listWeek : undefined;
 
   const supabase = await createClient();
   const [{ data: types }, { data: coaches }, { data: students }] =
@@ -58,9 +83,6 @@ export default async function LessonsPage({ searchParams }: Props) {
 
   const selectedCoach =
     (coaches ?? []).find((coach) => coach.id === params.coach) ?? null;
-
-  const coachHref = (coachId: string, weekStart: string) =>
-    `/employer/lessons?coach=${coachId}&week=${weekStart}`;
 
   let slots: {
     id: string;
@@ -108,8 +130,9 @@ export default async function LessonsPage({ searchParams }: Props) {
         )
         .eq("coach_id", selectedCoach.id)
         .neq("status", "cancelled")
-        .order("starts_at", { ascending: false })
-        .limit(100),
+        .gte("starts_at", listWeekStartIso)
+        .lt("starts_at", listWeekEndIso)
+        .order("starts_at", { ascending: true }),
     ]);
 
     slots = availabilities ?? [];
@@ -145,7 +168,8 @@ export default async function LessonsPage({ searchParams }: Props) {
         <EmployerCoachPicker
           coaches={coaches ?? []}
           selectedCoachId={selectedCoach?.id}
-          week={params.week ? week : undefined}
+          week={preservedWeek}
+          listWeek={preservedListWeek}
         />
       </Panel>
 
@@ -159,9 +183,18 @@ export default async function LessonsPage({ searchParams }: Props) {
               weekEnd={weekEnd}
               days={days}
               today={today}
-              prevWeekHref={coachHref(selectedCoach.id, prevWeek)}
-              nextWeekHref={coachHref(selectedCoach.id, nextWeek)}
-              currentWeekHref={coachHref(selectedCoach.id, currentWeek)}
+              prevWeekHref={lessonsHref(selectedCoach.id, {
+                week: prevWeek,
+                listWeek: preservedListWeek,
+              })}
+              nextWeekHref={lessonsHref(selectedCoach.id, {
+                week: nextWeek,
+                listWeek: preservedListWeek,
+              })}
+              currentWeekHref={lessonsHref(selectedCoach.id, {
+                week: currentWeek,
+                listWeek: preservedListWeek,
+              })}
               isCurrentWeek={week === currentWeek}
               slots={slots}
               leaveDates={leaveDates}
@@ -176,6 +209,42 @@ export default async function LessonsPage({ searchParams }: Props) {
           </Panel>
 
           <Panel title={`${selectedCoach.full_name} 的派更列表`}>
+            <div className="mb-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href={lessonsHref(selectedCoach.id, {
+                    week: preservedWeek,
+                    listWeek: prevListWeek,
+                  })}
+                  className="text-sm text-stone-600 underline"
+                >
+                  上週
+                </Link>
+                <p className="text-sm font-medium">
+                  {listWeek} – {listWeekEnd}
+                </p>
+                <Link
+                  href={lessonsHref(selectedCoach.id, {
+                    week: preservedWeek,
+                    listWeek: nextListWeek,
+                  })}
+                  className="text-sm text-stone-600 underline"
+                >
+                  下週
+                </Link>
+              </div>
+              {listWeek !== currentWeek ? (
+                <Link
+                  href={lessonsHref(selectedCoach.id, {
+                    week: preservedWeek,
+                    listWeek: currentWeek,
+                  })}
+                  className="text-sm text-stone-600 underline"
+                >
+                  返回本週
+                </Link>
+              ) : null}
+            </div>
             <ul className="divide-y divide-stone-100">
               {coachLessons.map((lesson) => {
                 const sizeLabel = formatLessonSizeLabel(
@@ -250,7 +319,7 @@ export default async function LessonsPage({ searchParams }: Props) {
                 );
               })}
               {coachLessons.length === 0 ? (
-                <li className="py-3 text-sm text-stone-500">尚未有派更</li>
+                <li className="py-3 text-sm text-stone-500">此週尚未有派更</li>
               ) : null}
             </ul>
           </Panel>
