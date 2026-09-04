@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { ActionResult } from "@/lib/types";
@@ -26,7 +27,8 @@ export function ServerActionButton({
       <button
         type="button"
         disabled={pending}
-        className={className}
+        aria-busy={pending}
+        className={`inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed ${className ?? ""}`}
         onClick={() => {
           if (confirmMessage && !window.confirm(confirmMessage)) {
             return;
@@ -47,7 +49,14 @@ export function ServerActionButton({
           });
         }}
       >
-        {pending ? "處理中…" : children}
+        {pending ? (
+          <>
+            <LoadingSpinner size="sm" label="處理中…" />
+            <span>處理中…</span>
+          </>
+        ) : (
+          children
+        )}
       </button>
       {error ? (
         <p className="max-w-xs text-sm text-red-700" role="alert">

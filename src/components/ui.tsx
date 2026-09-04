@@ -73,17 +73,6 @@ export function SelectField({
   );
 }
 
-export function SubmitButton({ children }: { children: React.ReactNode }) {
-  return (
-    <button
-      type="submit"
-      className="rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
-    >
-      {children}
-    </button>
-  );
-}
-
 export function Panel({
   title,
   children,
@@ -98,3 +87,5 @@ export function Panel({
     </section>
   );
 }
+
+export { SubmitButton } from "@/components/submit-button";

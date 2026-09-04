@@ -45,10 +45,16 @@ export function ActionForm({ action, children, className, onSuccess }: Props) {
   );
 
   return (
-    <form action={formAction} className={className}>
+    <form
+      action={formAction}
+      className={className}
+      aria-busy={pending}
+    >
       {children}
       {pending ? (
-        <p className="text-sm text-stone-500">處理中…</p>
+        <p className="sr-only" role="status" aria-live="polite">
+          處理中…
+        </p>
       ) : null}
       {state && !state.ok ? (
         <p className="text-sm text-red-700" role="alert">
