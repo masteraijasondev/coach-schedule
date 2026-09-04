@@ -3,6 +3,7 @@
 import { createLessonAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { LessonRegisterFields } from "@/components/lesson-register-fields";
+import { useStudentDirectory } from "@/components/student-directory-provider";
 import { TimeSelect } from "@/components/time-select";
 import { Field, SubmitButton } from "@/components/ui";
 import { formatAvailabilityTime } from "@/lib/format";
@@ -69,7 +70,6 @@ export function EmployerAssignWorkspace({
   slots,
   leaveDates,
   types,
-  students,
 }: {
   coachId: string;
   coachName: string;
@@ -84,8 +84,8 @@ export function EmployerAssignWorkspace({
   slots: AvailabilitySlot[];
   leaveDates: string[];
   types: LessonTypeOption[];
-  students: { id: string; name: string }[];
 }) {
+  const { directory, ensureStudents } = useStudentDirectory();
   const leaveSet = useMemo(() => new Set(leaveDates), [leaveDates]);
   const byDate = useMemo(() => {
     const map = new Map<string, AvailabilitySlot[]>();
@@ -103,6 +103,9 @@ export function EmployerAssignWorkspace({
   const durationMinutes =
     types.find((t) => t.id === typeId)?.default_duration_minutes ??
     DEFAULT_DURATION_MINUTES;
+  const payMode =
+    types.find((t) => t.id === typeId)?.pay_mode ?? "per_session";
+  const ptBlocked = payMode === "per_student" && directory.status !== "success";
 
   const formDate = selection?.date ?? today;
   const formStart = selection
@@ -229,7 +232,11 @@ export function EmployerAssignWorkspace({
         <input type="hidden" name="coach_id" value={coachId} />
         <LessonRegisterFields
           types={types}
-          students={students}
+          students={directory.students}
+          studentDirectory={directory}
+          onRetryStudents={() => {
+            void ensureStudents();
+          }}
           defaultTypeId={typeId}
           onTypeChange={setTypeId}
         />
@@ -259,7 +266,7 @@ export function EmployerAssignWorkspace({
         </div>
         <Field label="備註" name="notes" />
         <div className="sm:col-span-2">
-          <SubmitButton>派更</SubmitButton>
+          <SubmitButton disabled={ptBlocked}>派更</SubmitButton>
         </div>
       </ActionForm>
     </div>

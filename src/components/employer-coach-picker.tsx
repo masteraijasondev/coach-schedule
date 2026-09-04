@@ -1,6 +1,7 @@
 "use client";
 
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { useStudentDirectory } from "@/components/student-directory-provider";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
@@ -17,6 +18,7 @@ export function EmployerCoachPicker({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const { ensureStudents } = useStudentDirectory();
 
   return (
     <div className="flex max-w-sm items-end gap-3">
@@ -28,6 +30,9 @@ export function EmployerCoachPicker({
           aria-busy={pending}
           onChange={(event) => {
             const coachId = event.currentTarget.value;
+            if (coachId) {
+              void ensureStudents();
+            }
             startTransition(() => {
               if (!coachId) {
                 router.push("/employer/lessons");

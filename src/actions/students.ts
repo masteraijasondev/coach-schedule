@@ -34,6 +34,30 @@ export async function createStudentAction(
   }
 }
 
+export async function listActiveStudentsAction(): Promise<
+  ActionResult<{ id: string; name: string }[]>
+> {
+  try {
+    await requireEmployer();
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("students")
+      .select("id, name")
+      .eq("active", true)
+      .order("name");
+
+    if (error) {
+      console.error("[listActiveStudentsAction]", { error });
+      return { ok: false, error: "無法載入學生" };
+    }
+
+    return { ok: true, data: data ?? [] };
+  } catch (error) {
+    console.error("[listActiveStudentsAction] unexpected", { error });
+    return { ok: false, error: "無法載入學生" };
+  }
+}
+
 export async function toggleStudentActiveAction(
   studentId: string,
   active: boolean,

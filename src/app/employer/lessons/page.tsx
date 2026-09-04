@@ -2,6 +2,7 @@ import { EmployerAssignPanel } from "@/components/employer-assign-panel";
 import { EmployerCoachPicker } from "@/components/employer-coach-picker";
 import { EmployerLessonList } from "@/components/employer-lesson-list";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import {
@@ -100,6 +101,7 @@ export default async function LessonsPage({ searchParams }: Props) {
 
       {selectedCoach ? (
         <>
+          <EnsureStudentDirectory />
           <Suspense
             key={`${selectedCoach.id}-avail-${week}`}
             fallback={

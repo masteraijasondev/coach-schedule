@@ -39,7 +39,6 @@ export async function EmployerAssignPanel({
   const [
     { data: availabilities, error: availabilityError },
     { data: leaves, error: leavesError },
-    { data: students, error: studentsError },
   ] = await Promise.all([
     supabase
       .from("staff_availabilities")
@@ -55,16 +54,11 @@ export async function EmployerAssignPanel({
       .eq("coach_id", coachId)
       .gte("leave_date", week)
       .lte("leave_date", weekEnd),
-    supabase
-      .from("students")
-      .select("id, name")
-      .eq("active", true)
-      .order("name"),
   ]);
 
-  if (availabilityError || leavesError || studentsError) {
+  if (availabilityError || leavesError) {
     console.error("[EmployerAssignPanel] load assign data", {
-      error: availabilityError ?? leavesError ?? studentsError,
+      error: availabilityError ?? leavesError,
       coachId,
       week,
     });
@@ -72,7 +66,7 @@ export async function EmployerAssignPanel({
 
   return (
     <Panel title={`${coachName} 的可返工`}>
-      {availabilityError || leavesError || studentsError ? (
+      {availabilityError || leavesError ? (
         <p className="text-sm text-red-700" role="alert">
           無法載入可返工資料
         </p>
@@ -91,7 +85,6 @@ export async function EmployerAssignPanel({
           slots={availabilities ?? []}
           leaveDates={(leaves ?? []).map((leave) => leave.leave_date)}
           types={types}
-          students={students ?? []}
         />
       )}
     </Panel>

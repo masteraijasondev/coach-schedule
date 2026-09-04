@@ -6,16 +6,19 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({
   children,
   pendingLabel = "處理中…",
+  disabled = false,
 }: {
   children: React.ReactNode;
   pendingLabel?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
+  const isDisabled = pending || disabled;
 
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={isDisabled}
       aria-busy={pending}
       className="inline-flex min-h-10 min-w-28 items-center justify-center gap-2 rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
     >
