@@ -176,7 +176,7 @@ export function EmployerAssignWorkspace({
                     <p className="font-semibold">
                       星期{WEEKDAY_LABELS[dayIndex]}
                     </p>
-                    <p className="text-sm text-stone-500">{date.slice(5)}</p>
+                    <p className="text-xl text-stone-500">{date.slice(5)}</p>
                   </div>
                   <div className="space-y-2 p-2">
                     {onLeave ? (
