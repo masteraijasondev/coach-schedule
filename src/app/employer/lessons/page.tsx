@@ -89,7 +89,7 @@ export default async function LessonsPage({ searchParams }: Props) {
     <div className="space-y-6">
       <Panel title="派更">
         <p className="mb-3 text-sm text-stone-500">
-          先選擇教練，再按其可返工時段派更。時段必須完全落在已報可返工範圍內；放假日不可派。派更後為「待員工確認」，員工確認後才計入薪資。金額可後補。
+          先選擇員工，再按其可返工時段派更。時段必須完全落在已報可返工範圍內；＊放假日不可派。派更後為「待員工確認」，員工確認後才計入薪資。金額可後補。
         </p>
         <EmployerCoachPicker
           coaches={coaches ?? []}

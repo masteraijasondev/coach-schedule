@@ -65,7 +65,7 @@ export async function EmployerAssignPanel({
   }
 
   return (
-    <Panel title={`${coachName} 的可返工`}>
+    <Panel title={`${coachName} 可上班時間`}>
       {availabilityError || leavesError ? (
         <p className="text-sm text-red-700" role="alert">
           無法載入可返工資料
