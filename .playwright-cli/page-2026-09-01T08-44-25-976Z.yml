@@ -1,0 +1,15 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e155] [cursor=pointer]
+  - alert [ref=f1e159]: 教練排班與薪資
+  - generic [ref=f1e161]:
+    - generic [ref=f1e162]:
+      - heading "教練排班與薪資" [level=1] [ref=f1e163]
+      - paragraph [ref=f1e164]: 請使用機構提供的帳號登入
+    - generic [ref=f1e165]:
+      - generic [ref=f1e166]:
+        - text: 電郵
+        - textbox "電郵" [ref=f1e167]
+      - generic [ref=f1e168]:
+        - text: 密碼
+        - textbox "密碼" [ref=f1e169]
+      - button "登入" [ref=f1e170]

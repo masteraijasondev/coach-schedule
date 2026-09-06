@@ -221,7 +221,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
                       {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
                       {lessonStatusLabel(lesson.status)}
                     </p>
-                    <p className="text-sm text-stone-500">
+                    <p className="text-xl text-stone-500">
                       {formatDateTime(lesson.starts_at)} –{" "}
                       {formatDateTime(lesson.ends_at).slice(11)}
                     </p>
@@ -303,7 +303,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
                 {group.slots.map((slot) => (
                   <span
                     key={slot.id}
-                    className="rounded-md border border-dashed border-sky-300 bg-sky-50 px-2 py-1 text-sm text-sky-900"
+                    className="rounded-md border border-dashed border-sky-300 bg-sky-50 px-2 py-1 text-xl text-sky-900"
                   >
                     {formatAvailabilityTime(slot.start)}–
                     {formatAvailabilityTime(slot.end)}

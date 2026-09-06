@@ -195,16 +195,16 @@ export async function CoachAvailabilityCalendar({
         <div className="flex items-center justify-between gap-2">
           <Link
             href={coachWeekHref(prevWeek, month, day)}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             上週
           </Link>
-          <p className="text-sm font-medium">
+          <p className="text-xl font-medium">
             {week} – {weekEnd}
           </p>
           <Link
             href={coachWeekHref(nextWeek, month, day)}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             下週
           </Link>
@@ -212,7 +212,7 @@ export async function CoachAvailabilityCalendar({
         {week !== currentWeek ? (
           <Link
             href={coachWeekHref(currentWeek, month, day)}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             返回本週
           </Link>
@@ -260,7 +260,7 @@ export async function CoachAvailabilityCalendar({
                       <p className="font-semibold">
                         星期{WEEKDAY_LABELS[dayIndex]}
                       </p>
-                      <p className="text-sm text-stone-500">{date.slice(5)}</p>
+                      <p className="text-xl text-stone-500">{date.slice(5)}</p>
                     </div>
                     <div className="space-y-3 p-2">
                       {onLeave ? (
@@ -302,7 +302,7 @@ export async function CoachAvailabilityCalendar({
                               return (
                                 <div
                                   key={availability.id}
-                                  className="rounded-md bg-stone-100 px-2 py-2 text-sm"
+                                  className="rounded-md bg-stone-100 px-2 py-2 text-xl"
                                 >
                                   <p className="font-medium">{timeLabel}</p>
                                   <p className="text-xs text-stone-500">
@@ -315,7 +315,7 @@ export async function CoachAvailabilityCalendar({
                             return (
                               <details
                                 key={availability.id}
-                                className="rounded-md bg-sky-100 text-sm text-sky-950"
+                                className="rounded-md bg-sky-100 text-xl text-sky-950"
                               >
                                 <summary className="cursor-pointer list-none px-2 py-2 font-medium">
                                   {timeLabel}

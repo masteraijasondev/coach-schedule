@@ -55,14 +55,14 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/employer/salary?month=${prev}`}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             上期
           </Link>
           <p className="text-lg font-semibold">{formatMoney(grandTotal)}</p>
           <Link
             href={`/employer/salary?month=${next}`}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             下期
           </Link>

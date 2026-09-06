@@ -1,0 +1,1420 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - paragraph [ref=f1e6]: 僱主管理
+        - paragraph [ref=f1e7]: 僱主
+      - generic [ref=f1e8]:
+        - button "選單" [ref=f1e9]
+        - button "登出" [ref=f1e11]
+  - main [ref=f1e12]:
+    - generic [ref=f1e13]:
+      - generic [ref=f1e14]:
+        - heading "建立課堂" [level=2] [ref=f1e15]
+        - paragraph [ref=f1e16]: PT 必須選學生與 1:1／1:2／1:3；未有價錢可先建立。MIIT 需填人數。PTA／Admin 只需類型與時間。
+        - generic [ref=f1e17]:
+          - generic [ref=f1e18]:
+            - text: 教練
+            - combobox "教練" [ref=f1e19]:
+              - option "Christy" [selected]
+              - option "Nora"
+              - option "Tiff"
+          - generic [ref=f1e20]:
+            - text: 課堂類型
+            - combobox "課堂類型" [ref=f1e21]:
+              - option "Admin" [selected]
+              - option "MIIT"
+              - option "PT"
+              - option "PTA"
+              - option "小組課"
+              - option "私人課"
+              - option "體驗課"
+          - generic [ref=f1e22]:
+            - text: 日期
+            - textbox "日期" [ref=f1e23]: 2026-09-01
+          - generic [ref=f1e24]:
+            - generic [ref=f1e25]:
+              - text: 開始
+              - generic [ref=f1e26]:
+                - generic [ref=f1e27]: 開始（時）
+                - combobox "開始 小時" [ref=f1e28]:
+                  - option "00"
+                  - option "01"
+                  - option "02"
+                  - option "03"
+                  - option "04"
+                  - option "05"
+                  - option "06"
+                  - option "07"
+                  - option "08"
+                  - option "09" [selected]
+                  - option "10"
+                  - option "11"
+                  - option "12"
+                  - option "13"
+                  - option "14"
+                  - option "15"
+                  - option "16"
+                  - option "17"
+                  - option "18"
+                  - option "19"
+                  - option "20"
+                  - option "21"
+                  - option "22"
+                  - option "23"
+                - generic [ref=f1e29]: ":"
+                - generic [ref=f1e30]: 開始（分）
+                - combobox "開始 分鐘" [ref=f1e31]:
+                  - option "00" [selected]
+                  - option "05"
+                  - option "10"
+                  - option "15"
+                  - option "20"
+                  - option "25"
+                  - option "30"
+                  - option "35"
+                  - option "40"
+                  - option "45"
+                  - option "50"
+                  - option "55"
+              - paragraph [ref=f1e32]: 以 5 分鐘為單位
+            - generic [ref=f1e33]:
+              - text: 結束
+              - generic [ref=f1e34]:
+                - generic [ref=f1e35]: 結束（時）
+                - combobox "結束 小時" [ref=f1e36]:
+                  - option "00"
+                  - option "01"
+                  - option "02"
+                  - option "03"
+                  - option "04"
+                  - option "05"
+                  - option "06"
+                  - option "07"
+                  - option "08"
+                  - option "09" [selected]
+                  - option "10"
+                  - option "11"
+                  - option "12"
+                  - option "13"
+                  - option "14"
+                  - option "15"
+                  - option "16"
+                  - option "17"
+                  - option "18"
+                  - option "19"
+                  - option "20"
+                  - option "21"
+                  - option "22"
+                  - option "23"
+                - generic [ref=f1e37]: ":"
+                - generic [ref=f1e38]: 結束（分）
+                - combobox "結束 分鐘" [ref=f1e39]:
+                  - option "00" [selected]
+                  - option "05"
+                  - option "10"
+                  - option "15"
+                  - option "20"
+                  - option "25"
+                  - option "30"
+                  - option "35"
+                  - option "40"
+                  - option "45"
+                  - option "50"
+                  - option "55"
+              - paragraph [ref=f1e40]: 以 5 分鐘為單位
+          - generic [ref=f1e41]:
+            - text: 備註
+            - textbox "備註" [ref=f1e42]
+          - button "建立" [ref=f1e44]
+      - generic [ref=f1e45]:
+        - heading "課堂列表" [level=2] [ref=f1e46]
+        - list [ref=f1e47]:
+          - listitem [ref=f1e48]:
+            - generic [ref=f1e49]:
+              - generic [ref=f1e50]:
+                - paragraph [ref=f1e51]: PT · 已完成
+                - paragraph [ref=f1e52]: 2026-08-30 10:30 – 11:30
+                - paragraph [ref=f1e53]: 教練：Nora
+                - paragraph [ref=f1e54]: 學生：Yauyau
+                - paragraph [ref=f1e55]: 學生學費：港幣 $0.00
+                - paragraph [ref=f1e56]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e58]
+            - generic [ref=f1e59]:
+              - generic [ref=f1e60]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e61]: "0"
+              - generic [ref=f1e62]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e63]: "450"
+              - button "更新金額" [ref=f1e65]
+          - listitem [ref=f1e66]:
+            - generic [ref=f1e67]:
+              - generic [ref=f1e68]:
+                - paragraph [ref=f1e69]: PT · 已完成
+                - paragraph [ref=f1e70]: 2026-08-30 09:30 – 10:30
+                - paragraph [ref=f1e71]: 教練：Nora
+                - paragraph [ref=f1e72]: 學生：Chi
+                - paragraph [ref=f1e73]: 學生學費：港幣 $0.00
+                - paragraph [ref=f1e74]: 教練薪資：港幣 $300.00
+              - button "取消" [ref=f1e76]
+            - generic [ref=f1e77]:
+              - generic [ref=f1e78]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e79]: "0"
+              - generic [ref=f1e80]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e81]: "300"
+              - button "更新金額" [ref=f1e83]
+          - listitem [ref=f1e84]:
+            - generic [ref=f1e85]:
+              - generic [ref=f1e86]:
+                - paragraph [ref=f1e87]: PT · 已完成
+                - paragraph [ref=f1e88]: 2026-08-06 20:30 – 21:30
+                - paragraph [ref=f1e89]: 教練：Nora
+                - paragraph [ref=f1e90]: 學生：Chi
+                - paragraph [ref=f1e91]: 學生學費：待補
+                - paragraph [ref=f1e92]: 教練薪資：港幣 $300.00
+              - button "取消" [ref=f1e94]
+            - generic [ref=f1e95]:
+              - generic [ref=f1e96]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e97]
+              - generic [ref=f1e98]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e99]: "300"
+              - button "更新金額" [ref=f1e101]
+          - listitem [ref=f1e102]:
+            - generic [ref=f1e103]:
+              - generic [ref=f1e104]:
+                - paragraph [ref=f1e105]: Admin · 已完成
+                - paragraph [ref=f1e106]: 2026-08-06 18:30 – 20:30
+                - paragraph [ref=f1e107]: 教練：Nora
+                - paragraph [ref=f1e108]: 學生：無
+                - paragraph [ref=f1e109]: 教練薪資：港幣 $200.00
+              - button "取消" [ref=f1e111]
+            - generic [ref=f1e112]:
+              - generic [ref=f1e113]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e114]
+              - generic [ref=f1e115]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e116]: "200"
+              - button "更新金額" [ref=f1e118]
+          - listitem [ref=f1e119]:
+            - generic [ref=f1e120]:
+              - generic [ref=f1e121]:
+                - paragraph [ref=f1e122]: PT · 已完成
+                - paragraph [ref=f1e123]: 2026-08-03 20:00 – 21:00
+                - paragraph [ref=f1e124]: 教練：Nora
+                - paragraph [ref=f1e125]: 學生：Kelly
+                - paragraph [ref=f1e126]: 學生學費：待補
+                - paragraph [ref=f1e127]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e129]
+            - generic [ref=f1e130]:
+              - generic [ref=f1e131]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e132]
+              - generic [ref=f1e133]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e134]: "360"
+              - button "更新金額" [ref=f1e136]
+          - listitem [ref=f1e137]:
+            - generic [ref=f1e138]:
+              - generic [ref=f1e139]:
+                - paragraph [ref=f1e140]: MIIT · 已完成
+                - paragraph [ref=f1e141]: 2026-08-03 19:00 – 20:00
+                - paragraph [ref=f1e142]: 教練：Nora
+                - paragraph [ref=f1e143]: 學生：無
+                - paragraph [ref=f1e144]: 人數：3
+                - paragraph [ref=f1e145]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e147]
+            - generic [ref=f1e148]:
+              - generic [ref=f1e149]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e150]
+              - generic [ref=f1e151]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e152]: "270"
+              - button "更新金額" [ref=f1e154]
+          - listitem [ref=f1e155]:
+            - generic [ref=f1e156]:
+              - generic [ref=f1e157]:
+                - paragraph [ref=f1e158]: Admin · 已完成
+                - paragraph [ref=f1e159]: 2026-08-02 10:00 – 13:30
+                - paragraph [ref=f1e160]: 教練：Nora
+                - paragraph [ref=f1e161]: 學生：無
+                - paragraph [ref=f1e162]: 教練薪資：港幣 $350.00
+              - button "取消" [ref=f1e164]
+            - generic [ref=f1e165]:
+              - generic [ref=f1e166]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e167]
+              - generic [ref=f1e168]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e169]: "350"
+              - button "更新金額" [ref=f1e171]
+          - listitem [ref=f1e172]:
+            - generic [ref=f1e173]:
+              - generic [ref=f1e174]:
+                - paragraph [ref=f1e175]: MIIT · 已完成
+                - paragraph [ref=f1e176]: 2026-07-24 19:00 – 20:00
+                - paragraph [ref=f1e177]: 教練：Nora
+                - paragraph [ref=f1e178]: 學生：無
+                - paragraph [ref=f1e179]: 人數：5
+                - paragraph [ref=f1e180]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e182]
+            - generic [ref=f1e183]:
+              - generic [ref=f1e184]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e185]
+              - generic [ref=f1e186]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e187]: "450"
+              - button "更新金額" [ref=f1e189]
+          - listitem [ref=f1e190]:
+            - generic [ref=f1e191]:
+              - generic [ref=f1e192]:
+                - paragraph [ref=f1e193]: PT · 已完成
+                - paragraph [ref=f1e194]: 2026-07-23 19:45 – 20:45
+                - paragraph [ref=f1e195]: 教練：Nora
+                - paragraph [ref=f1e196]: 學生：Ivan
+                - paragraph [ref=f1e197]: 學生學費：待補
+                - paragraph [ref=f1e198]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e200]
+            - generic [ref=f1e201]:
+              - generic [ref=f1e202]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e203]
+              - generic [ref=f1e204]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e205]: "360"
+              - button "更新金額" [ref=f1e207]
+          - listitem [ref=f1e208]:
+            - generic [ref=f1e209]:
+              - generic [ref=f1e210]:
+                - paragraph [ref=f1e211]: PT · 已完成
+                - paragraph [ref=f1e212]: 2026-07-23 18:30 – 19:30
+                - paragraph [ref=f1e213]: 教練：Nora
+                - paragraph [ref=f1e214]: 學生：Junpei
+                - paragraph [ref=f1e215]: 學生學費：待補
+                - paragraph [ref=f1e216]: 教練薪資：港幣 $330.00
+              - button "取消" [ref=f1e218]
+            - generic [ref=f1e219]:
+              - generic [ref=f1e220]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e221]
+              - generic [ref=f1e222]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e223]: "330"
+              - button "更新金額" [ref=f1e225]
+          - listitem [ref=f1e226]:
+            - generic [ref=f1e227]:
+              - generic [ref=f1e228]:
+                - paragraph [ref=f1e229]: MIIT · 已完成
+                - paragraph [ref=f1e230]: 2026-07-20 19:00 – 20:00
+                - paragraph [ref=f1e231]: 教練：Nora
+                - paragraph [ref=f1e232]: 學生：無
+                - paragraph [ref=f1e233]: 人數：6
+                - paragraph [ref=f1e234]: 教練薪資：港幣 $540.00
+              - button "取消" [ref=f1e236]
+            - generic [ref=f1e237]:
+              - generic [ref=f1e238]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e239]
+              - generic [ref=f1e240]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e241]: "540"
+              - button "更新金額" [ref=f1e243]
+          - listitem [ref=f1e244]:
+            - generic [ref=f1e245]:
+              - generic [ref=f1e246]:
+                - paragraph [ref=f1e247]: Admin · 已完成
+                - paragraph [ref=f1e248]: 2026-07-20 18:00 – 19:00
+                - paragraph [ref=f1e249]: 教練：Nora
+                - paragraph [ref=f1e250]: 學生：無
+                - paragraph [ref=f1e251]: 教練薪資：港幣 $100.00
+              - button "取消" [ref=f1e253]
+            - generic [ref=f1e254]:
+              - generic [ref=f1e255]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e256]
+              - generic [ref=f1e257]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e258]: "100"
+              - button "更新金額" [ref=f1e260]
+          - listitem [ref=f1e261]:
+            - generic [ref=f1e262]:
+              - generic [ref=f1e263]:
+                - paragraph [ref=f1e264]: PT · 已完成
+                - paragraph [ref=f1e265]: 2026-07-19 12:30 – 13:30
+                - paragraph [ref=f1e266]: 教練：Nora
+                - paragraph [ref=f1e267]: 學生：Chi
+                - paragraph [ref=f1e268]: 學生學費：待補
+                - paragraph [ref=f1e269]: 教練薪資：港幣 $300.00
+              - button "取消" [ref=f1e271]
+            - generic [ref=f1e272]:
+              - generic [ref=f1e273]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e274]
+              - generic [ref=f1e275]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e276]: "300"
+              - button "更新金額" [ref=f1e278]
+          - listitem [ref=f1e279]:
+            - generic [ref=f1e280]:
+              - generic [ref=f1e281]:
+                - paragraph [ref=f1e282]: PT · 已完成
+                - paragraph [ref=f1e283]: 2026-07-19 11:30 – 12:30
+                - paragraph [ref=f1e284]: 教練：Nora
+                - paragraph [ref=f1e285]: 學生：Candy Barry
+                - paragraph [ref=f1e286]: 學生學費：待補
+                - paragraph [ref=f1e287]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e289]
+            - generic [ref=f1e290]:
+              - generic [ref=f1e291]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e292]
+              - generic [ref=f1e293]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e294]: "450"
+              - button "更新金額" [ref=f1e296]
+          - listitem [ref=f1e297]:
+            - generic [ref=f1e298]:
+              - generic [ref=f1e299]:
+                - paragraph [ref=f1e300]: PT · 已完成
+                - paragraph [ref=f1e301]: 2026-07-19 09:30 – 10:30
+                - paragraph [ref=f1e302]: 教練：Nora
+                - paragraph [ref=f1e303]: 學生：Edmond
+                - paragraph [ref=f1e304]: 學生學費：待補
+                - paragraph [ref=f1e305]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e307]
+            - generic [ref=f1e308]:
+              - generic [ref=f1e309]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e310]
+              - generic [ref=f1e311]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e312]: "270"
+              - button "更新金額" [ref=f1e314]
+          - listitem [ref=f1e315]:
+            - generic [ref=f1e316]:
+              - generic [ref=f1e317]:
+                - paragraph [ref=f1e318]: MIIT · 已完成
+                - paragraph [ref=f1e319]: 2026-07-17 19:00 – 20:00
+                - paragraph [ref=f1e320]: 教練：Nora
+                - paragraph [ref=f1e321]: 學生：無
+                - paragraph [ref=f1e322]: 人數：4
+                - paragraph [ref=f1e323]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e325]
+            - generic [ref=f1e326]:
+              - generic [ref=f1e327]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e328]
+              - generic [ref=f1e329]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e330]: "360"
+              - button "更新金額" [ref=f1e332]
+          - listitem [ref=f1e333]:
+            - generic [ref=f1e334]:
+              - generic [ref=f1e335]:
+                - paragraph [ref=f1e336]: PT · 已完成
+                - paragraph [ref=f1e337]: 2026-07-16 19:30 – 20:30
+                - paragraph [ref=f1e338]: 教練：Nora
+                - paragraph [ref=f1e339]: 學生：Kelly
+                - paragraph [ref=f1e340]: 學生學費：待補
+                - paragraph [ref=f1e341]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e343]
+            - generic [ref=f1e344]:
+              - generic [ref=f1e345]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e346]
+              - generic [ref=f1e347]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e348]: "360"
+              - button "更新金額" [ref=f1e350]
+          - listitem [ref=f1e351]:
+            - generic [ref=f1e352]:
+              - generic [ref=f1e353]:
+                - paragraph [ref=f1e354]: PT · 已完成
+                - paragraph [ref=f1e355]: 2026-07-16 18:30 – 19:30
+                - paragraph [ref=f1e356]: 教練：Nora
+                - paragraph [ref=f1e357]: 學生：Yauyau
+                - paragraph [ref=f1e358]: 學生學費：待補
+                - paragraph [ref=f1e359]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e361]
+            - generic [ref=f1e362]:
+              - generic [ref=f1e363]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e364]
+              - generic [ref=f1e365]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e366]: "450"
+              - button "更新金額" [ref=f1e368]
+          - listitem [ref=f1e369]:
+            - generic [ref=f1e370]:
+              - generic [ref=f1e371]:
+                - paragraph [ref=f1e372]: PT · 已完成
+                - paragraph [ref=f1e373]: 2026-07-13 20:00 – 21:00
+                - paragraph [ref=f1e374]: 教練：Nora
+                - paragraph [ref=f1e375]: 學生：Kelly
+                - paragraph [ref=f1e376]: 學生學費：待補
+                - paragraph [ref=f1e377]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e379]
+            - generic [ref=f1e380]:
+              - generic [ref=f1e381]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e382]
+              - generic [ref=f1e383]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e384]: "360"
+              - button "更新金額" [ref=f1e386]
+          - listitem [ref=f1e387]:
+            - generic [ref=f1e388]:
+              - generic [ref=f1e389]:
+                - paragraph [ref=f1e390]: MIIT · 已完成
+                - paragraph [ref=f1e391]: 2026-07-13 19:00 – 20:00
+                - paragraph [ref=f1e392]: 教練：Nora
+                - paragraph [ref=f1e393]: 學生：無
+                - paragraph [ref=f1e394]: 人數：5
+                - paragraph [ref=f1e395]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e397]
+            - generic [ref=f1e398]:
+              - generic [ref=f1e399]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e400]
+              - generic [ref=f1e401]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e402]: "450"
+              - button "更新金額" [ref=f1e404]
+          - listitem [ref=f1e405]:
+            - generic [ref=f1e406]:
+              - generic [ref=f1e407]:
+                - paragraph [ref=f1e408]: PT · 已完成
+                - paragraph [ref=f1e409]: 2026-07-13 18:00 – 19:00
+                - paragraph [ref=f1e410]: 教練：Nora
+                - paragraph [ref=f1e411]: 學生：Mimi
+                - paragraph [ref=f1e412]: 學生學費：待補
+                - paragraph [ref=f1e413]: 教練薪資：港幣 $306.00
+              - button "取消" [ref=f1e415]
+            - generic [ref=f1e416]:
+              - generic [ref=f1e417]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e418]
+              - generic [ref=f1e419]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e420]: "306"
+              - button "更新金額" [ref=f1e422]
+          - listitem [ref=f1e423]:
+            - generic [ref=f1e424]:
+              - generic [ref=f1e425]:
+                - paragraph [ref=f1e426]: PT · 已完成
+                - paragraph [ref=f1e427]: 2026-07-12 12:30 – 13:30
+                - paragraph [ref=f1e428]: 教練：Nora
+                - paragraph [ref=f1e429]: 學生：Connie Raymond
+                - paragraph [ref=f1e430]: 學生學費：待補
+                - paragraph [ref=f1e431]: 教練薪資：港幣 $636.00
+              - button "取消" [ref=f1e433]
+            - generic [ref=f1e434]:
+              - generic [ref=f1e435]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e436]
+              - generic [ref=f1e437]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e438]: "636"
+              - button "更新金額" [ref=f1e440]
+          - listitem [ref=f1e441]:
+            - generic [ref=f1e442]:
+              - generic [ref=f1e443]:
+                - paragraph [ref=f1e444]: Admin · 已完成
+                - paragraph [ref=f1e445]: 2026-07-12 10:30 – 12:30
+                - paragraph [ref=f1e446]: 教練：Nora
+                - paragraph [ref=f1e447]: 學生：無
+                - paragraph [ref=f1e448]: 教練薪資：港幣 $200.00
+              - button "取消" [ref=f1e450]
+            - generic [ref=f1e451]:
+              - generic [ref=f1e452]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e453]
+              - generic [ref=f1e454]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e455]: "200"
+              - button "更新金額" [ref=f1e457]
+          - listitem [ref=f1e458]:
+            - generic [ref=f1e459]:
+              - generic [ref=f1e460]:
+                - paragraph [ref=f1e461]: PT · 已完成
+                - paragraph [ref=f1e462]: 2026-07-09 20:30 – 21:30
+                - paragraph [ref=f1e463]: 教練：Nora
+                - paragraph [ref=f1e464]: 學生：Chi
+                - paragraph [ref=f1e465]: 學生學費：待補
+                - paragraph [ref=f1e466]: 教練薪資：港幣 $300.00
+              - button "取消" [ref=f1e468]
+            - generic [ref=f1e469]:
+              - generic [ref=f1e470]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e471]
+              - generic [ref=f1e472]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e473]: "300"
+              - button "更新金額" [ref=f1e475]
+          - listitem [ref=f1e476]:
+            - generic [ref=f1e477]:
+              - generic [ref=f1e478]:
+                - paragraph [ref=f1e479]: PT · 已完成
+                - paragraph [ref=f1e480]: 2026-07-09 19:30 – 20:30
+                - paragraph [ref=f1e481]: 教練：Nora
+                - paragraph [ref=f1e482]: 學生：Kelly
+                - paragraph [ref=f1e483]: 學生學費：待補
+                - paragraph [ref=f1e484]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e486]
+            - generic [ref=f1e487]:
+              - generic [ref=f1e488]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e489]
+              - generic [ref=f1e490]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e491]: "360"
+              - button "更新金額" [ref=f1e493]
+          - listitem [ref=f1e494]:
+            - generic [ref=f1e495]:
+              - generic [ref=f1e496]:
+                - paragraph [ref=f1e497]: PTA · 已完成
+                - paragraph [ref=f1e498]: 2026-07-09 18:30 – 19:30
+                - paragraph [ref=f1e499]: 教練：Nora
+                - paragraph [ref=f1e500]: 學生：無
+                - paragraph [ref=f1e501]: 教練薪資：港幣 $120.00
+              - button "取消" [ref=f1e503]
+            - generic [ref=f1e504]:
+              - generic [ref=f1e505]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e506]
+              - generic [ref=f1e507]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e508]: "120"
+              - button "更新金額" [ref=f1e510]
+          - listitem [ref=f1e511]:
+            - generic [ref=f1e512]:
+              - generic [ref=f1e513]:
+                - paragraph [ref=f1e514]: MIIT · 已完成
+                - paragraph [ref=f1e515]: 2026-07-06 19:00 – 20:00
+                - paragraph [ref=f1e516]: 教練：Nora
+                - paragraph [ref=f1e517]: 學生：無
+                - paragraph [ref=f1e518]: 人數：7
+                - paragraph [ref=f1e519]: 教練薪資：港幣 $630.00
+              - button "取消" [ref=f1e521]
+            - generic [ref=f1e522]:
+              - generic [ref=f1e523]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e524]
+              - generic [ref=f1e525]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e526]: "630"
+              - button "更新金額" [ref=f1e528]
+          - listitem [ref=f1e529]:
+            - generic [ref=f1e530]:
+              - generic [ref=f1e531]:
+                - paragraph [ref=f1e532]: PT · 已完成
+                - paragraph [ref=f1e533]: 2026-07-06 18:00 – 19:00
+                - paragraph [ref=f1e534]: 教練：Nora
+                - paragraph [ref=f1e535]: 學生：Mimi
+                - paragraph [ref=f1e536]: 學生學費：待補
+                - paragraph [ref=f1e537]: 教練薪資：港幣 $306.00
+              - button "取消" [ref=f1e539]
+            - generic [ref=f1e540]:
+              - generic [ref=f1e541]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e542]
+              - generic [ref=f1e543]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e544]: "306"
+              - button "更新金額" [ref=f1e546]
+          - listitem [ref=f1e547]:
+            - generic [ref=f1e548]:
+              - generic [ref=f1e549]:
+                - paragraph [ref=f1e550]: PT · 已完成
+                - paragraph [ref=f1e551]: 2026-07-05 12:30 – 13:30
+                - paragraph [ref=f1e552]: 教練：Nora
+                - paragraph [ref=f1e553]: 學生：Ivan
+                - paragraph [ref=f1e554]: 學生學費：待補
+                - paragraph [ref=f1e555]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e557]
+            - generic [ref=f1e558]:
+              - generic [ref=f1e559]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e560]
+              - generic [ref=f1e561]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e562]: "360"
+              - button "更新金額" [ref=f1e564]
+          - listitem [ref=f1e565]:
+            - generic [ref=f1e566]:
+              - generic [ref=f1e567]:
+                - paragraph [ref=f1e568]: PT · 已完成
+                - paragraph [ref=f1e569]: 2026-07-05 11:30 – 12:30
+                - paragraph [ref=f1e570]: 教練：Nora
+                - paragraph [ref=f1e571]: 學生：Candy Barry
+                - paragraph [ref=f1e572]: 學生學費：待補
+                - paragraph [ref=f1e573]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e575]
+            - generic [ref=f1e576]:
+              - generic [ref=f1e577]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e578]
+              - generic [ref=f1e579]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e580]: "450"
+              - button "更新金額" [ref=f1e582]
+          - listitem [ref=f1e583]:
+            - generic [ref=f1e584]:
+              - generic [ref=f1e585]:
+                - paragraph [ref=f1e586]: PTA · 已完成
+                - paragraph [ref=f1e587]: 2026-07-05 10:30 – 11:30
+                - paragraph [ref=f1e588]: 教練：Nora
+                - paragraph [ref=f1e589]: 學生：無
+                - paragraph [ref=f1e590]: 教練薪資：港幣 $120.00
+              - button "取消" [ref=f1e592]
+            - generic [ref=f1e593]:
+              - generic [ref=f1e594]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e595]
+              - generic [ref=f1e596]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e597]: "120"
+              - button "更新金額" [ref=f1e599]
+          - listitem [ref=f1e600]:
+            - generic [ref=f1e601]:
+              - generic [ref=f1e602]:
+                - paragraph [ref=f1e603]: MIIT · 已完成
+                - paragraph [ref=f1e604]: 2026-07-03 19:00 – 20:00
+                - paragraph [ref=f1e605]: 教練：Nora
+                - paragraph [ref=f1e606]: 學生：無
+                - paragraph [ref=f1e607]: 人數：5
+                - paragraph [ref=f1e608]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e610]
+            - generic [ref=f1e611]:
+              - generic [ref=f1e612]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e613]
+              - generic [ref=f1e614]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e615]: "450"
+              - button "更新金額" [ref=f1e617]
+          - listitem [ref=f1e618]:
+            - generic [ref=f1e619]:
+              - generic [ref=f1e620]:
+                - paragraph [ref=f1e621]: PT · 已完成
+                - paragraph [ref=f1e622]: 2026-06-30 19:30 – 20:30
+                - paragraph [ref=f1e623]: 教練：Nora
+                - paragraph [ref=f1e624]: 學生：Pearlie
+                - paragraph [ref=f1e625]: 學生學費：待補
+                - paragraph [ref=f1e626]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e628]
+            - generic [ref=f1e629]:
+              - generic [ref=f1e630]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e631]
+              - generic [ref=f1e632]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e633]: "450"
+              - button "更新金額" [ref=f1e635]
+          - listitem [ref=f1e636]:
+            - generic [ref=f1e637]:
+              - generic [ref=f1e638]:
+                - paragraph [ref=f1e639]: PT · 已完成
+                - paragraph [ref=f1e640]: 2026-06-30 18:30 – 19:30
+                - paragraph [ref=f1e641]: 教練：Nora
+                - paragraph [ref=f1e642]: 學生：Tiffany Joanna
+                - paragraph [ref=f1e643]: 學生學費：待補
+                - paragraph [ref=f1e644]: 教練薪資：港幣 $636.00
+              - button "取消" [ref=f1e646]
+            - generic [ref=f1e647]:
+              - generic [ref=f1e648]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e649]
+              - generic [ref=f1e650]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e651]: "636"
+              - button "更新金額" [ref=f1e653]
+          - listitem [ref=f1e654]:
+            - generic [ref=f1e655]:
+              - generic [ref=f1e656]:
+                - paragraph [ref=f1e657]: PT · 已完成
+                - paragraph [ref=f1e658]: 2026-06-29 20:00 – 21:00
+                - paragraph [ref=f1e659]: 教練：Nora
+                - paragraph [ref=f1e660]: 學生：Yauyau
+                - paragraph [ref=f1e661]: 學生學費：待補
+                - paragraph [ref=f1e662]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e664]
+            - generic [ref=f1e665]:
+              - generic [ref=f1e666]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e667]
+              - generic [ref=f1e668]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e669]: "450"
+              - button "更新金額" [ref=f1e671]
+          - listitem [ref=f1e672]:
+            - generic [ref=f1e673]:
+              - generic [ref=f1e674]:
+                - paragraph [ref=f1e675]: MIIT · 已完成
+                - paragraph [ref=f1e676]: 2026-06-29 19:00 – 20:00
+                - paragraph [ref=f1e677]: 教練：Nora
+                - paragraph [ref=f1e678]: 學生：無
+                - paragraph [ref=f1e679]: 人數：7
+                - paragraph [ref=f1e680]: 教練薪資：港幣 $630.00
+              - button "取消" [ref=f1e682]
+            - generic [ref=f1e683]:
+              - generic [ref=f1e684]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e685]
+              - generic [ref=f1e686]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e687]: "630"
+              - button "更新金額" [ref=f1e689]
+          - listitem [ref=f1e690]:
+            - generic [ref=f1e691]:
+              - generic [ref=f1e692]:
+                - paragraph [ref=f1e693]: PT · 已完成
+                - paragraph [ref=f1e694]: 2026-06-29 18:00 – 19:00
+                - paragraph [ref=f1e695]: 教練：Nora
+                - paragraph [ref=f1e696]: 學生：Mimi
+                - paragraph [ref=f1e697]: 學生學費：待補
+                - paragraph [ref=f1e698]: 教練薪資：港幣 $306.00
+              - button "取消" [ref=f1e700]
+            - generic [ref=f1e701]:
+              - generic [ref=f1e702]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e703]
+              - generic [ref=f1e704]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e705]: "306"
+              - button "更新金額" [ref=f1e707]
+          - listitem [ref=f1e708]:
+            - generic [ref=f1e709]:
+              - generic [ref=f1e710]:
+                - paragraph [ref=f1e711]: PT · 已完成
+                - paragraph [ref=f1e712]: 2026-06-22 20:00 – 21:00
+                - paragraph [ref=f1e713]: 教練：Nora
+                - paragraph [ref=f1e714]: 學生：Kelly
+                - paragraph [ref=f1e715]: 學生學費：待補
+                - paragraph [ref=f1e716]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e718]
+            - generic [ref=f1e719]:
+              - generic [ref=f1e720]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e721]
+              - generic [ref=f1e722]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e723]: "360"
+              - button "更新金額" [ref=f1e725]
+          - listitem [ref=f1e726]:
+            - generic [ref=f1e727]:
+              - generic [ref=f1e728]:
+                - paragraph [ref=f1e729]: MIIT · 已完成
+                - paragraph [ref=f1e730]: 2026-06-22 19:00 – 20:00
+                - paragraph [ref=f1e731]: 教練：Nora
+                - paragraph [ref=f1e732]: 學生：無
+                - paragraph [ref=f1e733]: 人數：1
+                - paragraph [ref=f1e734]: 教練薪資：港幣 $90.00
+              - button "取消" [ref=f1e736]
+            - generic [ref=f1e737]:
+              - generic [ref=f1e738]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e739]
+              - generic [ref=f1e740]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e741]: "90"
+              - button "更新金額" [ref=f1e743]
+          - listitem [ref=f1e744]:
+            - generic [ref=f1e745]:
+              - generic [ref=f1e746]:
+                - paragraph [ref=f1e747]: PT · 已完成
+                - paragraph [ref=f1e748]: 2026-06-22 18:00 – 19:00
+                - paragraph [ref=f1e749]: 教練：Nora
+                - paragraph [ref=f1e750]: 學生：Mimi
+                - paragraph [ref=f1e751]: 學生學費：待補
+                - paragraph [ref=f1e752]: 教練薪資：港幣 $306.00
+              - button "取消" [ref=f1e754]
+            - generic [ref=f1e755]:
+              - generic [ref=f1e756]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e757]
+              - generic [ref=f1e758]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e759]: "306"
+              - button "更新金額" [ref=f1e761]
+          - listitem [ref=f1e762]:
+            - generic [ref=f1e763]:
+              - generic [ref=f1e764]:
+                - paragraph [ref=f1e765]: PT · 已完成
+                - paragraph [ref=f1e766]: 2026-06-21 11:30 – 12:30
+                - paragraph [ref=f1e767]: 教練：Nora
+                - paragraph [ref=f1e768]: 學生：Connie Raymond
+                - paragraph [ref=f1e769]: 學生學費：待補
+                - paragraph [ref=f1e770]: 教練薪資：港幣 $636.00
+              - button "取消" [ref=f1e772]
+            - generic [ref=f1e773]:
+              - generic [ref=f1e774]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e775]
+              - generic [ref=f1e776]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e777]: "636"
+              - button "更新金額" [ref=f1e779]
+          - listitem [ref=f1e780]:
+            - generic [ref=f1e781]:
+              - generic [ref=f1e782]:
+                - paragraph [ref=f1e783]: PT · 已完成
+                - paragraph [ref=f1e784]: 2026-06-21 10:30 – 11:30
+                - paragraph [ref=f1e785]: 教練：Nora
+                - paragraph [ref=f1e786]: 學生：Sam group
+                - paragraph [ref=f1e787]: 學生學費：待補
+                - paragraph [ref=f1e788]: 教練薪資：港幣 $810.00
+              - button "取消" [ref=f1e790]
+            - generic [ref=f1e791]:
+              - generic [ref=f1e792]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e793]
+              - generic [ref=f1e794]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e795]: "810"
+              - button "更新金額" [ref=f1e797]
+          - listitem [ref=f1e798]:
+            - generic [ref=f1e799]:
+              - generic [ref=f1e800]:
+                - paragraph [ref=f1e801]: PT · 已完成
+                - paragraph [ref=f1e802]: 2026-06-21 09:30 – 10:30
+                - paragraph [ref=f1e803]: 教練：Nora
+                - paragraph [ref=f1e804]: 學生：Edmond
+                - paragraph [ref=f1e805]: 學生學費：待補
+                - paragraph [ref=f1e806]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e808]
+            - generic [ref=f1e809]:
+              - generic [ref=f1e810]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e811]
+              - generic [ref=f1e812]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e813]: "270"
+              - button "更新金額" [ref=f1e815]
+          - listitem [ref=f1e816]:
+            - generic [ref=f1e817]:
+              - generic [ref=f1e818]:
+                - paragraph [ref=f1e819]: PT · 已完成
+                - paragraph [ref=f1e820]: 2026-06-19 20:00 – 21:00
+                - paragraph [ref=f1e821]: 教練：Nora
+                - paragraph [ref=f1e822]: 學生：Steven
+                - paragraph [ref=f1e823]: 學生學費：待補
+                - paragraph [ref=f1e824]: 教練薪資：港幣 $228.00
+              - button "取消" [ref=f1e826]
+            - generic [ref=f1e827]:
+              - generic [ref=f1e828]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e829]
+              - generic [ref=f1e830]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e831]: "228"
+              - button "更新金額" [ref=f1e833]
+          - listitem [ref=f1e834]:
+            - generic [ref=f1e835]:
+              - generic [ref=f1e836]:
+                - paragraph [ref=f1e837]: MIIT · 已完成
+                - paragraph [ref=f1e838]: 2026-06-19 19:00 – 20:00
+                - paragraph [ref=f1e839]: 教練：Nora
+                - paragraph [ref=f1e840]: 學生：無
+                - paragraph [ref=f1e841]: 人數：1
+                - paragraph [ref=f1e842]: 教練薪資：港幣 $90.00
+              - button "取消" [ref=f1e844]
+            - generic [ref=f1e845]:
+              - generic [ref=f1e846]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e847]
+              - generic [ref=f1e848]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e849]: "90"
+              - button "更新金額" [ref=f1e851]
+          - listitem [ref=f1e852]:
+            - generic [ref=f1e853]:
+              - generic [ref=f1e854]:
+                - paragraph [ref=f1e855]: PT · 已完成
+                - paragraph [ref=f1e856]: 2026-06-15 20:00 – 21:00
+                - paragraph [ref=f1e857]: 教練：Nora
+                - paragraph [ref=f1e858]: 學生：Yauyau
+                - paragraph [ref=f1e859]: 學生學費：待補
+                - paragraph [ref=f1e860]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e862]
+            - generic [ref=f1e863]:
+              - generic [ref=f1e864]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e865]
+              - generic [ref=f1e866]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e867]: "450"
+              - button "更新金額" [ref=f1e869]
+          - listitem [ref=f1e870]:
+            - generic [ref=f1e871]:
+              - generic [ref=f1e872]:
+                - paragraph [ref=f1e873]: MIIT · 已完成
+                - paragraph [ref=f1e874]: 2026-06-15 19:00 – 20:00
+                - paragraph [ref=f1e875]: 教練：Nora
+                - paragraph [ref=f1e876]: 學生：無
+                - paragraph [ref=f1e877]: 人數：5
+                - paragraph [ref=f1e878]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e880]
+            - generic [ref=f1e881]:
+              - generic [ref=f1e882]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e883]
+              - generic [ref=f1e884]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e885]: "450"
+              - button "更新金額" [ref=f1e887]
+          - listitem [ref=f1e888]:
+            - generic [ref=f1e889]:
+              - generic [ref=f1e890]:
+                - paragraph [ref=f1e891]: PT · 已完成
+                - paragraph [ref=f1e892]: 2026-06-12 20:00 – 21:00
+                - paragraph [ref=f1e893]: 教練：Nora
+                - paragraph [ref=f1e894]: 學生：Yauyau
+                - paragraph [ref=f1e895]: 學生學費：待補
+                - paragraph [ref=f1e896]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e898]
+            - generic [ref=f1e899]:
+              - generic [ref=f1e900]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e901]
+              - generic [ref=f1e902]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e903]: "450"
+              - button "更新金額" [ref=f1e905]
+          - listitem [ref=f1e906]:
+            - generic [ref=f1e907]:
+              - generic [ref=f1e908]:
+                - paragraph [ref=f1e909]: MIIT · 已完成
+                - paragraph [ref=f1e910]: 2026-06-12 19:00 – 20:00
+                - paragraph [ref=f1e911]: 教練：Nora
+                - paragraph [ref=f1e912]: 學生：無
+                - paragraph [ref=f1e913]: 人數：1
+                - paragraph [ref=f1e914]: 教練薪資：港幣 $90.00
+              - button "取消" [ref=f1e916]
+            - generic [ref=f1e917]:
+              - generic [ref=f1e918]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e919]
+              - generic [ref=f1e920]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e921]: "90"
+              - button "更新金額" [ref=f1e923]
+          - listitem [ref=f1e924]:
+            - generic [ref=f1e925]:
+              - generic [ref=f1e926]:
+                - paragraph [ref=f1e927]: PT · 已完成
+                - paragraph [ref=f1e928]: 2026-06-09 20:00 – 21:00
+                - paragraph [ref=f1e929]: 教練：Nora
+                - paragraph [ref=f1e930]: 學生：Ivan
+                - paragraph [ref=f1e931]: 學生學費：待補
+                - paragraph [ref=f1e932]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e934]
+            - generic [ref=f1e935]:
+              - generic [ref=f1e936]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e937]
+              - generic [ref=f1e938]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e939]: "360"
+              - button "更新金額" [ref=f1e941]
+          - listitem [ref=f1e942]:
+            - generic [ref=f1e943]:
+              - generic [ref=f1e944]:
+                - paragraph [ref=f1e945]: PT · 已完成
+                - paragraph [ref=f1e946]: 2026-06-09 18:30 – 19:30
+                - paragraph [ref=f1e947]: 教練：Nora
+                - paragraph [ref=f1e948]: 學生：Tiff group
+                - paragraph [ref=f1e949]: 學生學費：待補
+                - paragraph [ref=f1e950]: 教練薪資：港幣 $636.00
+              - button "取消" [ref=f1e952]
+            - generic [ref=f1e953]:
+              - generic [ref=f1e954]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e955]
+              - generic [ref=f1e956]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e957]: "636"
+              - button "更新金額" [ref=f1e959]
+          - listitem [ref=f1e960]:
+            - generic [ref=f1e961]:
+              - generic [ref=f1e962]:
+                - paragraph [ref=f1e963]: MIIT · 已完成
+                - paragraph [ref=f1e964]: 2026-06-08 19:00 – 20:00
+                - paragraph [ref=f1e965]: 教練：Nora
+                - paragraph [ref=f1e966]: 學生：無
+                - paragraph [ref=f1e967]: 人數：5
+                - paragraph [ref=f1e968]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e970]
+            - generic [ref=f1e971]:
+              - generic [ref=f1e972]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e973]
+              - generic [ref=f1e974]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e975]: "450"
+              - button "更新金額" [ref=f1e977]
+          - listitem [ref=f1e978]:
+            - generic [ref=f1e979]:
+              - generic [ref=f1e980]:
+                - paragraph [ref=f1e981]: PT · 已完成
+                - paragraph [ref=f1e982]: 2026-06-07 12:30 – 13:30
+                - paragraph [ref=f1e983]: 教練：Nora
+                - paragraph [ref=f1e984]: 學生：Ivan
+                - paragraph [ref=f1e985]: 學生學費：待補
+                - paragraph [ref=f1e986]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e988]
+            - generic [ref=f1e989]:
+              - generic [ref=f1e990]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e991]
+              - generic [ref=f1e992]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e993]: "360"
+              - button "更新金額" [ref=f1e995]
+          - listitem [ref=f1e996]:
+            - generic [ref=f1e997]:
+              - generic [ref=f1e998]:
+                - paragraph [ref=f1e999]: PT · 已完成
+                - paragraph [ref=f1e1000]: 2026-06-07 11:30 – 12:30
+                - paragraph [ref=f1e1001]: 教練：Nora
+                - paragraph [ref=f1e1002]: 學生：Classpass Steven
+                - paragraph [ref=f1e1003]: 學生學費：待補
+                - paragraph [ref=f1e1004]: 教練薪資：港幣 $228.00
+              - button "取消" [ref=f1e1006]
+            - generic [ref=f1e1007]:
+              - generic [ref=f1e1008]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1009]
+              - generic [ref=f1e1010]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1011]: "228"
+              - button "更新金額" [ref=f1e1013]
+          - listitem [ref=f1e1014]:
+            - generic [ref=f1e1015]:
+              - generic [ref=f1e1016]:
+                - paragraph [ref=f1e1017]: PT · 已完成
+                - paragraph [ref=f1e1018]: 2026-06-07 10:30 – 11:30
+                - paragraph [ref=f1e1019]: 教練：Nora
+                - paragraph [ref=f1e1020]: 學生：Sam group
+                - paragraph [ref=f1e1021]: 學生學費：待補
+                - paragraph [ref=f1e1022]: 教練薪資：港幣 $810.00
+              - button "取消" [ref=f1e1024]
+            - generic [ref=f1e1025]:
+              - generic [ref=f1e1026]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1027]
+              - generic [ref=f1e1028]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1029]: "810"
+              - button "更新金額" [ref=f1e1031]
+          - listitem [ref=f1e1032]:
+            - generic [ref=f1e1033]:
+              - generic [ref=f1e1034]:
+                - paragraph [ref=f1e1035]: PT · 已完成
+                - paragraph [ref=f1e1036]: 2026-06-07 09:30 – 10:30
+                - paragraph [ref=f1e1037]: 教練：Nora
+                - paragraph [ref=f1e1038]: 學生：Yauyau
+                - paragraph [ref=f1e1039]: 學生學費：待補
+                - paragraph [ref=f1e1040]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e1042]
+            - generic [ref=f1e1043]:
+              - generic [ref=f1e1044]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1045]
+              - generic [ref=f1e1046]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1047]: "450"
+              - button "更新金額" [ref=f1e1049]
+          - listitem [ref=f1e1050]:
+            - generic [ref=f1e1051]:
+              - generic [ref=f1e1052]:
+                - paragraph [ref=f1e1053]: MIIT · 已完成
+                - paragraph [ref=f1e1054]: 2026-06-05 19:30 – 20:30
+                - paragraph [ref=f1e1055]: 教練：Nora
+                - paragraph [ref=f1e1056]: 學生：無
+                - paragraph [ref=f1e1057]: 人數：3
+                - paragraph [ref=f1e1058]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e1060]
+            - generic [ref=f1e1061]:
+              - generic [ref=f1e1062]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1063]
+              - generic [ref=f1e1064]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1065]: "270"
+              - button "更新金額" [ref=f1e1067]
+          - listitem [ref=f1e1068]:
+            - generic [ref=f1e1069]:
+              - generic [ref=f1e1070]:
+                - paragraph [ref=f1e1071]: PT · 已完成
+                - paragraph [ref=f1e1072]: 2026-06-05 18:30 – 19:30
+                - paragraph [ref=f1e1073]: 教練：Nora
+                - paragraph [ref=f1e1074]: 學生：Pearlie
+                - paragraph [ref=f1e1075]: 學生學費：待補
+                - paragraph [ref=f1e1076]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e1078]
+            - generic [ref=f1e1079]:
+              - generic [ref=f1e1080]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1081]
+              - generic [ref=f1e1082]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1083]: "450"
+              - button "更新金額" [ref=f1e1085]
+          - listitem [ref=f1e1086]:
+            - generic [ref=f1e1087]:
+              - generic [ref=f1e1088]:
+                - paragraph [ref=f1e1089]: PT · 已完成
+                - paragraph [ref=f1e1090]: 2026-06-02 20:30 – 21:30
+                - paragraph [ref=f1e1091]: 教練：Nora
+                - paragraph [ref=f1e1092]: 學生：Chi
+                - paragraph [ref=f1e1093]: 學生學費：待補
+                - paragraph [ref=f1e1094]: 教練薪資：港幣 $300.00
+              - button "取消" [ref=f1e1096]
+            - generic [ref=f1e1097]:
+              - generic [ref=f1e1098]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1099]
+              - generic [ref=f1e1100]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1101]: "300"
+              - button "更新金額" [ref=f1e1103]
+          - listitem [ref=f1e1104]:
+            - generic [ref=f1e1105]:
+              - generic [ref=f1e1106]:
+                - paragraph [ref=f1e1107]: PT · 已完成
+                - paragraph [ref=f1e1108]: 2026-06-02 19:30 – 20:30
+                - paragraph [ref=f1e1109]: 教練：Nora
+                - paragraph [ref=f1e1110]: 學生：Yauyau
+                - paragraph [ref=f1e1111]: 學生學費：待補
+                - paragraph [ref=f1e1112]: 教練薪資：港幣 $450.00
+              - button "取消" [ref=f1e1114]
+            - generic [ref=f1e1115]:
+              - generic [ref=f1e1116]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1117]
+              - generic [ref=f1e1118]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1119]: "450"
+              - button "更新金額" [ref=f1e1121]
+          - listitem [ref=f1e1122]:
+            - generic [ref=f1e1123]:
+              - generic [ref=f1e1124]:
+                - paragraph [ref=f1e1125]: PT · 已完成
+                - paragraph [ref=f1e1126]: 2026-06-02 18:30 – 19:30
+                - paragraph [ref=f1e1127]: 教練：Nora
+                - paragraph [ref=f1e1128]: 學生：Tiff group
+                - paragraph [ref=f1e1129]: 學生學費：待補
+                - paragraph [ref=f1e1130]: 教練薪資：港幣 $636.00
+              - button "取消" [ref=f1e1132]
+            - generic [ref=f1e1133]:
+              - generic [ref=f1e1134]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1135]
+              - generic [ref=f1e1136]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1137]: "636"
+              - button "更新金額" [ref=f1e1139]
+          - listitem [ref=f1e1140]:
+            - generic [ref=f1e1141]:
+              - generic [ref=f1e1142]:
+                - paragraph [ref=f1e1143]: PT · 已完成
+                - paragraph [ref=f1e1144]: 2026-06-01 20:20 – 21:20
+                - paragraph [ref=f1e1145]: 教練：Nora
+                - paragraph [ref=f1e1146]: 學生：Kelly
+                - paragraph [ref=f1e1147]: 學生學費：待補
+                - paragraph [ref=f1e1148]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e1150]
+            - generic [ref=f1e1151]:
+              - generic [ref=f1e1152]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1153]
+              - generic [ref=f1e1154]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1155]: "360"
+              - button "更新金額" [ref=f1e1157]
+          - listitem [ref=f1e1158]:
+            - generic [ref=f1e1159]:
+              - generic [ref=f1e1160]:
+                - paragraph [ref=f1e1161]: MIIT · 已完成
+                - paragraph [ref=f1e1162]: 2026-06-01 19:00 – 20:00
+                - paragraph [ref=f1e1163]: 教練：Nora
+                - paragraph [ref=f1e1164]: 學生：無
+                - paragraph [ref=f1e1165]: 人數：3
+                - paragraph [ref=f1e1166]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e1168]
+            - generic [ref=f1e1169]:
+              - generic [ref=f1e1170]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1171]
+              - generic [ref=f1e1172]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1173]: "270"
+              - button "更新金額" [ref=f1e1175]
+          - listitem [ref=f1e1176]:
+            - generic [ref=f1e1177]:
+              - generic [ref=f1e1178]:
+                - paragraph [ref=f1e1179]: PT · 已完成
+                - paragraph [ref=f1e1180]: 2026-05-31 10:30 – 11:30
+                - paragraph [ref=f1e1181]: 教練：Nora
+                - paragraph [ref=f1e1182]: 學生：Sam group
+                - paragraph [ref=f1e1183]: 學生學費：待補
+                - paragraph [ref=f1e1184]: 教練薪資：港幣 $810.00
+              - button "取消" [ref=f1e1186]
+            - generic [ref=f1e1187]:
+              - generic [ref=f1e1188]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1189]
+              - generic [ref=f1e1190]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1191]: "810"
+              - button "更新金額" [ref=f1e1193]
+          - listitem [ref=f1e1194]:
+            - generic [ref=f1e1195]:
+              - generic [ref=f1e1196]:
+                - paragraph [ref=f1e1197]: PTA · 已完成
+                - paragraph [ref=f1e1198]: 2026-05-26 19:30 – 21:00
+                - paragraph [ref=f1e1199]: 教練：Nora
+                - paragraph [ref=f1e1200]: 學生：Kwankwan
+                - paragraph [ref=f1e1201]: 教練薪資：港幣 $180.00
+              - button "取消" [ref=f1e1203]
+            - generic [ref=f1e1204]:
+              - generic [ref=f1e1205]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1206]
+              - generic [ref=f1e1207]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1208]: "180"
+              - button "更新金額" [ref=f1e1210]
+          - listitem [ref=f1e1211]:
+            - generic [ref=f1e1212]:
+              - generic [ref=f1e1213]:
+                - paragraph [ref=f1e1214]: PTA · 已完成
+                - paragraph [ref=f1e1215]: 2026-05-26 18:30 – 19:30
+                - paragraph [ref=f1e1216]: 教練：Nora
+                - paragraph [ref=f1e1217]: 學生：無
+                - paragraph [ref=f1e1218]: 教練薪資：港幣 $120.00
+              - button "取消" [ref=f1e1220]
+            - generic [ref=f1e1221]:
+              - generic [ref=f1e1222]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1223]
+              - generic [ref=f1e1224]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1225]: "120"
+              - button "更新金額" [ref=f1e1227]
+          - listitem [ref=f1e1228]:
+            - generic [ref=f1e1229]:
+              - generic [ref=f1e1230]:
+                - paragraph [ref=f1e1231]: PT · 已完成
+                - paragraph [ref=f1e1232]: 2026-05-25 20:00 – 21:00
+                - paragraph [ref=f1e1233]: 教練：Nora
+                - paragraph [ref=f1e1234]: 學生：Kelly
+                - paragraph [ref=f1e1235]: 學生學費：待補
+                - paragraph [ref=f1e1236]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e1238]
+            - generic [ref=f1e1239]:
+              - generic [ref=f1e1240]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1241]
+              - generic [ref=f1e1242]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1243]: "360"
+              - button "更新金額" [ref=f1e1245]
+          - listitem [ref=f1e1246]:
+            - generic [ref=f1e1247]:
+              - generic [ref=f1e1248]:
+                - paragraph [ref=f1e1249]: MIIT · 已完成
+                - paragraph [ref=f1e1250]: 2026-05-25 19:00 – 20:00
+                - paragraph [ref=f1e1251]: 教練：Nora
+                - paragraph [ref=f1e1252]: 學生：無
+                - paragraph [ref=f1e1253]: 人數：4
+                - paragraph [ref=f1e1254]: 教練薪資：港幣 $360.00
+              - button "取消" [ref=f1e1256]
+            - generic [ref=f1e1257]:
+              - generic [ref=f1e1258]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1259]
+              - generic [ref=f1e1260]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1261]: "360"
+              - button "更新金額" [ref=f1e1263]
+          - listitem [ref=f1e1264]:
+            - generic [ref=f1e1265]:
+              - generic [ref=f1e1266]:
+                - paragraph [ref=f1e1267]: PT · 已完成
+                - paragraph [ref=f1e1268]: 2026-05-25 18:00 – 19:00
+                - paragraph [ref=f1e1269]: 教練：Nora
+                - paragraph [ref=f1e1270]: 學生：Mimi
+                - paragraph [ref=f1e1271]: 學生學費：待補
+                - paragraph [ref=f1e1272]: 教練薪資：港幣 $306.00
+              - button "取消" [ref=f1e1274]
+            - generic [ref=f1e1275]:
+              - generic [ref=f1e1276]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1277]
+              - generic [ref=f1e1278]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1279]: "306"
+              - button "更新金額" [ref=f1e1281]
+          - listitem [ref=f1e1282]:
+            - generic [ref=f1e1283]:
+              - generic [ref=f1e1284]:
+                - paragraph [ref=f1e1285]: PT · 已完成
+                - paragraph [ref=f1e1286]: 2026-05-24 11:40 – 12:40
+                - paragraph [ref=f1e1287]: 教練：Nora
+                - paragraph [ref=f1e1288]: 學生：Classpass Steven
+                - paragraph [ref=f1e1289]: 學生學費：待補
+                - paragraph [ref=f1e1290]: 教練薪資：港幣 $228.00
+              - button "取消" [ref=f1e1292]
+            - generic [ref=f1e1293]:
+              - generic [ref=f1e1294]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1295]
+              - generic [ref=f1e1296]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1297]: "228"
+              - button "更新金額" [ref=f1e1299]
+          - listitem [ref=f1e1300]:
+            - generic [ref=f1e1301]:
+              - generic [ref=f1e1302]:
+                - paragraph [ref=f1e1303]: PT · 已完成
+                - paragraph [ref=f1e1304]: 2026-05-24 10:15 – 11:15
+                - paragraph [ref=f1e1305]: 教練：Nora
+                - paragraph [ref=f1e1306]: 學生：Edmond
+                - paragraph [ref=f1e1307]: 學生學費：待補
+                - paragraph [ref=f1e1308]: 教練薪資：港幣 $270.00
+              - button "取消" [ref=f1e1310]
+            - generic [ref=f1e1311]:
+              - generic [ref=f1e1312]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1313]
+              - generic [ref=f1e1314]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1315]: "270"
+              - button "更新金額" [ref=f1e1317]
+          - listitem [ref=f1e1318]:
+            - generic [ref=f1e1319]:
+              - generic [ref=f1e1320]:
+                - paragraph [ref=f1e1321]: MIIT · 已完成
+                - paragraph [ref=f1e1322]: 2026-05-22 19:00 – 20:00
+                - paragraph [ref=f1e1323]: 教練：Nora
+                - paragraph [ref=f1e1324]: 學生：無
+                - paragraph [ref=f1e1325]: 人數：2
+                - paragraph [ref=f1e1326]: 教練薪資：港幣 $180.00
+              - button "取消" [ref=f1e1328]
+            - generic [ref=f1e1329]:
+              - generic [ref=f1e1330]:
+                - text: 學生學費
+                - spinbutton "學生學費" [ref=f1e1331]
+              - generic [ref=f1e1332]:
+                - text: 教練薪資
+                - spinbutton "教練薪資" [ref=f1e1333]: "180"
+              - button "更新金額" [ref=f1e1335]

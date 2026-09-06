@@ -101,16 +101,16 @@ export async function EmployerLessonList({
         <div className="flex items-center justify-between gap-2">
           <Link
             href={prevListWeekHref}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             上週
           </Link>
-          <p className="text-sm font-medium">
+          <p className="text-xl font-medium">
             {listWeek} – {listWeekEnd}
           </p>
           <Link
             href={nextListWeekHref}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             下週
           </Link>
@@ -118,7 +118,7 @@ export async function EmployerLessonList({
         {!isCurrentListWeek ? (
           <Link
             href={currentListWeekHref}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             返回本週
           </Link>
@@ -147,7 +147,7 @@ export async function EmployerLessonList({
                       {typeName.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
                       {lessonStatusLabel(lesson.status)}
                     </p>
-                    <p className="text-sm text-stone-500">
+                    <p className="text-xl text-stone-500">
                       {formatDateTime(lesson.starts_at)} –{" "}
                       {formatDateTime(lesson.ends_at).slice(11)}
                     </p>

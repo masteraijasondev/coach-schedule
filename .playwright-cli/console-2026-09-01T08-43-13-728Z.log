@@ -1,0 +1,14 @@
+[     268ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3001/login:0
+[     292ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     371ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     511ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     996ms] [LOG] [Fast Refresh] done in 586ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   26369ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   26413ms] [LOG] [Fast Refresh] done in 146ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   43318ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   43486ms] [LOG] [Fast Refresh] done in 270ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   49936ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   49969ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   71827ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3001/login:0
+[   72381ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   72498ms] [LOG] [Fast Refresh] done in 219ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489

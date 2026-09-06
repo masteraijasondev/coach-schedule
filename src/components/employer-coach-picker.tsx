@@ -23,7 +23,7 @@ export function EmployerCoachPicker({
   return (
     <div className="flex max-w-sm items-end gap-3">
       <label className="block min-w-0 flex-1 space-y-1 text-sm">
-        <span className="text-stone-700">教練</span>
+        <span className="text-stone-700 text-xl">員工</span>
         <select
           value={selectedCoachId ?? ""}
           disabled={pending}

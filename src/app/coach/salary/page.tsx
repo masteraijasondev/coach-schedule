@@ -51,14 +51,14 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/coach/salary?month=${prev}`}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             上期
           </Link>
           <p className="text-lg font-semibold">{formatMoney(total)}</p>
           <Link
             href={`/coach/salary?month=${next}`}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             下期
           </Link>
@@ -79,7 +79,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="font-medium">
                   {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
                 </p>
-                <p className="text-sm text-stone-500">
+                <p className="text-xl text-stone-500">
                   {formatDateTime(lesson.starts_at)}
                 </p>
                 {sizeLabel ? (

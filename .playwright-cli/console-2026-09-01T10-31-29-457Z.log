@@ -1,0 +1,21 @@
+[     362ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:3001/login:0
+[     444ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     554ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[     640ms] [LOG] [Fast Refresh] done in 186ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   36810ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[   36916ms] [LOG] [Fast Refresh] done in 207ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  150483ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  150640ms] [LOG] [Fast Refresh] done in 258ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  152461ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  152462ms] [LOG] [Fast Refresh] done in 102ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  177766ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  177906ms] [LOG] [Fast Refresh] done in 203ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  178656ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  178815ms] [LOG] [Fast Refresh] done in 242ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  188844ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  188861ms] [LOG] [Fast Refresh] done in 74ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  214960ms] [LOG] [HMR] connected @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  215216ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  215296ms] [LOG] [Fast Refresh] done in 182ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  228956ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489
+[  229012ms] [LOG] [Fast Refresh] done in 158ms @ http://localhost:3001/_next/static/chunks/node_modules_next_dist_1ybzpk2._.js:2489

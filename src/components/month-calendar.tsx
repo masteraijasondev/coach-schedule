@@ -86,19 +86,19 @@ export function MonthCalendar({
       <div className="flex items-center justify-between">
         <Link
           href={`${basePath}?month=${prev}`}
-          className="text-sm text-stone-600 underline"
+          className="text-xl text-stone-600 underline"
         >
           上月
         </Link>
         <p className="font-semibold">{month}</p>
         <Link
           href={`${basePath}?month=${next}`}
-          className="text-sm text-stone-600 underline"
+          className="text-xl text-stone-600 underline"
         >
           下月
         </Link>
       </div>  
-      <div className="grid grid-cols-7 gap-1 text-center text-sm text-stone-500">
+      <div className="grid grid-cols-7 gap-1 text-center text-xl text-stone-500">
         {WEEKDAYS.map((d) => (
           <div key={d} className="py-1 border-2 rounded-2xl">
             {d}

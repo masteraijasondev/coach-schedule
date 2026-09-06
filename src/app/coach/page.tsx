@@ -186,7 +186,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                       {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
                       {lessonStatusLabel(lesson.status)}
                     </p>
-                    <p className="text-sm text-stone-500">
+                    <p className="text-xl text-stone-500">
                       {formatDateTime(lesson.starts_at)} – {endTime}
                     </p>
                     {linkedStudentId ? (

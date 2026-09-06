@@ -126,20 +126,20 @@ export function EmployerAssignWorkspace({
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <Link href={prevWeekHref} className="text-sm text-stone-600 underline">
+          <Link href={prevWeekHref} className="text-xl text-stone-600 underline">
             上週
           </Link>
-          <p className="text-sm font-medium">
+          <p className="text-xl font-medium">
             {coachName} · {week} – {weekEnd}
           </p>
-          <Link href={nextWeekHref} className="text-sm text-stone-600 underline">
+          <Link href={nextWeekHref} className="text-xl text-stone-600 underline">
             下週
           </Link>
         </div>
         {!isCurrentWeek ? (
           <Link
             href={currentWeekHref}
-            className="text-sm text-stone-600 underline"
+            className="text-xl text-stone-600 underline"
           >
             返回本週
           </Link>
@@ -204,7 +204,7 @@ export function EmployerAssignWorkspace({
                                 slotEndMinute: slot.end_minute,
                               })
                             }
-                            className={`w-full rounded-md px-2 py-2 text-left text-sm ${
+                            className={`w-full rounded-md px-2 py-2 text-left text-xl ${
                               selected
                                 ? "bg-stone-900 text-white"
                                 : "bg-sky-100 text-sky-950 hover:bg-sky-200"

@@ -40,7 +40,7 @@ export function TimeSelect({ label, name, required, defaultValue }: Props) {
   const value = `${hour}:${minute}`;
 
   return (
-    <div className="block space-y-1.5 text-sm">
+    <div className="block space-y-1.5 text-xl">
       <span className="text-stone-700">{label}</span>
       <input type="hidden" name={name} value={value} required={required} />
       <div className="flex items-center gap-2">
