@@ -125,11 +125,11 @@ export function EmployerAssignWorkspace({
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Link href={prevWeekHref} className="text-xl text-stone-600 underline">
             上週
           </Link>
-          <p className="text-xl font-medium">
+          <p className="min-w-0 flex-1 text-center text-xl font-medium">
             {coachName} · {week} – {weekEnd}
           </p>
           <Link href={nextWeekHref} className="text-xl text-stone-600 underline">
@@ -147,80 +147,85 @@ export function EmployerAssignWorkspace({
         <p className="text-sm text-stone-500">
           點選可返工時段以填入派更時間（結束時間為類型預設時長，不會超出該時段）。此週曆只讀。
         </p>
-        <div className="overflow-x-auto">
-          <div className="grid min-w-[1260px] grid-cols-7 overflow-hidden rounded-lg border border-stone-200">
-            {days.map((date, dayIndex) => {
-              const onLeave = leaveSet.has(date);
-              const daySlots = onLeave ? [] : (byDate.get(date) ?? []);
-              const columnFilled = onLeave || daySlots.length > 0;
-              return (
-                <section
-                  key={date}
-                  className={`min-h-64 border-l border-stone-200 first:border-l-0 ${
+        <div className="grid w-full grid-cols-7 overflow-hidden rounded-lg border border-stone-200">
+          {days.map((date, dayIndex) => {
+            const onLeave = leaveSet.has(date);
+            const daySlots = onLeave ? [] : (byDate.get(date) ?? []);
+            const columnFilled = onLeave || daySlots.length > 0;
+            return (
+              <section
+                key={date}
+                className={`min-h-64 min-w-0 border-l border-stone-200 first:border-l-0 ${
+                  onLeave
+                    ? "bg-rose-50"
+                    : columnFilled
+                      ? "bg-white"
+                      : "bg-stone-100"
+                }`}
+              >
+                <div
+                  className={`border-b border-stone-200 px-1 py-2 text-center ${
                     onLeave
-                      ? "bg-rose-50"
+                      ? "bg-rose-100"
                       : columnFilled
                         ? "bg-white"
-                        : "bg-stone-100"
-                  }`}
+                        : "bg-stone-200"
+                  } ${date === today ? "ring-2 ring-inset ring-sky-400" : ""}`}
                 >
-                  <div
-                    className={`border-b border-stone-200 px-3 py-3 text-center ${
-                      onLeave
-                        ? "bg-rose-100"
-                        : columnFilled
-                          ? "bg-white"
-                          : "bg-stone-200"
-                    } ${date === today ? "ring-2 ring-inset ring-sky-400" : ""}`}
-                  >
-                    <p className="font-semibold">
-                      星期{WEEKDAY_LABELS[dayIndex]}
+                  <p className="font-semibold">{WEEKDAY_LABELS[dayIndex]}</p>
+                  <p className="text-xl leading-tight text-stone-500">
+                    {date.slice(5)}
+                  </p>
+                </div>
+                <div className="space-y-2 p-1">
+                  {onLeave ? (
+                    <p className="rounded-md bg-rose-100 px-1 py-2 text-center text-sm font-medium text-rose-900">
+                      放假
                     </p>
-                    <p className="text-xl text-stone-500">{date.slice(5)}</p>
-                  </div>
-                  <div className="space-y-2 p-2">
-                    {onLeave ? (
-                      <p className="rounded-md bg-rose-100 px-2 py-2 text-center text-sm font-medium text-rose-900">
-                        放假
-                      </p>
-                    ) : daySlots.length === 0 ? (
-                      <p className="py-4 text-center text-sm font-medium text-stone-500">
-                        未報
-                      </p>
-                    ) : (
-                      daySlots.map((slot) => {
-                        const selected =
-                          selection?.date === date &&
-                          selection.startMinute === slot.start_minute &&
-                          selection.slotEndMinute === slot.end_minute;
-                        return (
-                          <button
-                            key={slot.id}
-                            type="button"
-                            onClick={() =>
-                              setSelection({
-                                date,
-                                startMinute: slot.start_minute,
-                                slotEndMinute: slot.end_minute,
-                              })
-                            }
-                            className={`w-full rounded-md px-2 py-2 text-left text-xl ${
-                              selected
-                                ? "bg-stone-900 text-white"
-                                : "bg-sky-100 text-sky-950 hover:bg-sky-200"
-                            }`}
-                          >
-                            {formatAvailabilityTime(slot.start_minute)} –{" "}
+                  ) : daySlots.length === 0 ? (
+                    <p className="py-4 text-center text-sm font-medium text-stone-500">
+                      未報
+                    </p>
+                  ) : (
+                    daySlots.map((slot) => {
+                      const selected =
+                        selection?.date === date &&
+                        selection.startMinute === slot.start_minute &&
+                        selection.slotEndMinute === slot.end_minute;
+                      return (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() =>
+                            setSelection({
+                              date,
+                              startMinute: slot.start_minute,
+                              slotEndMinute: slot.end_minute,
+                            })
+                          }
+                          className={`w-full min-w-0 rounded-md px-0.5 py-1.5 text-center text-xl leading-tight tabular-nums ${
+                            selected
+                              ? "bg-stone-900 text-white"
+                              : "bg-sky-100 text-sky-950 hover:bg-sky-200"
+                          }`}
+                        >
+                          <span className="block">
+                            {formatAvailabilityTime(slot.start_minute)}
+                          </span>
+                          <span className="block text-xs leading-none opacity-70">
+                            –
+                          </span>
+                          <span className="block">
                             {formatAvailabilityTime(slot.end_minute)}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+                          </span>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </div>
 
