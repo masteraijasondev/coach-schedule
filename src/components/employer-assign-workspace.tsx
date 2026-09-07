@@ -203,21 +203,14 @@ export function EmployerAssignWorkspace({
                               slotEndMinute: slot.end_minute,
                             })
                           }
-                          className={`w-full min-w-0 rounded-md px-0.5 py-1.5 text-center text-xl leading-tight tabular-nums ${
+                          className={`w-full min-w-0 rounded-md px-0.5 py-1.5 text-center text-sm tabular-nums ${
                             selected
                               ? "bg-stone-900 text-white"
                               : "bg-sky-100 text-sky-950 hover:bg-sky-200"
                           }`}
                         >
-                          <span className="block">
-                            {formatAvailabilityTime(slot.start_minute)}
-                          </span>
-                          <span className="block text-xs leading-none opacity-70">
-                            –
-                          </span>
-                          <span className="block">
-                            {formatAvailabilityTime(slot.end_minute)}
-                          </span>
+                          {formatAvailabilityTime(slot.start_minute)}–
+                          {formatAvailabilityTime(slot.end_minute)}
                         </button>
                       );
                     })

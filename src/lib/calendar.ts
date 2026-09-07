@@ -108,6 +108,46 @@ export function lessonDayKey(iso: string): string {
   return formatInTimeZone(iso, TIMEZONE, "yyyy-MM-dd");
 }
 
+export function lessonMinutesInHongKong(
+  startsAt: string,
+  endsAt: string,
+): { date: string; startMinute: number; endMinute: number } {
+  const date = formatInTimeZone(startsAt, TIMEZONE, "yyyy-MM-dd");
+  const startMinute =
+    Number(formatInTimeZone(startsAt, TIMEZONE, "H")) * 60 +
+    Number(formatInTimeZone(startsAt, TIMEZONE, "m"));
+  const endMinute =
+    Number(formatInTimeZone(endsAt, TIMEZONE, "H")) * 60 +
+    Number(formatInTimeZone(endsAt, TIMEZONE, "m"));
+  return { date, startMinute, endMinute };
+}
+
+export function availabilityOverlapsLessons(
+  date: string,
+  startMinute: number,
+  endMinute: number,
+  lessons: { starts_at: string; ends_at: string }[],
+): boolean {
+  return lessons.some((lesson) => {
+    const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    return (
+      range.date === date &&
+      range.startMinute < endMinute &&
+      range.endMinute > startMinute
+    );
+  });
+}
+
+export function dayHasLessonOnDate(
+  date: string,
+  lessons: { starts_at: string; ends_at: string }[],
+): boolean {
+  return lessons.some(
+    (lesson) =>
+      lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at).date === date,
+  );
+}
+
 export function getMonthCells(month: string): Date[] {
   const anchor = fromZonedTime(`${month}-01T12:00:00`, TIMEZONE);
   const start = startOfWeek(startOfMonth(anchor), { weekStartsOn: 0 });

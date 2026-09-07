@@ -13,7 +13,7 @@ const endOptions = Array.from(
 );
 
 const selectClass =
-  "w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-xl text-stone-900 outline-none focus:border-stone-500";
+  "w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 outline-none focus:border-stone-500";
 
 export function AvailabilityTimeFields({
   defaultStartMinute,
@@ -24,7 +24,7 @@ export function AvailabilityTimeFields({
 }) {
   return (
     <div className="grid grid-cols-2 gap-2">
-      <label className="space-y-1 text-xl">
+      <label className="space-y-1 text-sm">
         <span className="text-stone-600">開始</span>
         <select
           name="start_minute"
@@ -39,7 +39,7 @@ export function AvailabilityTimeFields({
           ))}
         </select>
       </label>
-      <label className="space-y-1 text-xl">
+      <label className="space-y-1 text-sm">
         <span className="text-stone-600">結束</span>
         <select
           name="end_minute"

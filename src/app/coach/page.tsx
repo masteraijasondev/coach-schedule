@@ -6,6 +6,7 @@ import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
 import {
+  availabilityOverlapsLessons,
   lessonDayKey,
   monthBoundsIso,
   monthGridDateRange,
@@ -117,9 +118,17 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const leaveDates = new Set(
     (leaves ?? []).map((leave) => leave.leave_date),
   );
+  const assignedLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "assigned" || lesson.status === "completed",
+  );
   const availabilityByDay = new Map<
     string,
-    { id: string; label: string; coachName: string; variant?: "slot" | "leave" }[]
+    {
+      id: string;
+      label: string;
+      coachName: string;
+      variant?: "slot" | "leave" | "assigned";
+    }[]
   >();
   for (const leave of leaves ?? []) {
     availabilityByDay.set(leave.leave_date, [
@@ -135,11 +144,19 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     if (leaveDates.has(availability.available_date)) {
       continue;
     }
+    const timeLabel = `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`;
+    const assigned = availabilityOverlapsLessons(
+      availability.available_date,
+      availability.start_minute,
+      availability.end_minute,
+      assignedLessons,
+    );
     const list = availabilityByDay.get(availability.available_date) ?? [];
     list.push({
       id: availability.id,
-      label: `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+      label: assigned ? `${timeLabel} ·已派更` : timeLabel,
       coachName: coach.full_name,
+      variant: assigned ? "assigned" : "slot",
     });
     availabilityByDay.set(availability.available_date, list);
   }

@@ -56,7 +56,7 @@ type CalendarAvailability = {
   id: string;
   label: string;
   coachName: string;
-  variant?: "slot" | "leave";
+  variant?: "slot" | "leave" | "assigned";
 };
 
 type Props = {
@@ -166,9 +166,11 @@ export function MonthCalendar({
                       className={`rounded-md px-1 py-0.5 text-center text-[10px] font-medium ${
                         availability.variant === "leave"
                           ? "border border-dashed border-rose-400 bg-rose-50 text-rose-800"
-                          : getCoachAvailabilityBadgeClass(
-                              availability.coachName,
-                            )
+                          : availability.variant === "assigned"
+                            ? "border border-emerald-400 bg-emerald-100 text-emerald-900"
+                            : getCoachAvailabilityBadgeClass(
+                                availability.coachName,
+                              )
                       }`}
                     >
                       {availability.label}

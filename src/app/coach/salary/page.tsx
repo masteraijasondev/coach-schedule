@@ -23,19 +23,43 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: lessons } = await supabase
     .from("lessons")
-    .select("*")
+    .select(
+      "id, lesson_type_id, starts_at, earned_amount_hkd, headcount, expected_headcount",
+    )
     .eq("coach_id", coach.id)
     .eq("status", "completed")
     .gte("starts_at", start)
     .lt("starts_at", end)
     .order("starts_at", { ascending: true });
 
+  const lessonIds = (lessons ?? []).map((lesson) => lesson.id);
   const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
-  const { data: types } = typeIds.length
-    ? await supabase.from("lesson_types").select("id, name, pay_mode").in("id", typeIds)
+  const [{ data: types }, { data: lessonStudents }] = await Promise.all([
+    typeIds.length
+      ? supabase
+          .from("lesson_types")
+          .select("id, name, pay_mode")
+          .in("id", typeIds)
+      : Promise.resolve({ data: [] }),
+    lessonIds.length
+      ? supabase
+          .from("lesson_students")
+          .select("lesson_id, student_id")
+          .in("lesson_id", lessonIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const studentIds = [
+    ...new Set((lessonStudents ?? []).map((row) => row.student_id)),
+  ];
+  const { data: students } = studentIds.length
+    ? await supabase.from("students").select("id, name").in("id", studentIds)
     : { data: [] };
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
+  const studentByLesson = new Map(
+    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
+  );
+  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
@@ -68,11 +92,13 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
         </p>
         <ul className="divide-y divide-stone-100">
           {(lessons ?? []).map((lesson) => {
+            const payMode = payModeByType.get(lesson.lesson_type_id);
             const sizeLabel = formatLessonSizeLabel(
-              payModeByType.get(lesson.lesson_type_id),
+              payMode,
               lesson.headcount,
               lesson.expected_headcount,
             );
+            const linkedStudentId = studentByLesson.get(lesson.id);
             return (
             <li key={lesson.id} className="flex justify-between gap-3 py-3">
               <div>
@@ -82,6 +108,14 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="text-xl text-stone-500">
                   {formatDateTime(lesson.starts_at)}
                 </p>
+                {payMode === "per_student" ? (
+                  <p className="text-sm text-stone-500">
+                    學生：
+                    {linkedStudentId
+                      ? (studentName.get(linkedStudentId) ?? "—")
+                      : "—"}
+                  </p>
+                ) : null}
                 {sizeLabel ? (
                   <p className="text-sm text-stone-500">{sizeLabel}</p>
                 ) : null}
