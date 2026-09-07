@@ -74,6 +74,12 @@ export function defaultLessonTimeSlot(now = new Date()): {
   return { start, end };
 }
 
+export type CalendarView = "month" | "week";
+
+export function parseCalendarView(raw?: string): CalendarView {
+  return raw === "week" ? "week" : "month";
+}
+
 export function parseMonthParam(month?: string): string {
   if (month && /^\d{4}-\d{2}$/.test(month)) {
     return month;

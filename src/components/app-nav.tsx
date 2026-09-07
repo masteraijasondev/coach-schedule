@@ -5,13 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type NavItem = { href: string; label: string };
+export type NavItem = { href: string; label: string; activeWhen?: string[] };
 
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/employer" || href === "/coach") {
-    return pathname === href || pathname === "/";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
+function isActive(pathname: string, item: NavItem): boolean {
+  const hrefs = item.activeWhen ?? [item.href];
+  return hrefs.some((href) => {
+    if (href === "/employer" || href === "/coach") {
+      return pathname === href || pathname === "/";
+    }
+    return pathname === href || pathname.startsWith(`${href}/`);
+  });
 }
 
 export function AppHeader({
@@ -66,7 +69,7 @@ export function AppHeader({
         } mx-auto max-w-6xl flex-col gap-1 border-t border-stone-100 px-4 py-2 md:flex md:flex-row md:flex-wrap md:border-t-0 md:pb-3 md:pt-0`}
       >
         {items.map((item) => {
-          const active = isActive(pathname, item.href);
+          const active = isActive(pathname, item);
           return (
             <Link
               key={item.href}

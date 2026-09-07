@@ -97,14 +97,14 @@ export default async function EmployerCoachSalaryPage({
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/employer/salary/${coachId}?month=${prev}`}
-            className="text-xl text-stone-600 underline"
+            className="text-sm text-stone-600 underline"
           >
             上期
           </Link>
           <p className="text-lg font-semibold">{formatMoney(total)}</p>
           <Link
             href={`/employer/salary/${coachId}?month=${next}`}
-            className="text-xl text-stone-600 underline"
+            className="text-sm text-stone-600 underline"
           >
             下期
           </Link>
@@ -141,7 +141,7 @@ export default async function EmployerCoachSalaryPage({
                     <p className="font-medium">
                       {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
                     </p>
-                    <p className="text-xl text-stone-500">
+                    <p className="text-sm tabular-nums text-stone-500">
                       {formatDateTime(lesson.starts_at)}
                     </p>
                     {linkedStudentId ? (

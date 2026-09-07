@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
 import { cancelLessonAction } from "@/actions/lessons";
-import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
+import { CalendarViewToggle } from "@/components/calendar-view-toggle";
+import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EmployerAssignPanel } from "@/components/employer-assign-panel";
+import { EmployerCoachPicker } from "@/components/employer-coach-picker";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
+import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import {
+  availabilityWeekDays,
+  availabilityWeekStart,
+  hongKongToday,
   lessonDayKey,
   monthBoundsIso,
   monthGridDateRange,
+  overlappingLesson,
+  parseCalendarView,
+  parseAvailabilityWeekParam,
   parseDayParam,
   parseMonthParam,
+  payrollPeriodForDate,
+  shiftAvailabilityWeek,
 } from "@/lib/calendar";
+import { employerCalendarHref } from "@/lib/employer-href";
 import {
   formatAvailabilityTime,
   formatDateTime,
@@ -20,12 +33,41 @@ import {
   lessonStatusLabel,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 
 type Props = {
-  searchParams: Promise<{ month?: string; day?: string }>;
+  searchParams: Promise<{
+    month?: string;
+    day?: string;
+    coach?: string;
+    week?: string;
+    view?: string;
+    slotStart?: string;
+    slotEnd?: string;
+  }>;
 };
 
-export async function generateMetadata({  }: Props): Promise<Metadata> {
+function nestedStudentName(related: {
+  students: { name: string } | { name: string }[] | null;
+}): string | null {
+  if (!related.students) {
+    return null;
+  }
+  if (Array.isArray(related.students)) {
+    return related.students[0]?.name ?? null;
+  }
+  return related.students.name;
+}
+
+function parseMinuteParam(raw?: string): number | null {
+  if (raw == null || raw === "") {
+    return null;
+  }
+  const value = Number(raw);
+  return Number.isInteger(value) ? value : null;
+}
+
+export async function generateMetadata({}: Props): Promise<Metadata> {
   return {
     title: `全體教練日曆`,
   };
@@ -36,21 +78,32 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const params = await searchParams;
   const month = parseMonthParam(params.month);
   const day = parseDayParam(params.day, month);
+  const today = hongKongToday();
+  const week = parseAvailabilityWeekParam(params.week ?? day);
+  const currentWeek = availabilityWeekStart();
+  const days = availabilityWeekDays(week);
+  const weekEnd = days[6];
+  const prevWeek = shiftAvailabilityWeek(week, -1);
+  const nextWeek = shiftAvailabilityWeek(week, 1);
   const { start, end } = monthBoundsIso(month);
   const gridRange = monthGridDateRange(month);
+  const slotStart = parseMinuteParam(params.slotStart);
+  const slotEnd = parseMinuteParam(params.slotEnd);
+  const view = parseCalendarView(params.view);
 
   const supabase = await createClient();
   const [
     { data: lessons },
     { data: types },
     { data: coaches },
-    { data: students },
     { data: availabilities },
     { data: leaves },
   ] = await Promise.all([
     supabase
       .from("lessons")
-      .select("*")
+      .select(
+        "id, lesson_type_id, coach_id, starts_at, ends_at, status, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount, lesson_students ( students ( name ) )",
+      )
       .neq("status", "cancelled")
       .gte("starts_at", start)
       .lt("starts_at", end)
@@ -66,11 +119,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .eq("role", "coach")
       .order("full_name"),
     supabase
-      .from("students")
-      .select("id, name")
-      .eq("active", true)
-      .order("name"),
-    supabase
       .from("staff_availabilities")
       .select("id, coach_id, available_date, start_minute, end_minute")
       .gte("available_date", gridRange.start)
@@ -83,33 +131,23 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .lte("leave_date", gridRange.end),
   ]);
 
-  const lessonIds = (lessons ?? []).map((l) => l.id);
-  const { data: lessonStudents } =
-    lessonIds.length > 0
-      ? await supabase
-          .from("lesson_students")
-          .select("lesson_id, student_id")
-          .in("lesson_id", lessonIds)
-      : { data: [] };
-
-  const studentByLesson = new Map(
-    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
-  );
-  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const coachMap = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
-  const countsByDay = new Map<string, number>();
   const lessonsByDay = new Map<
     string,
-    { id: string; coachName: string; status?: string }[]
+    { id: string; coachName: string; status?: string; timeLabel?: string }[]
   >();
   for (const lesson of lessons ?? []) {
     const key = lessonDayKey(lesson.starts_at);
-    countsByDay.set(key, (countsByDay.get(key) ?? 0) + 1);
     const coachName = lesson.coach_id ? coachMap.get(lesson.coach_id) ?? "—" : "—";
     const list = lessonsByDay.get(key) ?? [];
-    list.push({ id: lesson.id, coachName, status: lesson.status });
+    list.push({
+      id: lesson.id,
+      coachName,
+      status: lesson.status,
+      timeLabel: `${formatDateTime(lesson.starts_at).slice(11)}–${formatDateTime(lesson.ends_at).slice(11)}`,
+    });
     lessonsByDay.set(key, list);
   }
 
@@ -122,8 +160,17 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   );
   const availabilityByDay = new Map<
     string,
-    { id: string; label: string; coachName: string; variant?: "slot" | "leave" }[]
+    {
+      id: string;
+      label: string;
+      coachName: string;
+      timeLabel?: string;
+      variant?: "slot" | "leave" | "pending" | "confirmed";
+    }[]
   >();
+  const shiftLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "assigned" || lesson.status === "completed",
+  );
   for (const leave of leaves ?? []) {
     const coachName = coachMap.get(leave.coach_id) ?? "—";
     const list = availabilityByDay.get(leave.leave_date) ?? [];
@@ -144,11 +191,24 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       continue;
     }
     const coachName = coachMap.get(availability.coach_id) ?? "—";
+    const overlap = overlappingLesson(
+      availability.available_date,
+      availability.start_minute,
+      availability.end_minute,
+      shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
+    );
     const list = availabilityByDay.get(availability.available_date) ?? [];
     list.push({
       id: availability.id,
       label: `${coachName} ${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
       coachName,
+      timeLabel: formatAvailabilityTime(availability.start_minute),
+      variant:
+        overlap?.status === "assigned"
+          ? "pending"
+          : overlap?.status === "completed"
+            ? "confirmed"
+            : "slot",
     });
     availabilityByDay.set(availability.available_date, list);
   }
@@ -191,134 +251,406 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       coachName: coachMap.get(leave.coach_id) ?? "—",
     }));
 
+  const selectedCoach =
+    (coaches ?? []).find((coach) => coach.id === params.coach) ?? null;
+  const lessonTypes = (types ?? []).map((type) => ({
+    id: type.id,
+    name: type.name,
+    pay_mode: type.pay_mode,
+    default_duration_minutes: type.default_duration_minutes,
+  }));
+  const weekInGrid = days.every(
+    (date) => date >= gridRange.start && date <= gridRange.end,
+  );
+  const assignSlots =
+    selectedCoach && weekInGrid
+      ? (availabilities ?? []).filter(
+          (slot) =>
+            slot.coach_id === selectedCoach.id &&
+            slot.available_date >= week &&
+            slot.available_date <= weekEnd,
+        )
+      : undefined;
+  const assignLeaveDates =
+    selectedCoach && weekInGrid
+      ? (leaves ?? [])
+          .filter(
+            (leave) =>
+              leave.coach_id === selectedCoach.id &&
+              leave.leave_date >= week &&
+              leave.leave_date <= weekEnd,
+          )
+          .map((leave) => leave.leave_date)
+      : undefined;
+  const initialSelection =
+    selectedCoach && slotStart != null && slotEnd != null
+      ? { date: day, startMinute: slotStart, slotEndMinute: slotEnd }
+      : null;
+  const salaryHref = (coachId: string) =>
+    `/employer/salary/${coachId}?month=${payrollPeriodForDate(day)}`;
+  const monthViewHref = employerCalendarHref({
+    month,
+    day,
+    coach: selectedCoach?.id,
+    week,
+  });
+  const weekViewHref = employerCalendarHref({
+    month,
+    day,
+    coach: selectedCoach?.id,
+    week: availabilityWeekStart(day),
+    view: "week",
+  });
+  const selectedAssignGroup =
+    initialSelection && selectedCoach
+      ? dayAvailabilities.find((group) => group.coachId === selectedCoach.id)
+      : undefined;
+  const showAssignForm =
+    initialSelection != null &&
+    selectedAssignGroup != null &&
+    selectedAssignGroup.slots.some(
+      (slot) =>
+        slot.start === initialSelection.startMinute &&
+        slot.end === initialSelection.slotEndMinute &&
+        !overlappingLesson(
+          day,
+          slot.start,
+          slot.end,
+          dayLessons.filter((lesson) => lesson.coach_id === selectedCoach?.id),
+        ),
+    );
+
   return (
     <div className="space-y-6">
-      <Panel title="全體教練日曆">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-base font-semibold">全體教練日曆</h1>
+        <CalendarViewToggle
+          view={view}
+          monthHref={monthViewHref}
+          weekHref={weekViewHref}
+        />
+      </div>
+
+      {view === "month" ? (
+      <Panel title="月曆">
+        <p className="mb-3 text-sm text-stone-500">
+          格內最多顯示兩項。點選日期後，全部詳情在下方。員工確認後才計入薪資。
+        </p>
         <MonthCalendar
           month={month}
           selectedDay={day}
           basePath="/employer"
-          countsByDay={countsByDay}
           lessonsByDay={lessonsByDay}
           availabilityByDay={availabilityByDay}
+          showNames
+          todayHref={`${employerCalendarHref({
+            month: today.slice(0, 7),
+            day: today,
+            coach: selectedCoach?.id,
+            week: selectedCoach ? availabilityWeekStart(today) : undefined,
+          })}#day`}
+          monthHref={(target) =>
+            employerCalendarHref({
+              month: target,
+              coach: selectedCoach?.id,
+              week,
+            })
+          }
+          dayHref={(target) =>
+            `${employerCalendarHref({
+              month: target.slice(0, 7),
+              day: target,
+              coach: selectedCoach?.id,
+              week: selectedCoach
+                ? availabilityWeekStart(target)
+                : week,
+            })}#day`
+          }
         />
       </Panel>
-      
-      <Panel title={`${day} 的課堂`}>
-        <ul className="divide-y divide-stone-100">
-          {dayLessons.map((lesson) => {
-            const linkedStudentId = studentByLesson.get(lesson.id);
-            const sizeLabel = formatLessonSizeLabel(
-              payModeByType.get(lesson.lesson_type_id),
-              lesson.headcount,
-              lesson.expected_headcount,
-            );
-            return (
-              <li key={lesson.id} className="space-y-2 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">
-                      {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
-                      {lessonStatusLabel(lesson.status)}
-                    </p>
-                    <p className="text-xl text-stone-500">
-                      {formatDateTime(lesson.starts_at)} –{" "}
-                      {formatDateTime(lesson.ends_at).slice(11)}
-                    </p>
-                    <p className="text-sm text-stone-500">
-                      教練：
-                      {lesson.coach_id
-                        ? (coachMap.get(lesson.coach_id) ?? "—")
-                        : "—"}
-                    </p>
-                    {linkedStudentId ? (
-                      <p className="text-sm text-stone-500">
-                        學生：{studentName.get(linkedStudentId) ?? "—"}
-                      </p>
-                    ) : null}
-                    {sizeLabel ? (
-                      <p className="text-sm text-stone-500">{sizeLabel}</p>
-                    ) : null}
-                    {payModeByType.get(lesson.lesson_type_id) === "per_student" ? (
-                      <p className="text-sm text-stone-500">
-                        學生學費：{formatMoneyOrPending(lesson.student_fee_hkd)}
-                      </p>
-                    ) : null}
-                    <p
-                      className={
-                        lesson.earned_amount_hkd == null
-                          ? "text-sm text-amber-700"
-                          : "text-sm text-emerald-700"
-                      }
-                    >
-                      教練薪資：{formatMoneyOrPending(lesson.earned_amount_hkd)}
-                    </p>
-                  </div>
-                  {lesson.status !== "cancelled" ? (
-                    <ServerActionButton
-                      action={cancelLessonAction.bind(null, lesson.id)}
-                      confirmMessage="確定取消此課堂？將不再計入薪資。"
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 disabled:opacity-60"
-                    >
-                      取消
-                    </ServerActionButton>
-                  ) : null}
-                </div>
-                {lesson.status !== "cancelled" ? (
-                  <EmployerLessonFeeForm
-                    lessonId={lesson.id}
-                    studentFeeHkd={
-                      lesson.student_fee_hkd == null
-                        ? null
-                        : Number(lesson.student_fee_hkd)
-                    }
-                    earnedAmountHkd={
-                      lesson.earned_amount_hkd == null
-                        ? null
-                        : Number(lesson.earned_amount_hkd)
-                    }
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-          {dayLessons.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">這天尚未有課堂</li>
-          ) : null}
-        </ul>
+      ) : (
+      <Panel title="週曆">
+        <p className="mb-3 text-sm text-stone-500">
+          選擇員工查看本週可返工。點選時段即可派更。
+        </p>
+        <EmployerCoachPicker
+          coaches={coaches ?? []}
+          selectedCoachId={selectedCoach?.id}
+          month={month}
+          day={day}
+          week={week}
+          view={view}
+        />
       </Panel>
+      )}
 
-      <Panel title={`${day} 可返工／放假`}>
-        <ul className="divide-y divide-stone-100">
-          {dayLeaves.map((leave) => (
-            <li key={leave.id} className="py-3">
-              <p className="font-medium">{leave.coachName}</p>
-              <p className="mt-1 text-sm text-rose-800">全日放假</p>
-            </li>
-          ))}
-          {dayAvailabilities.map((group) => (
-            <li key={group.coachId} className="py-3">
-              <p className="font-medium">{group.coachName}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {group.slots.map((slot) => (
-                  <span
-                    key={slot.id}
-                    className="rounded-md border border-dashed border-sky-300 bg-sky-50 px-2 py-1 text-xl text-sky-900"
-                  >
-                    {formatAvailabilityTime(slot.start)}–
-                    {formatAvailabilityTime(slot.end)}
-                  </span>
-                ))}
-              </div>
-            </li>
-          ))}
-          {dayLeaves.length === 0 && dayAvailabilities.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">
-              這天尚未有人報可返工或放假
-            </li>
-          ) : null}
-        </ul>
-      </Panel>
+      {view === "week" && selectedCoach ? (
+        <EmployerAssignPanel
+          coachId={selectedCoach.id}
+          coachName={selectedCoach.full_name}
+          month={month}
+          week={week}
+          weekEnd={weekEnd}
+          days={days}
+          today={today}
+          selectedDay={day}
+          selectedSlot={initialSelection}
+          prevWeekHref={employerCalendarHref({
+            month,
+            day,
+            coach: selectedCoach.id,
+            week: prevWeek,
+            view: "week",
+          })}
+          nextWeekHref={employerCalendarHref({
+            month,
+            day,
+            coach: selectedCoach.id,
+            week: nextWeek,
+            view: "week",
+          })}
+          currentWeekHref={employerCalendarHref({
+            month,
+            day,
+            coach: selectedCoach.id,
+            week: currentWeek,
+            view: "week",
+          })}
+          isCurrentWeek={week === currentWeek}
+          slots={assignSlots}
+          leaveDates={assignLeaveDates}
+          view="week"
+        />
+      ) : null}
+
+      {view === "week" && showAssignForm && initialSelection && selectedCoach ? (
+        <section id="day" className="scroll-mt-4">
+          <Panel title="派更">
+            <EnsureStudentDirectory />
+            <EmployerAssignForm
+              coachId={selectedCoach.id}
+              coachName={selectedCoach.full_name}
+              types={lessonTypes}
+              date={initialSelection.date}
+              startMinute={initialSelection.startMinute}
+              slotEndMinute={initialSelection.slotEndMinute}
+              clearHref={employerCalendarHref({
+                month,
+                day,
+                coach: selectedCoach.id,
+                week: availabilityWeekStart(day),
+                view: "week",
+              })}
+            />
+          </Panel>
+        </section>
+      ) : null}
+
+      {view === "month" ? (
+      <section id="day" className="scroll-mt-4">
+        <Panel title={day}>
+          <ul className="divide-y divide-stone-100">
+            {dayLessons.map((lesson) => {
+              const studentNames = (lesson.lesson_students ?? [])
+                .map(nestedStudentName)
+                .filter((name): name is string => Boolean(name));
+              const sizeLabel = formatLessonSizeLabel(
+                payModeByType.get(lesson.lesson_type_id),
+                lesson.headcount,
+                lesson.expected_headcount,
+              );
+              const pending = lesson.status === "assigned";
+              return (
+                <li key={lesson.id} className="space-y-2 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-medium">
+                        {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
+                        {lessonStatusLabel(lesson.status)}
+                      </p>
+                      <p className="text-sm tabular-nums text-stone-500">
+                        {formatDateTime(lesson.starts_at)} –{" "}
+                        {formatDateTime(lesson.ends_at).slice(11)}
+                      </p>
+                      <p className="text-sm text-stone-500">
+                        教練：
+                        {lesson.coach_id
+                          ? (coachMap.get(lesson.coach_id) ?? "—")
+                          : "—"}
+                      </p>
+                      {studentNames.length > 0 ? (
+                        <p className="text-sm text-stone-500">
+                          學生：{studentNames.join("、")}
+                        </p>
+                      ) : null}
+                      {sizeLabel ? (
+                        <p className="text-sm text-stone-500">{sizeLabel}</p>
+                      ) : null}
+                      <p
+                        className={
+                          pending
+                            ? "text-sm text-amber-700"
+                            : "text-sm text-emerald-700"
+                        }
+                      >
+                        {pending
+                          ? "待員工確認後才計薪"
+                          : `教練薪資：${formatMoneyOrPending(lesson.earned_amount_hkd)}`}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {lesson.coach_id && !pending ? (
+                        <Link
+                          href={salaryHref(lesson.coach_id)}
+                          className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 py-1.5 text-sm"
+                        >
+                          改價錢
+                        </Link>
+                      ) : null}
+                      {lesson.status !== "cancelled" ? (
+                        <ServerActionButton
+                          action={cancelLessonAction.bind(null, lesson.id)}
+                          confirmMessage="確定取消此課堂？將不再計入薪資。"
+                          className="min-h-11 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 disabled:opacity-60"
+                        >
+                          取消
+                        </ServerActionButton>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+            {dayLessons.length === 0 ? (
+              <li className="py-3 text-sm text-stone-500">這天尚未有課堂</li>
+            ) : null}
+          </ul>
+
+          <div className="mt-4 border-t border-stone-100 pt-4">
+            <p className="mb-3 text-sm text-stone-500">當日可返工／放假時段；點選可返工即可派更。</p>
+            <ul className="divide-y divide-stone-100">
+              {dayLeaves.map((leave) => (
+                <li key={leave.id} className="py-3">
+                  <p className="font-medium">{leave.coachName}</p>
+                  <p className="mt-1 text-sm text-rose-800">全日放假</p>
+                </li>
+              ))}
+              {dayAvailabilities.map((group) => {
+                const coachDayLessons = dayLessons.filter(
+                  (lesson) => lesson.coach_id === group.coachId,
+                );
+                const selectedSlotOpen =
+                  initialSelection != null &&
+                  selectedCoach?.id === group.coachId &&
+                  group.slots.some(
+                    (slot) =>
+                      slot.start === initialSelection.startMinute &&
+                      slot.end === initialSelection.slotEndMinute &&
+                      !overlappingLesson(
+                        day,
+                        slot.start,
+                        slot.end,
+                        coachDayLessons,
+                      ),
+                  );
+                return (
+                  <li key={group.coachId} className="space-y-3 py-3">
+                    <p className="font-medium">{group.coachName}</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.slots.map((slot) => {
+                        const overlap = overlappingLesson(
+                          day,
+                          slot.start,
+                          slot.end,
+                          coachDayLessons,
+                        );
+                        const selected =
+                          selectedCoach?.id === group.coachId &&
+                          slotStart === slot.start &&
+                          slotEnd === slot.end;
+                        if (overlap) {
+                          const pending = overlap.status === "assigned";
+                          const studentNames = (overlap.lesson_students ?? [])
+                            .map(nestedStudentName)
+                            .filter((name): name is string => Boolean(name));
+                          return (
+                            <span
+                              key={slot.id}
+                              className={`rounded-md px-2 py-2 text-sm ${
+                                pending
+                                  ? "bg-amber-100 text-amber-950"
+                                  : "bg-emerald-100 text-emerald-950"
+                              }`}
+                            >
+                              <span className="tabular-nums">
+                                {formatAvailabilityTime(slot.start)}–
+                                {formatAvailabilityTime(slot.end)}
+                              </span>{" "}
+                              {pending ? "待確認" : "已確認"}
+                              {typeMap.get(overlap.lesson_type_id)
+                                ? ` ·${typeMap.get(overlap.lesson_type_id)}`
+                                : ""}
+                              {studentNames.length > 0
+                                ? ` ·${studentNames.join("、")}`
+                                : ""}
+                            </span>
+                          );
+                        }
+                        return (
+                          <a
+                            key={slot.id}
+                            href={`${employerCalendarHref({
+                              month,
+                              day,
+                              coach: group.coachId,
+                              week: availabilityWeekStart(day),
+                              slotStart: slot.start,
+                              slotEnd: slot.end,
+                            })}#day`}
+                            className={`min-h-11 rounded-md border border-dashed px-2 py-2 text-sm tabular-nums ${
+                              selected
+                                ? "border-stone-900 bg-stone-900 text-white"
+                                : "border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100"
+                            }`}
+                          >
+                            {formatAvailabilityTime(slot.start)}–
+                            {formatAvailabilityTime(slot.end)} 可返工
+                          </a>
+                        );
+                      })}
+                    </div>
+                    {selectedSlotOpen && initialSelection ? (
+                      <>
+                        <EnsureStudentDirectory />
+                        <EmployerAssignForm
+                          coachId={group.coachId}
+                          coachName={group.coachName}
+                          types={lessonTypes}
+                          date={initialSelection.date}
+                          startMinute={initialSelection.startMinute}
+                          slotEndMinute={initialSelection.slotEndMinute}
+                          clearHref={employerCalendarHref({
+                            month,
+                            day,
+                            coach: group.coachId,
+                            week: availabilityWeekStart(day),
+                          })}
+                        />
+                      </>
+                    ) : null}
+                  </li>
+                );
+              })}
+              {dayLeaves.length === 0 && dayAvailabilities.length === 0 ? (
+                <li className="py-3 text-sm text-stone-500">
+                  這天尚未有人報可返工或放假
+                </li>
+              ) : null}
+            </ul>
+          </div>
+        </Panel>
+      </section>
+      ) : null}
     </div>
   );
 }

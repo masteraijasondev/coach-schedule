@@ -2,19 +2,24 @@
 
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useStudentDirectory } from "@/components/student-directory-provider";
+import { employerCalendarHref } from "@/lib/employer-href";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 
 export function EmployerCoachPicker({
   coaches,
   selectedCoachId,
+  month,
+  day,
   week,
-  listWeek,
+  view,
 }: {
   coaches: { id: string; full_name: string }[];
   selectedCoachId?: string;
+  month?: string;
+  day?: string;
   week?: string;
-  listWeek?: string;
+  view?: "month" | "week";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -23,7 +28,7 @@ export function EmployerCoachPicker({
   return (
     <div className="flex max-w-sm items-end gap-3">
       <label className="block min-w-0 flex-1 space-y-1 text-sm">
-        <span className="text-stone-700 text-xl">員工</span>
+        <span className="text-stone-700">員工</span>
         <select
           value={selectedCoachId ?? ""}
           disabled={pending}
@@ -34,18 +39,15 @@ export function EmployerCoachPicker({
               void ensureStudents();
             }
             startTransition(() => {
-              if (!coachId) {
-                router.push("/employer/lessons");
-                return;
-              }
-              const query = new URLSearchParams({ coach: coachId });
-              if (week) {
-                query.set("week", week);
-              }
-              if (listWeek) {
-                query.set("listWeek", listWeek);
-              }
-              router.push(`/employer/lessons?${query.toString()}`);
+              router.push(
+                employerCalendarHref({
+                  month,
+                  day,
+                  coach: coachId || undefined,
+                  week: coachId ? week : undefined,
+                  view,
+                }),
+              );
             });
           }}
           className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500 disabled:cursor-not-allowed disabled:opacity-70"

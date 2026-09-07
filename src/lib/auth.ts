@@ -1,8 +1,9 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
 import { redirect } from "next/navigation";
 
-export async function requireProfile(): Promise<Profile> {
+export const requireProfile = cache(async (): Promise<Profile> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,7 +15,7 @@ export async function requireProfile(): Promise<Profile> {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, email, full_name, role, must_change_password, created_at")
     .eq("id", user.id)
     .single();
 
@@ -23,7 +24,7 @@ export async function requireProfile(): Promise<Profile> {
   }
 
   return profile as Profile;
-}
+});
 
 export async function requireEmployer(): Promise<Profile> {
   const profile = await requireProfile();

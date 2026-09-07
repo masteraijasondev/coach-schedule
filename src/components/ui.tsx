@@ -18,7 +18,7 @@ export function Field({
   min,
 }: Props) {
   return (
-    <label className={`block space-y-1 ${type === "date" ? "text-xl" : "text-sm"}`}>
+    <label className="block space-y-1 text-sm">
       <span className="text-stone-700">{label}</span>
       <input
         name={name}

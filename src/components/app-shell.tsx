@@ -1,6 +1,4 @@
-import { AppHeader } from "@/components/app-nav";
-
-type NavItem = { href: string; label: string };
+import { AppHeader, type NavItem } from "@/components/app-nav";
 
 type Props = {
   title: string;

@@ -1,5 +1,6 @@
 import { upsertCoachRateAction } from "@/actions/rates";
 import { ActionForm } from "@/components/action-form";
+import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { formatMoney } from "@/lib/format";
@@ -36,6 +37,8 @@ export default async function RatesPage() {
   }
 
   return (
+    <div className="space-y-6">
+      <EmployerSettingsBackLink />
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="設定教練薪資（MIIT 每人 / PTA·Admin 每小時）">
         <ActionForm action={upsertCoachRateAction} className="space-y-3">
@@ -91,6 +94,7 @@ export default async function RatesPage() {
           ) : null}
         </ul>
       </Panel>
+    </div>
     </div>
   );
 }

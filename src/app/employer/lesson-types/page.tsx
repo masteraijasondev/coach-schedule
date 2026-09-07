@@ -3,6 +3,7 @@ import {
   toggleLessonTypeActiveAction,
 } from "@/actions/lesson-types";
 import { ActionForm } from "@/components/action-form";
+import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,8 @@ export default async function LessonTypesPage() {
     .order("name");
 
   return (
+    <div className="space-y-6">
+      <EmployerSettingsBackLink />
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="新增課堂類型">
         <ActionForm action={createLessonTypeAction} className="space-y-3">
@@ -84,6 +87,7 @@ export default async function LessonTypesPage() {
           ) : null}
         </ul>
       </Panel>
+    </div>
     </div>
   );
 }

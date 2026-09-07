@@ -1,5 +1,6 @@
 import { createStudentAction, toggleStudentActiveAction } from "@/actions/students";
 import { ActionForm } from "@/components/action-form";
+import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,8 @@ export default async function StudentsPage() {
     .order("name");
 
   return (
+    <div className="space-y-6">
+      <EmployerSettingsBackLink />
     <div className="grid gap-6 lg:grid-cols-2">
       <Panel title="新增學生">
         <ActionForm action={createStudentAction} className="space-y-3">
@@ -55,6 +58,7 @@ export default async function StudentsPage() {
           ) : null}
         </ul>
       </Panel>
+    </div>
     </div>
   );
 }
