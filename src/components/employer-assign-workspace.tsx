@@ -1,12 +1,22 @@
 "use client";
 
 import { CalendarLegend } from "@/components/calendar-legend";
+import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import { availabilityWeekStart, overlappingLesson } from "@/lib/calendar";
+import {
+  isModifiedClick,
+  replaceCalendarHref,
+  scrollToCalendarDay,
+  useCalendarSelection,
+} from "@/lib/calendar-history";
 import { employerCalendarHref } from "@/lib/employer-href";
 import { formatAvailabilityTime } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
+import type { PayMode } from "@/lib/types";
 import Link from "next/link";
+import type { MouseEvent } from "react";
 
 type AvailabilitySlot = {
   id: string;
@@ -28,6 +38,13 @@ type WeekLesson = {
   status?: string;
 };
 
+type LessonTypeOption = {
+  id: string;
+  name: string;
+  pay_mode: PayMode;
+  default_duration_minutes: number;
+};
+
 export function EmployerAssignWorkspace({
   coachId,
   coachName,
@@ -45,6 +62,7 @@ export function EmployerAssignWorkspace({
   lessons,
   selectedDay,
   selectedSlot,
+  types,
   view,
   nowMinute,
 }: {
@@ -64,9 +82,28 @@ export function EmployerAssignWorkspace({
   lessons: WeekLesson[];
   selectedDay?: string;
   selectedSlot?: SlotSelection | null;
+  types: LessonTypeOption[];
   view?: "month" | "week";
   nowMinute: number | null;
 }) {
+  const [selection, setSelection] = useCalendarSelection(
+    month,
+    {
+      day: selectedSlot?.date ?? selectedDay ?? week,
+      coachId,
+      slotStart: selectedSlot?.startMinute ?? null,
+      slotEnd: selectedSlot?.slotEndMinute ?? null,
+    },
+    false,
+  );
+  const liveSlot =
+    selection.slotStart != null && selection.slotEnd != null
+      ? {
+          date: selection.day,
+          startMinute: selection.slotStart,
+          slotEndMinute: selection.slotEnd,
+        }
+      : null;
   const leaveSet = new Set(leaveDates);
   const { start: gridStart, end: gridEnd } = weekGridRange(slots);
   const byDate = new Map<string, AvailabilitySlot[]>();
@@ -74,6 +111,51 @@ export function EmployerAssignWorkspace({
     const list = byDate.get(slot.available_date) ?? [];
     list.push(slot);
     byDate.set(slot.available_date, list);
+  }
+
+  const openSlot =
+    liveSlot != null &&
+    slots.some(
+      (slot) =>
+        slot.available_date === liveSlot.date &&
+        slot.start_minute === liveSlot.startMinute &&
+        slot.end_minute === liveSlot.slotEndMinute &&
+        !overlappingLesson(
+          liveSlot.date,
+          liveSlot.startMinute,
+          liveSlot.slotEndMinute,
+          lessons,
+        ),
+    );
+
+  function selectSlot(
+    event: MouseEvent<HTMLAnchorElement>,
+    date: string,
+    start: number,
+    end: number,
+  ) {
+    if (isModifiedClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    setSelection({
+      day: date,
+      coachId,
+      slotStart: start,
+      slotEnd: end,
+    });
+    replaceCalendarHref(
+      `${employerCalendarHref({
+        month,
+        day: date,
+        coach: coachId,
+        week: availabilityWeekStart(date),
+        slotStart: start,
+        slotEnd: end,
+        view,
+      })}#day`,
+    );
+    scrollToCalendarDay();
   }
 
   return (
@@ -101,7 +183,7 @@ export function EmployerAssignWorkspace({
       <WeekTimeGrid
         days={days}
         today={today}
-        selectedDay={selectedDay}
+        selectedDay={selection.day}
         gridStart={gridStart}
         gridEnd={gridEnd}
         nowMinute={days.includes(today) ? nowMinute : null}
@@ -126,9 +208,9 @@ export function EmployerAssignWorkspace({
             const pending = overlap?.status === "assigned";
             const confirmed = overlap?.status === "completed";
             const selected =
-              selectedSlot?.date === date &&
-              selectedSlot.startMinute === slot.start_minute &&
-              selectedSlot.slotEndMinute === slot.end_minute;
+              liveSlot?.date === date &&
+              liveSlot.startMinute === slot.start_minute &&
+              liveSlot.slotEndMinute === slot.end_minute;
             const { top, height } = eventPosition(
               slot.start_minute,
               slot.end_minute,
@@ -170,6 +252,9 @@ export function EmployerAssignWorkspace({
                   slotEnd: slot.end_minute,
                   view,
                 })}#day`}
+                onClick={(event) =>
+                  selectSlot(event, date, slot.start_minute, slot.end_minute)
+                }
                 title={`${label} 可返工`}
                 className={`absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                 style={{ top, height }}
@@ -181,6 +266,26 @@ export function EmployerAssignWorkspace({
           });
         }}
       />
+      {openSlot && liveSlot ? (
+        <section id="day" className="scroll-mt-4">
+          <EnsureStudentDirectory />
+          <EmployerAssignForm
+            coachId={coachId}
+            coachName={coachName}
+            types={types}
+            date={liveSlot.date}
+            startMinute={liveSlot.startMinute}
+            slotEndMinute={liveSlot.slotEndMinute}
+            clearHref={employerCalendarHref({
+              month,
+              day: liveSlot.date,
+              coach: coachId,
+              week: availabilityWeekStart(liveSlot.date),
+              view,
+            })}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }

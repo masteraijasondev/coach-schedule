@@ -2,6 +2,18 @@ import { formatInTimeZone } from "date-fns-tz";
 import { TIMEZONE, CURRENCY_LABEL } from "@/lib/constants";
 import type { LessonStatus, PayMode, RequestStatus } from "@/lib/types";
 
+export function nestedStudentName(related: {
+  students: { name: string } | { name: string }[] | null;
+}): string | null {
+  if (!related.students) {
+    return null;
+  }
+  if (Array.isArray(related.students)) {
+    return related.students[0]?.name ?? null;
+  }
+  return related.students.name;
+}
+
 export function formatDateTime(iso: string): string {
   return formatInTimeZone(iso, TIMEZONE, "yyyy-MM-dd HH:mm");
 }

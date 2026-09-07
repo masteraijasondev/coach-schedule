@@ -80,6 +80,14 @@ export function parseCalendarView(raw?: string): CalendarView {
   return raw === "week" ? "week" : "month";
 }
 
+export function parseMinuteParam(raw?: string | null): number | null {
+  if (raw == null || raw === "") {
+    return null;
+  }
+  const value = Number(raw);
+  return Number.isInteger(value) ? value : null;
+}
+
 export function parseMonthParam(month?: string): string {
   if (month && /^\d{4}-\d{2}$/.test(month)) {
     return month;

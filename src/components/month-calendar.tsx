@@ -1,5 +1,9 @@
+"use client";
+
 import { CalendarLegend } from "@/components/calendar-legend";
+import { isModifiedClick } from "@/lib/calendar-history";
 import Link from "next/link";
+import type { MouseEvent } from "react";
 import {
   formatCellDay,
   getMonthCells,
@@ -126,6 +130,7 @@ type Props = {
   monthHref?: (month: string) => string;
   todayHref?: string;
   showNames?: boolean;
+  onSelectDay?: (day: string) => void;
 };
 
 export function MonthCalendar({
@@ -138,6 +143,7 @@ export function MonthCalendar({
   monthHref,
   todayHref,
   showNames = false,
+  onSelectDay,
 }: Props) {
   const cells = getMonthCells(month);
   const today = hongKongToday();
@@ -150,6 +156,14 @@ export function MonthCalendar({
   const hrefForToday =
     todayHref ?? `${basePath}?month=${today.slice(0, 7)}&day=${today}`;
   const viewingToday = selectedDay === today;
+
+  function handleSelectDay(event: MouseEvent<HTMLAnchorElement>, target: string) {
+    if (!onSelectDay || isModifiedClick(event) || !target.startsWith(month)) {
+      return;
+    }
+    event.preventDefault();
+    onSelectDay(target);
+  }
 
   return (
     <div className="space-y-3">
@@ -164,6 +178,7 @@ export function MonthCalendar({
           <p className="font-semibold">{month}</p>
           <Link
             href={hrefForToday}
+            onClick={(event) => handleSelectDay(event, today)}
             className={
               viewingToday
                 ? "text-sm text-stone-400"
@@ -205,6 +220,7 @@ export function MonthCalendar({
             <Link
               key={day}
               href={hrefForDay(day)}
+              onClick={(event) => handleSelectDay(event, day)}
               className={[
                 "flex h-28 w-full flex-col overflow-hidden rounded-md border p-1 text-left",
                 inMonth
