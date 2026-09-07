@@ -6,7 +6,7 @@ import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
 import {
-  availabilityOverlapsLessons,
+  overlappingLesson,
   lessonDayKey,
   monthBoundsIso,
   monthGridDateRange,
@@ -14,13 +14,7 @@ import {
   parseMonthParam,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
-import {
-  formatAvailabilityTime,
-  formatDateTime,
-  formatLessonSizeLabel,
-  formatMoneyOrPending,
-  lessonStatusLabel,
-} from "@/lib/format";
+import { formatAvailabilityTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -43,61 +37,31 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const gridRange = monthGridDateRange(month);
 
   const supabase = await createClient();
-  const [
-    { data: lessons },
-    { data: types },
-    { data: students },
-    { data: availabilities },
-    { data: leaves },
-  ] = await Promise.all([
-    supabase
-      .from("lessons")
-      .select("*")
-      .eq("coach_id", coach.id)
-      .neq("status", "cancelled")
-      .gte("starts_at", start)
-      .lt("starts_at", end)
-      .order("starts_at", { ascending: true }),
-    supabase
-      .from("lesson_types")
-      .select("id, name, pay_mode")
-      .eq("active", true)
-      .order("name"),
-    supabase
-      .from("students")
-      .select("id, name")
-      .eq("active", true)
-      .order("name"),
-    supabase
-      .from("staff_availabilities")
-      .select("id, coach_id, available_date, start_minute, end_minute")
-      .eq("coach_id", coach.id)
-      .gte("available_date", gridRange.start)
-      .lte("available_date", gridRange.end)
-      .order("start_minute"),
-    supabase
-      .from("staff_leaves")
-      .select("id, coach_id, leave_date")
-      .eq("coach_id", coach.id)
-      .gte("leave_date", gridRange.start)
-      .lte("leave_date", gridRange.end),
-  ]);
+  const [{ data: lessons }, { data: availabilities }, { data: leaves }] =
+    await Promise.all([
+      supabase
+        .from("lessons")
+        .select("id, starts_at, ends_at, status")
+        .eq("coach_id", coach.id)
+        .neq("status", "cancelled")
+        .gte("starts_at", start)
+        .lt("starts_at", end)
+        .order("starts_at", { ascending: true }),
+      supabase
+        .from("staff_availabilities")
+        .select("id, coach_id, available_date, start_minute, end_minute")
+        .eq("coach_id", coach.id)
+        .gte("available_date", gridRange.start)
+        .lte("available_date", gridRange.end)
+        .order("start_minute"),
+      supabase
+        .from("staff_leaves")
+        .select("id, coach_id, leave_date")
+        .eq("coach_id", coach.id)
+        .gte("leave_date", gridRange.start)
+        .lte("leave_date", gridRange.end),
+    ]);
 
-  const lessonIds = (lessons ?? []).map((l) => l.id);
-  const { data: lessonStudents } =
-    lessonIds.length > 0
-      ? await supabase
-          .from("lesson_students")
-          .select("lesson_id, student_id")
-          .in("lesson_id", lessonIds)
-      : { data: [] };
-
-  const studentByLesson = new Map(
-    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
-  );
-  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
-  const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
-  const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const countsByDay = new Map<string, number>();
   const lessonsByDay = new Map<
     string,
@@ -109,16 +73,14 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     const list = lessonsByDay.get(key) ?? [];
     list.push({
       id: lesson.id,
-      coachName: coach.full_name,
+      coachName: "課堂",
       status: lesson.status,
     });
     lessonsByDay.set(key, list);
   }
 
-  const leaveDates = new Set(
-    (leaves ?? []).map((leave) => leave.leave_date),
-  );
-  const assignedLessons = (lessons ?? []).filter(
+  const leaveDates = new Set((leaves ?? []).map((leave) => leave.leave_date));
+  const shiftLessons = (lessons ?? []).filter(
     (lesson) => lesson.status === "assigned" || lesson.status === "completed",
   );
   const availabilityByDay = new Map<
@@ -127,7 +89,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       id: string;
       label: string;
       coachName: string;
-      variant?: "slot" | "leave" | "assigned";
+      variant?: "slot" | "leave" | "pending" | "confirmed";
     }[]
   >();
   for (const leave of leaves ?? []) {
@@ -145,18 +107,24 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       continue;
     }
     const timeLabel = `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`;
-    const assigned = availabilityOverlapsLessons(
+    const overlap = overlappingLesson(
       availability.available_date,
       availability.start_minute,
       availability.end_minute,
-      assignedLessons,
+      shiftLessons,
     );
+    const pending = overlap?.status === "assigned";
+    const confirmed = overlap?.status === "completed";
     const list = availabilityByDay.get(availability.available_date) ?? [];
     list.push({
       id: availability.id,
-      label: assigned ? `${timeLabel} ·已派更` : timeLabel,
+      label: pending
+        ? `${timeLabel} ·待確認`
+        : confirmed
+          ? `${timeLabel} ·已確認`
+          : timeLabel,
       coachName: coach.full_name,
-      variant: assigned ? "assigned" : "slot",
+      variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
     });
     availabilityByDay.set(availability.available_date, list);
   }
@@ -164,13 +132,19 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const dayLessons = (lessons ?? []).filter(
     (lesson) => lessonDayKey(lesson.starts_at) === day,
   );
+  const pendingDayLessons = dayLessons.filter(
+    (lesson) => lesson.status === "assigned",
+  );
+  const confirmedDayCount = dayLessons.filter(
+    (lesson) => lesson.status === "completed",
+  ).length;
   const now = new Date();
 
   return (
     <div className="space-y-6">
       <Panel title="我的課堂日曆">
         <p className="mb-3 text-sm text-stone-500">
-          請先提交可返工時間。僱主派更後會顯示「待員工確認」；確認後才計入薪資。
+          琥珀＝待確認，綠色＝已確認。點選待確認時段即可確認派更；確認後才計入薪資。
         </p>
         <MonthCalendar
           month={month}
@@ -182,54 +156,30 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         />
       </Panel>
 
-      <Panel title={`${day} 的課堂`}>
-        <ul className="divide-y divide-stone-100">
-          {dayLessons.map((lesson) => {
-            const endTime = formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm");
-            const linkedStudentId = studentByLesson.get(lesson.id);
-            const canConfirm =
-              lesson.status === "assigned" &&
-              new Date(lesson.starts_at) > now;
-            const sizeLabel = formatLessonSizeLabel(
-              payModeByType.get(lesson.lesson_type_id),
-              lesson.headcount,
-              lesson.expected_headcount,
-            );
-            return (
-              <li key={lesson.id} className="space-y-3 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">
-                      {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
-                      {lessonStatusLabel(lesson.status)}
-                    </p>
-                    <p className="text-xl text-stone-500">
-                      {formatDateTime(lesson.starts_at)} – {endTime}
-                    </p>
-                    {linkedStudentId ? (
-                      <p className="text-sm text-stone-500">
-                        學生：{studentName.get(linkedStudentId) ?? "—"}
-                      </p>
-                    ) : null}
-                    {sizeLabel ? (
-                      <p className="text-sm text-stone-500">{sizeLabel}</p>
-                    ) : null}
-                    <p
-                      className={
-                        lesson.earned_amount_hkd == null
-                          ? "text-sm text-amber-700"
-                          : "text-sm text-emerald-700"
-                      }
-                    >
-                      {formatMoneyOrPending(lesson.earned_amount_hkd)}
-                    </p>
-                    {lesson.status === "assigned" &&
-                    new Date(lesson.starts_at) <= now ? (
-                      <p className="mt-1 text-sm text-amber-700">
-                        已過開始時間，無法確認；請聯絡僱主取消或重派。
-                      </p>
-                    ) : null}
-                  </div>
+      <Panel title={`${day}`}>
+        {dayLessons.length === 0 ? (
+          <p className="text-sm text-stone-500">這天尚未有派更</p>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-stone-600">
+              待確認 {pendingDayLessons.length} · 已確認 {confirmedDayCount}
+            </p>
+            {pendingDayLessons.map((lesson) => {
+              const startTime = formatInTimeZone(
+                lesson.starts_at,
+                TIMEZONE,
+                "HH:mm",
+              );
+              const endTime = formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm");
+              const canConfirm = new Date(lesson.starts_at) > now;
+              return (
+                <div
+                  key={lesson.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2"
+                >
+                  <p className="text-sm font-medium tabular-nums text-amber-950">
+                    {startTime}–{endTime} ·待確認
+                  </p>
                   {canConfirm ? (
                     <ServerActionButton
                       action={confirmLessonAction.bind(null, lesson.id)}
@@ -238,15 +188,14 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
                     >
                       確認派更
                     </ServerActionButton>
-                  ) : null}
+                  ) : (
+                    <p className="text-xs text-amber-800">已過開始時間，無法確認</p>
+                  )}
                 </div>
-              </li>
-            );
-          })}
-          {dayLessons.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">這天尚未有派更</li>
-          ) : null}
-        </ul>
+              );
+            })}
+          </div>
+        )}
       </Panel>
 
       <section id="availability" className="scroll-mt-4">

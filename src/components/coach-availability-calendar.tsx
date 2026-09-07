@@ -1,3 +1,4 @@
+import { confirmLessonAction } from "@/actions/lessons";
 import {
   cancelLeaveAction,
   deleteAvailabilityAction,
@@ -9,7 +10,7 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { Panel, SubmitButton } from "@/components/ui";
 import {
-  availabilityOverlapsLessons,
+  overlappingLesson,
   availabilityWeekBoundsIso,
   availabilityWeekDays,
   availabilityWeekStart,
@@ -120,7 +121,7 @@ export async function CoachAvailabilityCalendar({
       .lte("leave_date", weekEnd),
     supabase
       .from("lessons")
-      .select("starts_at, ends_at")
+      .select("id, starts_at, ends_at, status")
       .eq("coach_id", coachId)
       .in("status", ["assigned", "completed"])
       .gte("starts_at", weekStartIso)
@@ -216,7 +217,7 @@ export async function CoachAvailabilityCalendar({
                         : columnFilled
                           ? "bg-white"
                           : "bg-stone-200"
-                    } ${date === today ? "ring-2 ring-inset ring-sky-400" : ""}`}
+                    } ${date === day ? "ring-2 ring-inset ring-stone-900" : date === today ? "ring-2 ring-inset ring-sky-400" : ""}`}
                   >
                     <p className="font-semibold">{WEEKDAY_LABELS[dayIndex]}</p>
                     <p className="text-xl leading-tight text-stone-500">
@@ -242,16 +243,19 @@ export async function CoachAvailabilityCalendar({
                     ) : (
                       <>
                         {dayAvailabilities.map((availability) => {
-                          const assigned = availabilityOverlapsLessons(
+                          const overlap = overlappingLesson(
                             date,
                             availability.start_minute,
                             availability.end_minute,
                             assignedLessons,
                           );
+                          const pending = overlap?.status === "assigned";
+                          const confirmed = overlap?.status === "completed";
+                          const locked = overlap != null;
                           const editable = canEditAvailability(
                             availability,
                             now,
-                            assigned,
+                            locked,
                           );
                           const timeLabel = `${formatAvailabilityTime(
                             availability.start_minute,
@@ -259,7 +263,39 @@ export async function CoachAvailabilityCalendar({
                             availability.end_minute,
                           )}`;
 
-                          if (assigned) {
+                          if (pending && overlap) {
+                            const canConfirm =
+                              new Date(overlap.starts_at) > now;
+                            return (
+                              <div
+                                key={availability.id}
+                                className="space-y-1 rounded-md bg-amber-100 px-1 py-2 text-center text-sm text-amber-950"
+                              >
+                                <p className="font-medium tabular-nums">
+                                  {timeLabel}
+                                </p>
+                                <p className="text-xs font-medium">待確認</p>
+                                {canConfirm ? (
+                                  <ServerActionButton
+                                    action={confirmLessonAction.bind(
+                                      null,
+                                      overlap.id,
+                                    )}
+                                    confirmMessage="確定接受此派更？確認後將計入薪資。"
+                                    className="w-full rounded-md bg-stone-900 px-2 py-1.5 text-xs text-white disabled:opacity-60"
+                                  >
+                                    確認派更
+                                  </ServerActionButton>
+                                ) : (
+                                  <p className="text-[10px] text-amber-800">
+                                    已過開始時間
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          }
+
+                          if (confirmed) {
                             return (
                               <div
                                 key={availability.id}
@@ -268,7 +304,7 @@ export async function CoachAvailabilityCalendar({
                                 <p className="font-medium tabular-nums">
                                   {timeLabel}
                                 </p>
-                                <p className="text-xs font-medium">已派更</p>
+                                <p className="text-xs font-medium">已確認</p>
                               </div>
                             );
                           }
@@ -394,7 +430,7 @@ export async function CoachAvailabilityCalendar({
             })}
           </div>
           <p className="text-xs text-stone-400">
-            灰色代表未報；淺藍代表已報未派；綠色代表已派更；粉紅代表放假。
+            灰色＝未報；淺藍＝已報未派；琥珀＝待確認；綠色＝已確認；粉紅＝放假。
           </p>
         </Panel>
       )}

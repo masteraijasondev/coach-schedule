@@ -122,13 +122,15 @@ export function lessonMinutesInHongKong(
   return { date, startMinute, endMinute };
 }
 
-export function availabilityOverlapsLessons(
+export function overlappingLesson<
+  T extends { starts_at: string; ends_at: string; status?: string },
+>(
   date: string,
   startMinute: number,
   endMinute: number,
-  lessons: { starts_at: string; ends_at: string }[],
-): boolean {
-  return lessons.some((lesson) => {
+  lessons: T[],
+): T | undefined {
+  const matches = lessons.filter((lesson) => {
     const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
     return (
       range.date === date &&
@@ -136,6 +138,18 @@ export function availabilityOverlapsLessons(
       range.endMinute > startMinute
     );
   });
+  return (
+    matches.find((lesson) => lesson.status === "assigned") ?? matches[0]
+  );
+}
+
+export function availabilityOverlapsLessons(
+  date: string,
+  startMinute: number,
+  endMinute: number,
+  lessons: { starts_at: string; ends_at: string }[],
+): boolean {
+  return overlappingLesson(date, startMinute, endMinute, lessons) != null;
 }
 
 export function dayHasLessonOnDate(

@@ -56,7 +56,7 @@ type CalendarAvailability = {
   id: string;
   label: string;
   coachName: string;
-  variant?: "slot" | "leave" | "assigned";
+  variant?: "slot" | "leave" | "pending" | "confirmed";
 };
 
 type Props = {
@@ -138,21 +138,28 @@ export function MonthCalendar({
               {count > 0 ? (
                 <div className="mt-1 space-y-0.5 font-bold text-sm text-stone-600">
                   <div>{count} 堂</div>
-                  {lessons.slice(0, 2).map((lesson) => (
+                  {lessons.slice(0, 2).map((lesson) => {
+                    const pending = lesson.status === "assigned";
+                    const confirmed = lesson.status === "completed";
+                    return (
                     <div
                       key={lesson.id}
-                      className={`rounded-md px-1 py-0.5 text-center text-[10px] font-semibold ${getCoachBadgeClass(
-                        lesson.coachName,
-                      )} ${
-                        lesson.status === "assigned"
-                          ? "border border-dashed opacity-80"
-                          : ""
+                      className={`rounded-md px-1 py-0.5 text-center text-[10px] font-semibold ${
+                        pending
+                          ? "border border-dashed border-amber-400 bg-amber-100 text-amber-900"
+                          : confirmed
+                            ? "border border-emerald-400 bg-emerald-100 text-emerald-900"
+                            : getCoachBadgeClass(lesson.coachName)
                       }`}
                     >
-                      {lesson.coachName}
-                      {lesson.status === "assigned" ? " ·待確認" : ""}
+                      {pending
+                        ? `${lesson.coachName} ·待確認`
+                        : confirmed
+                          ? `${lesson.coachName} ·已確認`
+                          : lesson.coachName}
                     </div>
-                  ))}
+                    );
+                  })}
                   {lessons.length > 2 ? (
                     <div>+{lessons.length - 2} 位教練</div>
                   ) : null}
@@ -166,11 +173,13 @@ export function MonthCalendar({
                       className={`rounded-md px-1 py-0.5 text-center text-[10px] font-medium ${
                         availability.variant === "leave"
                           ? "border border-dashed border-rose-400 bg-rose-50 text-rose-800"
-                          : availability.variant === "assigned"
-                            ? "border border-emerald-400 bg-emerald-100 text-emerald-900"
-                            : getCoachAvailabilityBadgeClass(
-                                availability.coachName,
-                              )
+                          : availability.variant === "pending"
+                            ? "border border-dashed border-amber-400 bg-amber-100 text-amber-900"
+                            : availability.variant === "confirmed"
+                              ? "border border-emerald-400 bg-emerald-100 text-emerald-900"
+                              : getCoachAvailabilityBadgeClass(
+                                  availability.coachName,
+                                )
                       }`}
                     >
                       {availability.label}
