@@ -109,6 +109,26 @@ export function useCalendarView(
   return [view, setView];
 }
 
+export function useCalendarWeek(
+  initialWeek: string,
+): [string, (week: string) => void] {
+  const [week, setWeek] = useState(initialWeek);
+
+  useEffect(() => {
+    setWeek(initialWeek);
+  }, [initialWeek]);
+
+  useEffect(() => {
+    function onPop() {
+      setWeek(readCalendarWeek());
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  return [week, setWeek];
+}
+
 export function readCalendarCoachId(): string | undefined {
   return new URLSearchParams(window.location.search).get("coach") || undefined;
 }

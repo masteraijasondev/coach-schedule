@@ -28,6 +28,7 @@ import { weekGridRange } from "@/lib/week-grid";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { coachCalendarHref } from "@/lib/coach-href";
 import Link from "next/link";
+import type { MouseEvent } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
 const DEFAULT_DURATION_MINUTES = 60;
@@ -115,6 +116,7 @@ export function CoachWeekCalendar({
   leaves,
   lessons,
   loadError = false,
+  onWeekNavigate,
 }: {
   week: string;
   month: string;
@@ -124,6 +126,11 @@ export function CoachWeekCalendar({
   leaves: CoachWeekLeave[];
   lessons: CoachWeekLesson[];
   loadError?: boolean;
+  onWeekNavigate?: (
+    week: string,
+    href: string,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) => void;
 }) {
   const currentWeek = availabilityWeekStart();
   const prevWeek = shiftAvailabilityWeek(week, -1);
@@ -164,6 +171,13 @@ export function CoachWeekCalendar({
               <Link
                 href={coachWeekHref(prevWeek, month, day, view)}
                 className="text-sm text-stone-600 underline"
+                onClick={(event) =>
+                  onWeekNavigate?.(
+                    prevWeek,
+                    coachWeekHref(prevWeek, month, day, view),
+                    event,
+                  )
+                }
               >
                 上週
               </Link>
@@ -173,6 +187,13 @@ export function CoachWeekCalendar({
               <Link
                 href={coachWeekHref(nextWeek, month, day, view)}
                 className="text-sm text-stone-600 underline"
+                onClick={(event) =>
+                  onWeekNavigate?.(
+                    nextWeek,
+                    coachWeekHref(nextWeek, month, day, view),
+                    event,
+                  )
+                }
               >
                 下週
               </Link>
@@ -181,6 +202,13 @@ export function CoachWeekCalendar({
               <Link
                 href={coachWeekHref(currentWeek, month, day, view)}
                 className="text-sm text-stone-600 underline"
+                onClick={(event) =>
+                  onWeekNavigate?.(
+                    currentWeek,
+                    coachWeekHref(currentWeek, month, day, view),
+                    event,
+                  )
+                }
               >
                 返回本週
               </Link>
@@ -223,13 +251,13 @@ export function CoachWeekCalendar({
                 }
                 return (
                   <div className="space-y-1">
-                    <details className="rounded-sm border border-dashed border-stone-300 bg-white text-xs">
+                    <details className="relative z-[2] rounded-sm border border-dashed border-stone-300 bg-white text-xs">
                       <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium text-stone-600">
                         ＋ 新增
                       </summary>
                       <ActionForm
                         action={saveAvailabilityAction}
-                        className="space-y-2 border-t border-stone-200 p-1"
+                        className="min-w-[9rem] space-y-2 border-t border-stone-200 p-2"
                       >
                         <input
                           type="hidden"
@@ -351,13 +379,13 @@ export function CoachWeekCalendar({
                   return (
                     <details
                       key={availability.id}
-                      className={`${shell} border-sky-300 bg-sky-100 text-sky-950`}
+                      className={`${shell} overflow-visible border-sky-300 bg-sky-100 text-sky-950`}
                       style={{ top, height }}
                     >
                       <summary className="cursor-pointer list-none font-medium tabular-nums">
                         {timeLabel} 修改
                       </summary>
-                      <div className="space-y-2 border-t border-sky-200 bg-white p-1 text-stone-900">
+                      <div className="min-w-[9rem] space-y-2 border-t border-sky-200 bg-white p-2 text-stone-900">
                         <ActionForm
                           action={saveAvailabilityAction}
                           className="space-y-2"

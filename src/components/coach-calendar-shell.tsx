@@ -14,9 +14,15 @@ import {
   lessonDayKey,
   type CalendarView,
 } from "@/lib/calendar";
-import { readCalendarWeek, useCalendarView } from "@/lib/calendar-history";
+import {
+  isModifiedClick,
+  pushCalendarHref,
+  readCalendarWeek,
+  useCalendarView,
+  useCalendarWeek,
+} from "@/lib/calendar-history";
 import { coachCalendarHref } from "@/lib/coach-href";
-import { useState, type ReactNode } from "react";
+import { type MouseEvent, type ReactNode } from "react";
 
 export function CoachCalendarShell({
   initialView,
@@ -46,7 +52,7 @@ export function CoachCalendarShell({
   remoteWeekCalendar: ReactNode;
 }) {
   const [view, setView] = useCalendarView(initialView);
-  const [week, setWeek] = useState(initialWeek);
+  const [week, setWeek] = useCalendarWeek(initialWeek);
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
   const weekInGrid = days.every(
@@ -62,6 +68,26 @@ export function CoachCalendarShell({
   const weekLessons = lessons.filter((lesson) =>
     weekDays.has(lessonDayKey(lesson.starts_at)),
   );
+
+  function selectWeek(
+    nextWeek: string,
+    href: string,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) {
+    if (isModifiedClick(event)) {
+      return;
+    }
+    const nextDays = availabilityWeekDays(nextWeek);
+    const inGrid = nextDays.every(
+      (date) => date >= gridStart && date <= gridEnd,
+    );
+    if (!inGrid) {
+      return;
+    }
+    event.preventDefault();
+    setWeek(nextWeek);
+    pushCalendarHref(href);
+  }
 
   return (
     <div className="space-y-6">
@@ -107,6 +133,7 @@ export function CoachCalendarShell({
               availabilities={weekSlots}
               leaves={weekLeaves}
               lessons={weekLessons}
+              onWeekNavigate={selectWeek}
             />
           </section>
         ) : (

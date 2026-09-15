@@ -4,7 +4,7 @@ import { CalendarLegend } from "@/components/calendar-legend";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
-import { availabilityWeekStart, overlappingLesson } from "@/lib/calendar";
+import { availabilityWeekStart, overlappingLesson, shiftAvailabilityWeek } from "@/lib/calendar";
 import {
   isModifiedClick,
   replaceCalendarHref,
@@ -65,6 +65,7 @@ export function EmployerAssignWorkspace({
   types,
   view,
   nowMinute,
+  onWeekNavigate,
 }: {
   coachId: string;
   coachName: string;
@@ -85,6 +86,11 @@ export function EmployerAssignWorkspace({
   types: LessonTypeOption[];
   view?: "month" | "week";
   nowMinute: number | null;
+  onWeekNavigate?: (
+    week: string,
+    href: string,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) => void;
 }) {
   const [selection, setSelection] = useCalendarSelection(
     month,
@@ -161,18 +167,48 @@ export function EmployerAssignWorkspace({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Link href={prevWeekHref} className="text-sm text-stone-600 underline">
+        <Link
+          href={prevWeekHref}
+          className="text-sm text-stone-600 underline"
+          onClick={(event) =>
+            onWeekNavigate?.(
+              shiftAvailabilityWeek(week, -1),
+              prevWeekHref,
+              event,
+            )
+          }
+        >
           上週
         </Link>
         <p className="min-w-0 flex-1 text-center text-sm font-medium">
           {coachName} · {week} – {weekEnd}
         </p>
-        <Link href={nextWeekHref} className="text-sm text-stone-600 underline">
+        <Link
+          href={nextWeekHref}
+          className="text-sm text-stone-600 underline"
+          onClick={(event) =>
+            onWeekNavigate?.(
+              shiftAvailabilityWeek(week, 1),
+              nextWeekHref,
+              event,
+            )
+          }
+        >
           下週
         </Link>
       </div>
       {!isCurrentWeek ? (
-        <Link href={currentWeekHref} className="text-sm text-stone-600 underline">
+        <Link
+          href={currentWeekHref}
+          className="text-sm text-stone-600 underline"
+          onClick={(event) =>
+            onWeekNavigate?.(
+              availabilityWeekStart(),
+              currentWeekHref,
+              event,
+            )
+          }
+        >
           返回本週
         </Link>
       ) : null}

@@ -69,7 +69,7 @@ export function WeekTimeGrid({
         {days.map((date) => (
           <div
             key={`allday-${date}`}
-            className="min-h-10 border-b border-l border-stone-200 p-0.5"
+            className="min-h-10 overflow-visible border-b border-l border-stone-200 p-0.5"
           >
             {allDay(date)}
           </div>

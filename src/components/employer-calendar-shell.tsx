@@ -20,14 +20,17 @@ import {
   type CalendarView,
 } from "@/lib/calendar";
 import {
+  isModifiedClick,
+  pushCalendarHref,
   readCalendarCoachId,
   readCalendarWeek,
   useCalendarView,
+  useCalendarWeek,
 } from "@/lib/calendar-history";
 import { TIMEZONE } from "@/lib/constants";
 import { employerCalendarHref } from "@/lib/employer-href";
 import { formatInTimeZone } from "date-fns-tz";
-import { useState, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 
 export function EmployerCalendarShell({
   initialView,
@@ -66,7 +69,7 @@ export function EmployerCalendarShell({
 }) {
   const [view, setView] = useCalendarView(initialView);
   const [coachId, setCoachId] = useState(initialCoachId);
-  const [week, setWeek] = useState(initialWeek);
+  const [week, setWeek] = useCalendarWeek(initialWeek);
   const selectedCoach =
     coaches.find((coach) => coach.id === coachId) ?? null;
   const days = availabilityWeekDays(week);
@@ -120,6 +123,26 @@ export function EmployerCalendarShell({
     setView(nextView);
     setCoachId(readCalendarCoachId());
     setWeek(readCalendarWeek(day));
+  }
+
+  function selectWeek(
+    nextWeek: string,
+    href: string,
+    event: MouseEvent<HTMLAnchorElement>,
+  ) {
+    if (isModifiedClick(event)) {
+      return;
+    }
+    const nextDays = availabilityWeekDays(nextWeek);
+    const inGrid = nextDays.every(
+      (date) => date >= gridStart && date <= gridEnd,
+    );
+    if (!inGrid) {
+      return;
+    }
+    event.preventDefault();
+    setWeek(nextWeek);
+    pushCalendarHref(href);
   }
 
   return (
@@ -223,6 +246,7 @@ export function EmployerCalendarShell({
               lessons={weekLessons}
               nowMinute={nowMinute}
               view="week"
+              onWeekNavigate={selectWeek}
             />
           </Panel>
         ) : null}
