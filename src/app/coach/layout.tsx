@@ -14,7 +14,7 @@ export default async function CoachLayout({
   const profile = await requireCoach();
 
   return (
-    <AppShell title="教練工作台" name={profile.full_name} items={items}>
+    <AppShell title="員工工作台" name={profile.full_name} items={items}>
       {children}
     </AppShell>
   );
