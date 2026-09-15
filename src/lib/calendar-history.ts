@@ -1,6 +1,13 @@
 "use client";
 
-import { parseDayParam, parseMinuteParam } from "@/lib/calendar";
+import {
+  availabilityWeekStart,
+  parseAvailabilityWeekParam,
+  parseCalendarView,
+  parseDayParam,
+  parseMinuteParam,
+  type CalendarView,
+} from "@/lib/calendar";
 import { useEffect, useState, type MouseEvent } from "react";
 
 export type CalendarSelection = {
@@ -53,6 +60,64 @@ export function isModifiedClick(event: MouseEvent): boolean {
 
 export function pushCalendarHref(href: string) {
   window.history.pushState(null, "", href);
+}
+
+export function calendarHrefFromLocation(
+  patch: Record<string, string | undefined>,
+): string {
+  const params = new URLSearchParams(window.location.search);
+  for (const [key, value] of Object.entries(patch)) {
+    if (value == null || value === "") {
+      params.delete(key);
+    } else {
+      params.set(key, value);
+    }
+  }
+  const query = params.toString();
+  return `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`;
+}
+
+export function applyCalendarView(view: CalendarView): string {
+  const params = new URLSearchParams(window.location.search);
+  const day = params.get("day") ?? undefined;
+  if (view === "week") {
+    params.set("view", "week");
+    params.set("week", availabilityWeekStart(day));
+  } else {
+    params.delete("view");
+  }
+  const query = params.toString();
+  const href = `${window.location.pathname}${query ? `?${query}` : ""}`;
+  pushCalendarHref(href);
+  return href;
+}
+
+export function useCalendarView(
+  initialView: CalendarView,
+): [CalendarView, (view: CalendarView) => void] {
+  const [view, setView] = useState(initialView);
+
+  useEffect(() => {
+    function onPop() {
+      const params = new URLSearchParams(window.location.search);
+      setView(parseCalendarView(params.get("view") ?? undefined));
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  return [view, setView];
+}
+
+export function readCalendarCoachId(): string | undefined {
+  return new URLSearchParams(window.location.search).get("coach") || undefined;
+}
+
+export function readCalendarWeek(fallbackDay?: string): string {
+  const params = new URLSearchParams(window.location.search);
+  return parseAvailabilityWeekParam(
+    params.get("week") ?? params.get("day") ?? fallbackDay,
+  );
 }
 
 export function replaceCalendarHref(href: string) {

@@ -1,18 +1,17 @@
 import type { Metadata } from "next";
-import { CalendarViewToggle } from "@/components/calendar-view-toggle";
 import { CoachAvailabilityCalendar } from "@/components/coach-availability-calendar";
-import { CoachMonthWorkspace } from "@/components/coach-month-workspace";
+import { CoachCalendarShell } from "@/components/coach-calendar-shell";
 import { requireCoach } from "@/lib/auth";
 import {
-  availabilityWeekStart,
+  availabilityWeekDays,
   hongKongToday,
   monthBoundsIso,
   monthGridDateRange,
+  parseAvailabilityWeekParam,
   parseCalendarView,
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
-import { coachCalendarHref } from "@/lib/coach-href";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -32,8 +31,13 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const day = parseDayParam(params.day, month);
   const today = hongKongToday();
   const view = parseCalendarView(params.view);
+  const week = parseAvailabilityWeekParam(params.week ?? day);
   const { start, end } = monthBoundsIso(month);
   const gridRange = monthGridDateRange(month);
+  const days = availabilityWeekDays(week);
+  const weekInGrid = days.every(
+    (date) => date >= gridRange.start && date <= gridRange.end,
+  );
 
   const supabase = await createClient();
   const [{ data: lessons }, { data: availabilities }, { data: leaves }] =
@@ -62,43 +66,31 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-base font-semibold">我的課堂日曆</h1>
-        <CalendarViewToggle
-          view={view}
-          monthHref={coachCalendarHref({ month, day, week: params.week })}
-          weekHref={coachCalendarHref({
-            month,
-            day,
-            week: availabilityWeekStart(day),
-            view: "week",
-          })}
-        />
-      </div>
-
-      {view === "month" ? (
-        <CoachMonthWorkspace
-          key={month}
-          month={month}
-          day={day}
-          today={today}
-          coachName={coach.full_name}
-          lessons={lessons ?? []}
-          availabilities={availabilities ?? []}
-          leaves={leaves ?? []}
-        />
-      ) : (
-        <section id="availability" className="scroll-mt-4">
-          <CoachAvailabilityCalendar
-            coachId={coach.id}
-            weekParam={params.week}
-            month={month}
-            day={day}
-            view="week"
-          />
-        </section>
-      )}
-    </div>
+    <CoachCalendarShell
+      initialView={view}
+      month={month}
+      day={day}
+      today={today}
+      week={week}
+      gridStart={gridRange.start}
+      gridEnd={gridRange.end}
+      coachName={coach.full_name}
+      lessons={lessons ?? []}
+      availabilities={availabilities ?? []}
+      leaves={leaves ?? []}
+      remoteWeekCalendar={
+        !weekInGrid ? (
+          <section id="availability" className="scroll-mt-4">
+            <CoachAvailabilityCalendar
+              coachId={coach.id}
+              weekParam={params.week}
+              month={month}
+              day={day}
+              view="week"
+            />
+          </section>
+        ) : null
+      }
+    />
   );
 }

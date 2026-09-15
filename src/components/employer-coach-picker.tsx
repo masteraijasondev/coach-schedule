@@ -2,6 +2,10 @@
 
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useStudentDirectory } from "@/components/student-directory-provider";
+import {
+  calendarHrefFromLocation,
+  pushCalendarHref,
+} from "@/lib/calendar-history";
 import { employerCalendarHref } from "@/lib/employer-href";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -13,6 +17,7 @@ export function EmployerCoachPicker({
   day,
   week,
   view,
+  onCoachChange,
 }: {
   coaches: { id: string; full_name: string }[];
   selectedCoachId?: string;
@@ -20,6 +25,7 @@ export function EmployerCoachPicker({
   day?: string;
   week?: string;
   view?: "month" | "week";
+  onCoachChange?: (coachId: string | undefined) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -34,16 +40,27 @@ export function EmployerCoachPicker({
           disabled={pending}
           aria-busy={pending}
           onChange={(event) => {
-            const coachId = event.currentTarget.value;
+            const coachId = event.currentTarget.value || undefined;
             if (coachId) {
               void ensureStudents();
+            }
+            if (onCoachChange) {
+              pushCalendarHref(
+                calendarHrefFromLocation({
+                  coach: coachId,
+                  week: coachId ? week : undefined,
+                  view: view === "week" ? "week" : undefined,
+                }),
+              );
+              onCoachChange(coachId);
+              return;
             }
             startTransition(() => {
               router.push(
                 employerCalendarHref({
                   month,
                   day,
-                  coach: coachId || undefined,
+                  coach: coachId,
                   week: coachId ? week : undefined,
                   view,
                 }),

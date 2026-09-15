@@ -1,14 +1,23 @@
+"use client";
+
+import {
+  applyCalendarView,
+  isModifiedClick,
+} from "@/lib/calendar-history";
 import type { CalendarView } from "@/lib/calendar";
 import Link from "next/link";
+import type { MouseEvent } from "react";
 
 export function CalendarViewToggle({
   view,
   monthHref,
   weekHref,
+  onViewChange,
 }: {
   view: CalendarView;
   monthHref: string;
   weekHref: string;
+  onViewChange: (view: CalendarView) => void;
 }) {
   const itemClass = (active: boolean) =>
     [
@@ -17,6 +26,15 @@ export function CalendarViewToggle({
         ? "bg-stone-900 font-medium text-white"
         : "text-stone-700 hover:bg-stone-100",
     ].join(" ");
+
+  function selectView(event: MouseEvent<HTMLAnchorElement>, next: CalendarView) {
+    if (isModifiedClick(event)) {
+      return;
+    }
+    event.preventDefault();
+    applyCalendarView(next);
+    onViewChange(next);
+  }
 
   return (
     <div
@@ -29,6 +47,7 @@ export function CalendarViewToggle({
         role="tab"
         aria-selected={view === "month"}
         className={itemClass(view === "month")}
+        onClick={(event) => selectView(event, "month")}
       >
         月
       </Link>
@@ -37,6 +56,7 @@ export function CalendarViewToggle({
         role="tab"
         aria-selected={view === "week"}
         className={itemClass(view === "week")}
+        onClick={(event) => selectView(event, "week")}
       >
         週
       </Link>

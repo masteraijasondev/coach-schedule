@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { CalendarViewToggle } from "@/components/calendar-view-toggle";
 import { EmployerAssignPanel } from "@/components/employer-assign-panel";
-import { EmployerCoachPicker } from "@/components/employer-coach-picker";
-import { EmployerMonthWorkspace } from "@/components/employer-month-workspace";
-import { Panel } from "@/components/ui";
+import { EmployerCalendarShell } from "@/components/employer-calendar-shell";
 import { requireEmployer } from "@/lib/auth";
 import {
   availabilityWeekDays,
@@ -132,102 +129,65 @@ export default async function EmployerHomePage({ searchParams }: Props) {
     selectedCoach && slotStart != null && slotEnd != null
       ? { date: day, startMinute: slotStart, slotEndMinute: slotEnd }
       : null;
-  const monthViewHref = employerCalendarHref({
-    month,
-    day,
-    coach: selectedCoach?.id,
-    week,
-  });
-  const weekViewHref = employerCalendarHref({
-    month,
-    day,
-    coach: selectedCoach?.id,
-    week: availabilityWeekStart(day),
-    view: "week",
-  });
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-base font-semibold">全體教練日曆</h1>
-        <CalendarViewToggle
-          view={view}
-          monthHref={monthViewHref}
-          weekHref={weekViewHref}
-        />
-      </div>
-
-      {view === "month" ? (
-        <EmployerMonthWorkspace
-          key={month}
-          month={month}
-          day={day}
-          today={today}
-          week={week}
-          coachId={selectedCoach?.id}
-          slotStart={slotStart}
-          slotEnd={slotEnd}
-          lessons={lessons ?? []}
-          types={lessonTypes}
-          coaches={coaches ?? []}
-          availabilities={availabilities ?? []}
-          leaves={leaves ?? []}
-        />
-      ) : (
-        <Panel title="週曆">
-          <p className="mb-3 text-sm text-stone-500">
-            選擇員工查看本週可返工。點選時段即可派更。
-          </p>
-          <EmployerCoachPicker
-            coaches={coaches ?? []}
-            selectedCoachId={selectedCoach?.id}
+    <EmployerCalendarShell
+      initialView={view}
+      month={month}
+      day={day}
+      today={today}
+      week={week}
+      gridStart={gridRange.start}
+      gridEnd={gridRange.end}
+      coachId={selectedCoach?.id}
+      slotStart={slotStart}
+      slotEnd={slotEnd}
+      lessons={lessons ?? []}
+      types={lessonTypes}
+      coaches={coaches ?? []}
+      availabilities={availabilities ?? []}
+      leaves={leaves ?? []}
+      remoteWeekPanel={
+        selectedCoach && !weekInGrid ? (
+          <EmployerAssignPanel
+            coachId={selectedCoach.id}
+            coachName={selectedCoach.full_name}
             month={month}
-            day={day}
             week={week}
-            view={view}
+            weekEnd={weekEnd}
+            days={days}
+            today={today}
+            selectedDay={day}
+            selectedSlot={initialSelection}
+            types={lessonTypes}
+            prevWeekHref={employerCalendarHref({
+              month,
+              day,
+              coach: selectedCoach.id,
+              week: prevWeek,
+              view: "week",
+            })}
+            nextWeekHref={employerCalendarHref({
+              month,
+              day,
+              coach: selectedCoach.id,
+              week: nextWeek,
+              view: "week",
+            })}
+            currentWeekHref={employerCalendarHref({
+              month,
+              day,
+              coach: selectedCoach.id,
+              week: currentWeek,
+              view: "week",
+            })}
+            isCurrentWeek={week === currentWeek}
+            slots={assignSlots}
+            leaveDates={assignLeaveDates}
+            view="week"
           />
-        </Panel>
-      )}
-
-      {view === "week" && selectedCoach ? (
-        <EmployerAssignPanel
-          coachId={selectedCoach.id}
-          coachName={selectedCoach.full_name}
-          month={month}
-          week={week}
-          weekEnd={weekEnd}
-          days={days}
-          today={today}
-          selectedDay={day}
-          selectedSlot={initialSelection}
-          types={lessonTypes}
-          prevWeekHref={employerCalendarHref({
-            month,
-            day,
-            coach: selectedCoach.id,
-            week: prevWeek,
-            view: "week",
-          })}
-          nextWeekHref={employerCalendarHref({
-            month,
-            day,
-            coach: selectedCoach.id,
-            week: nextWeek,
-            view: "week",
-          })}
-          currentWeekHref={employerCalendarHref({
-            month,
-            day,
-            coach: selectedCoach.id,
-            week: currentWeek,
-            view: "week",
-          })}
-          isCurrentWeek={week === currentWeek}
-          slots={assignSlots}
-          leaveDates={assignLeaveDates}
-          view="week"
-        />
-      ) : null}
-    </div>
+        ) : null
+      }
+    />
   );
 }
