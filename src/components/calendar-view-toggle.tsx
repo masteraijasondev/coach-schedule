@@ -58,7 +58,7 @@ export function CalendarViewToggle({
         className={itemClass(view === "week")}
         onClick={(event) => selectView(event, "week")}
       >
-        週
+        週(報更)
       </Link>
     </div>
   );

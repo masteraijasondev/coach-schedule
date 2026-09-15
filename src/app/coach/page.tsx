@@ -20,7 +20,7 @@ type Props = {
 
 export async function generateMetadata({}: Props): Promise<Metadata> {
   return {
-    title: `我的課堂日曆`,
+    title: `我的工作日曆`,
   };
 }
 
