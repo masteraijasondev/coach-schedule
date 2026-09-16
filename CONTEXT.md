@@ -9,7 +9,7 @@ A coach-declared time window when they can be assigned work. Not itself a paid s
 _Avoid_: Shift, 報更 (when meaning availability)
 
 **放假 (Leave)**:
-A full day the coach is unavailable. Mutually exclusive with availability that day. Blocks assignment.
+A coach-declared unavailable window: a full day, or a timed Short Break. Full-day leave is mutually exclusive with availability that day. A Short Break can sit beside availability on the same day (for example evening unavailable, morning still 可返工). Both block assignment in the covered window.
 _Avoid_: Day off request (as a separate approval object)
 
 **派更 (Assignment)**:
@@ -20,13 +20,13 @@ _Avoid_: Open lesson, self-registered lesson, 派工
 Assignment status after the employer assigns and before the coach confirms. Visible on both calendars; does not count toward pay.
 _Avoid_: 已指派 (as the user-facing label), pending approval by employer
 
-**已確認**:
-Assignment status after the coach confirms, before start time. Counts toward payroll when an amount is set.
+**已確認 / 已確認簽到**:
+Coach-confirmed work periods inside an assignment. Only these periods count toward payroll when an amount is set. Time inside the original assigned window that was not added stays unconfirmed and unpaid.
 _Avoid_: 已完成 (as the user-facing label for pay eligibility)
 
-**確認派更**:
-The coach's sole action on an assignment (accept). There is no reject action; disagreement is handled by employer cancel.
-_Avoid_: Approve, 批更 (as employer-side approval of coach self-logs)
+**確認派更 / 簽到**:
+The coach confirms actual work inside an assigned window by adding one or more time periods (same interaction as 報更), then confirming. Only added periods become 已確認簽到 and count toward payroll. Time not added is unconfirmed and unpaid; leftover availability can be assigned again.
+_Avoid_: Confirming the whole assigned window in one click
 
 **計薪課堂**:
 A confirmed lesson with a coach pay amount. Salary totals only these.

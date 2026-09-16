@@ -41,7 +41,7 @@ export async function CoachAvailabilityCalendar({
       .order("start_minute"),
     supabase
       .from("staff_leaves")
-      .select("id, coach_id, leave_date")
+      .select("id, coach_id, leave_date, start_minute, end_minute")
       .eq("coach_id", coachId)
       .gte("leave_date", week)
       .lte("leave_date", weekEnd),

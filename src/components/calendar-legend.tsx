@@ -1,9 +1,9 @@
 export function CalendarLegend() {
   const items = [
-    { className: "bg-amber-400", label: "待確認" },
-    { className: "bg-emerald-500", label: "已確認" },
     { className: "bg-sky-400", label: "可返工" },
-    { className: "bg-rose-400", label: "放假" },
+    { className: "bg-amber-400", label: "待公司派更" },
+    { className: "bg-emerald-500", label: "上班日期及時間" },
+    { className: "bg-rose-400", label: "放假或 Short Break" },
   ];
 
   return (

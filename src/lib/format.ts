@@ -62,6 +62,26 @@ export function formatAvailabilityTime(minutes: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+export function leaveWindowLabel(leave: {
+  start_minute?: number | null;
+  end_minute?: number | null;
+}): string {
+  if (leave.start_minute == null || leave.end_minute == null) {
+    return "放假";
+  }
+  return `${formatAvailabilityTime(leave.start_minute)}–${formatAvailabilityTime(leave.end_minute)} Short Break`;
+}
+
+export function calendarAssignmentLabel(status: string): string {
+  if (status === "assigned") {
+    return "待確認";
+  }
+  if (status === "completed") {
+    return "已確認簽到";
+  }
+  return status;
+}
+
 export function formatHeadcount(
   actual: number | null | undefined,
   expected: number | null | undefined,

@@ -76,13 +76,13 @@ function availabilityDatabaseError(message: string): string {
     return "找不到此時段，請重新整理後再試";
   }
   if (message.includes("leave day")) {
-    return "當日已報放假，請先取消放假再報可返工";
+    return "此時段已報放假或 Short Break";
   }
   if (message.includes("locked by an assigned lesson")) {
     return "此時段已有派更，不可修改或刪除可返工時間";
   }
   if (message.includes("assigned work")) {
-    return "當日已有派更，不可報放假";
+    return "此時段已有派更，不可報放假";
   }
   return "儲存可返工時間失敗";
 }
@@ -125,6 +125,46 @@ export async function saveLeaveAction(
   }
 }
 
+export async function saveShortBreakAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireCoach();
+    const id = String(formData.get("leave_id") ?? "").trim() || null;
+    const date = String(formData.get("leave_date") ?? "").trim();
+    const startMinute = parseMinute(formData.get("start_minute"));
+    const endMinute = parseMinute(formData.get("end_minute"));
+    const validationError = validateAvailabilityInput(
+      date,
+      startMinute,
+      endMinute,
+    );
+    if (validationError) {
+      return { ok: false, error: validationError };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("save_staff_short_break", {
+      p_id: id,
+      p_leave_date: date,
+      p_start_minute: startMinute,
+      p_end_minute: endMinute,
+    });
+
+    if (error) {
+      console.error("[saveShortBreakAction]", { error, leaveId: id, date });
+      return { ok: false, error: availabilityDatabaseError(error.message) };
+    }
+
+    revalidateAvailabilityPages();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[saveShortBreakAction] unexpected", { error });
+    return { ok: false, error: "報 Short Break 時發生錯誤" };
+  }
+}
+
 export async function cancelLeaveAction(
   leaveDate: string,
 ): Promise<ActionResult> {
@@ -154,6 +194,39 @@ export async function cancelLeaveAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[cancelLeaveAction] unexpected", { error });
+    return { ok: false, error: "取消放假時發生錯誤" };
+  }
+}
+
+export async function cancelLeaveByIdAction(
+  leaveId: string,
+): Promise<ActionResult> {
+  try {
+    await requireCoach();
+    if (!leaveId) {
+      return { ok: false, error: "找不到放假紀錄" };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("delete_staff_leave_by_id", {
+      p_id: leaveId,
+    });
+
+    if (error) {
+      console.error("[cancelLeaveByIdAction]", { error, leaveId });
+      if (error.message.includes("Past leave")) {
+        return { ok: false, error: "過去的放假不能取消" };
+      }
+      if (error.message.includes("not found")) {
+        return { ok: false, error: "找不到放假紀錄" };
+      }
+      return { ok: false, error: availabilityDatabaseError(error.message) };
+    }
+
+    revalidateAvailabilityPages();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[cancelLeaveByIdAction] unexpected", { error });
     return { ok: false, error: "取消放假時發生錯誤" };
   }
 }

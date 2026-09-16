@@ -19,6 +19,13 @@ type SlotSelection = {
   slotEndMinute: number;
 };
 
+type LeaveSlot = {
+  id?: string;
+  leave_date: string;
+  start_minute?: number | null;
+  end_minute?: number | null;
+};
+
 type WeekLesson = {
   id: string;
   starts_at: string;
@@ -39,7 +46,7 @@ export async function EmployerAssignPanel({
   currentWeekHref,
   isCurrentWeek,
   slots: providedSlots,
-  leaveDates: providedLeaveDates,
+  leaves: providedLeaves,
   selectedDay,
   selectedSlot,
   types,
@@ -57,7 +64,7 @@ export async function EmployerAssignPanel({
   currentWeekHref: string;
   isCurrentWeek: boolean;
   slots?: AvailabilitySlot[];
-  leaveDates?: string[];
+  leaves?: LeaveSlot[];
   selectedDay?: string;
   selectedSlot?: SlotSelection | null;
   types: {
@@ -69,7 +76,7 @@ export async function EmployerAssignPanel({
   view?: "month" | "week";
 }) {
   let slots = providedSlots;
-  let leaveDates = providedLeaveDates;
+  let leaves = providedLeaves;
   let lessons: WeekLesson[] = [];
   let availabilityError = null;
   let leavesError = null;
@@ -93,17 +100,14 @@ export async function EmployerAssignPanel({
           .order("available_date")
           .order("start_minute")
       : Promise.resolve({ data: slots, error: null }),
-    leaveDates == null
+    leaves == null
       ? supabase
           .from("staff_leaves")
-          .select("leave_date")
+          .select("id, leave_date, start_minute, end_minute")
           .eq("coach_id", coachId)
           .gte("leave_date", week)
           .lte("leave_date", weekEnd)
-      : Promise.resolve({
-          data: leaveDates.map((leave_date) => ({ leave_date })),
-          error: null,
-        }),
+      : Promise.resolve({ data: leaves, error: null }),
     supabase
       .from("lessons")
       .select("id, starts_at, ends_at, status")
@@ -114,12 +118,10 @@ export async function EmployerAssignPanel({
   ]);
 
   availabilityError = slots == null ? availabilityResult.error : null;
-  leavesError = leaveDates == null ? leavesResult.error : null;
+  leavesError = leaves == null ? leavesResult.error : null;
   lessonsError = lessonsResult.error;
   slots = slots ?? availabilityResult.data ?? [];
-  leaveDates =
-    leaveDates ??
-    (leavesResult.data ?? []).map((leave) => leave.leave_date);
+  leaves = leaves ?? leavesResult.data ?? [];
   lessons = lessonsResult.data ?? [];
 
   if (availabilityError || leavesError || lessonsError) {
@@ -154,7 +156,7 @@ export async function EmployerAssignPanel({
           currentWeekHref={currentWeekHref}
           isCurrentWeek={isCurrentWeek}
           slots={slots}
-          leaveDates={leaveDates}
+          leaves={leaves}
           lessons={lessons}
           nowMinute={nowMinute}
           view={view}

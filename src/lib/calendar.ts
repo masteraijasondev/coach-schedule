@@ -144,7 +144,26 @@ export function overlappingLesson<
   endMinute: number,
   lessons: T[],
 ): T | undefined {
-  const matches = lessons.filter((lesson) => {
+  const matches = overlappingLessons(
+    date,
+    startMinute,
+    endMinute,
+    lessons,
+  );
+  return (
+    matches.find((lesson) => lesson.status === "assigned") ?? matches[0]
+  );
+}
+
+export function overlappingLessons<
+  T extends { starts_at: string; ends_at: string; status?: string },
+>(
+  date: string,
+  startMinute: number,
+  endMinute: number,
+  lessons: T[],
+): T[] {
+  return lessons.filter((lesson) => {
     const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
     return (
       range.date === date &&
@@ -152,9 +171,60 @@ export function overlappingLesson<
       range.endMinute > startMinute
     );
   });
-  return (
-    matches.find((lesson) => lesson.status === "assigned") ?? matches[0]
-  );
+}
+
+export type AvailabilitySegmentLesson = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  status?: string;
+};
+
+export type AvailabilitySegment<T extends AvailabilitySegmentLesson> = {
+  startMinute: number;
+  endMinute: number;
+  lesson?: T;
+};
+
+/** Split an availability window by overlapping lessons so leftover stays 可返工. */
+export function availabilitySegments<T extends AvailabilitySegmentLesson>(
+  date: string,
+  startMinute: number,
+  endMinute: number,
+  lessons: T[],
+): AvailabilitySegment<T>[] {
+  const covers = overlappingLessons(date, startMinute, endMinute, lessons)
+    .map((lesson) => {
+      const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+      return {
+        start: Math.max(startMinute, range.startMinute),
+        end: Math.min(endMinute, range.endMinute),
+        lesson,
+      };
+    })
+    .filter((cover) => cover.start < cover.end)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const segments: AvailabilitySegment<T>[] = [];
+  let cursor = startMinute;
+  for (const cover of covers) {
+    if (cover.start > cursor) {
+      segments.push({ startMinute: cursor, endMinute: cover.start });
+    }
+    const segStart = Math.max(cursor, cover.start);
+    if (cover.end > segStart) {
+      segments.push({
+        startMinute: segStart,
+        endMinute: cover.end,
+        lesson: cover.lesson,
+      });
+      cursor = cover.end;
+    }
+  }
+  if (cursor < endMinute) {
+    segments.push({ startMinute: cursor, endMinute });
+  }
+  return segments;
 }
 
 export function availabilityOverlapsLessons(
@@ -174,6 +244,13 @@ export function dayHasLessonOnDate(
     (lesson) =>
       lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at).date === date,
   );
+}
+
+export function isFullDayLeave(leave: {
+  start_minute?: number | null;
+  end_minute?: number | null;
+}): boolean {
+  return leave.start_minute == null || leave.end_minute == null;
 }
 
 export function getMonthCells(month: string): Date[] {

@@ -84,7 +84,7 @@ export function EmployerAssignForm({
         )}
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        時間已依此時段填入。派更後為待確認，員工確認後才計入薪資。
+        時間已依此時段填入。派更後為待確認；員工加入實際上班時段並確認簽到後才計入薪資，未加入的時間不計薪。
       </p>
       <ActionForm
         action={createLessonAction}

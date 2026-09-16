@@ -89,7 +89,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .order("start_minute"),
     supabase
       .from("staff_leaves")
-      .select("id, coach_id, leave_date")
+      .select("id, coach_id, leave_date, start_minute, end_minute")
       .gte("leave_date", gridRange.start)
       .lte("leave_date", gridRange.end),
   ]);
@@ -113,17 +113,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
             slot.available_date >= week &&
             slot.available_date <= weekEnd,
         )
-      : undefined;
-  const assignLeaveDates =
-    selectedCoach && weekInGrid
-      ? (leaves ?? [])
-          .filter(
-            (leave) =>
-              leave.coach_id === selectedCoach.id &&
-              leave.leave_date >= week &&
-              leave.leave_date <= weekEnd,
-          )
-          .map((leave) => leave.leave_date)
       : undefined;
   const initialSelection =
     selectedCoach && slotStart != null && slotEnd != null
@@ -183,7 +172,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
             })}
             isCurrentWeek={week === currentWeek}
             slots={assignSlots}
-            leaveDates={assignLeaveDates}
             view="week"
           />
         ) : null

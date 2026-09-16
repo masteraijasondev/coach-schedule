@@ -85,7 +85,7 @@ function barFromAvailability(
   const name = displayName(item.coachName, showNames);
   const text =
     variant === "leave"
-      ? [name, "放假"].filter(Boolean).join(" ")
+      ? item.label
       : [startTime(item.timeLabel) || startTime(item.label), name]
           .filter(Boolean)
           .join(" ");
@@ -93,7 +93,10 @@ function barFromAvailability(
     id: item.id,
     text,
     variant,
-    sortKey: variant === "leave" ? "0" : `1-${item.timeLabel ?? item.label}`,
+    sortKey:
+      variant === "leave" && !item.timeLabel
+        ? "0"
+        : `1-${item.timeLabel ?? item.label}`,
   };
 }
 

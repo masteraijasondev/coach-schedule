@@ -89,15 +89,13 @@ export function EmployerCalendarShell({
           slot.available_date <= weekEnd,
       )
     : [];
-  const assignLeaveDates = selectedCoach
-    ? leaves
-        .filter(
-          (leave) =>
-            leave.coach_id === selectedCoach.id &&
-            leave.leave_date >= week &&
-            leave.leave_date <= weekEnd,
-        )
-        .map((leave) => leave.leave_date)
+  const assignLeaves = selectedCoach
+    ? leaves.filter(
+        (leave) =>
+          leave.coach_id === selectedCoach.id &&
+          leave.leave_date >= week &&
+          leave.leave_date <= weekEnd,
+      )
     : [];
   const weekDays = new Set(days);
   const weekLessons = selectedCoach
@@ -242,7 +240,7 @@ export function EmployerCalendarShell({
               })}
               isCurrentWeek={week === currentWeek}
               slots={assignSlots}
-              leaveDates={assignLeaveDates}
+              leaves={assignLeaves}
               lessons={weekLessons}
               nowMinute={nowMinute}
               view="week"

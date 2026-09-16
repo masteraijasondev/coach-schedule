@@ -2,6 +2,11 @@
 
 import { fromZonedTime } from "date-fns-tz";
 import { requireCoach, requireEmployer } from "@/lib/auth";
+import { lessonMinutesInHongKong } from "@/lib/calendar";
+import {
+  assertCheckInPeriods,
+  parseCheckInPeriods,
+} from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { calculateLessonPay } from "@/lib/pay";
 import { createClient } from "@/lib/supabase/server";
@@ -344,39 +349,141 @@ export async function createLessonAction(
   }
 }
 
-export async function confirmLessonAction(
-  lessonId: string,
+function minutesToClock(minutes: number): string {
+  const hour = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const minute = String(minutes % 60).padStart(2, "0");
+  return `${hour}:${minute}`;
+}
+
+function confirmLessonErrorMessage(message: string): string {
+  if (message.includes("already started")) {
+    return "課堂已開始，無法確認；請聯絡僱主取消或重派";
+  }
+  if (message.includes("pending assignments")) {
+    return "只有待確認的派更可以確認";
+  }
+  if (message.includes("not found")) {
+    return "找不到課堂";
+  }
+  if (message.includes("At least one check-in")) {
+    return "請加入至少一個簽到時段";
+  }
+  if (message.includes("outside the assignment")) {
+    return "簽到時段必須完全落在派更範圍內";
+  }
+  if (message.includes("overlap")) {
+    return "簽到時段不可重疊";
+  }
+  if (message.includes("invalid")) {
+    return "簽到時段無效";
+  }
+  return "確認簽到失敗";
+}
+
+export async function confirmLessonPeriodsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireCoach();
+    const coach = await requireCoach();
+    const lessonId = String(formData.get("lesson_id") ?? "");
+    const parsed = parseCheckInPeriods(String(formData.get("periods") ?? ""));
     if (!lessonId) {
       return { ok: false, error: "找不到課堂" };
     }
+    if (!parsed.ok) {
+      return { ok: false, error: parsed.error };
+    }
 
     const supabase = await createClient();
-    const { error } = await supabase.rpc("confirm_staff_lesson", {
+    const { data: lesson, error: lessonError } = await supabase
+      .from("lessons")
+      .select(
+        "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount",
+      )
+      .eq("id", lessonId)
+      .eq("coach_id", coach.id)
+      .maybeSingle();
+
+    if (lessonError) {
+      console.error("[confirmLessonPeriodsAction] load", { error: lessonError });
+      return { ok: false, error: "讀取派更失敗" };
+    }
+    if (!lesson || lesson.status !== "assigned") {
+      return { ok: false, error: "只有待確認的派更可以確認" };
+    }
+
+    const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const periodError = assertCheckInPeriods(
+      parsed.periods,
+      window.startMinute,
+      window.endMinute,
+    );
+    if (periodError) {
+      return { ok: false, error: periodError };
+    }
+
+    const { data: link } = await supabase
+      .from("lesson_students")
+      .select("student_id")
+      .eq("lesson_id", lessonId)
+      .maybeSingle();
+
+    const periodsWithPay: {
+      start_minute: number;
+      end_minute: number;
+      earned_amount_hkd: number | null;
+    }[] = [];
+
+    for (const period of [...parsed.periods].sort(
+      (a, b) => a.startMinute - b.startMinute,
+    )) {
+      const startsAt = parseHongKongDateTime(
+        window.date,
+        minutesToClock(period.startMinute),
+      ).toISOString();
+      const endsAt = parseHongKongDateTime(
+        window.date,
+        minutesToClock(period.endMinute),
+      ).toISOString();
+      const rateResult = await resolveLessonPay({
+        coachId: coach.id,
+        lessonTypeId: lesson.lesson_type_id,
+        studentId: link?.student_id ?? null,
+        headcountRaw:
+          lesson.headcount == null ? "" : String(lesson.headcount),
+        expectedHeadcountRaw:
+          lesson.expected_headcount == null
+            ? ""
+            : String(lesson.expected_headcount),
+        startsAt,
+        endsAt,
+      });
+      if ("error" in rateResult) {
+        return { ok: false, error: rateResult.error };
+      }
+      periodsWithPay.push({
+        start_minute: period.startMinute,
+        end_minute: period.endMinute,
+        earned_amount_hkd: rateResult.amount,
+      });
+    }
+
+    const { error } = await supabase.rpc("confirm_staff_lesson_periods", {
       p_id: lessonId,
+      p_periods: periodsWithPay,
     });
 
     if (error) {
-      console.error("[confirmLessonAction]", { error, lessonId });
-      if (error.message.includes("already started")) {
-        return { ok: false, error: "課堂已開始，無法確認；請聯絡僱主取消或重派" };
-      }
-      if (error.message.includes("pending assignments")) {
-        return { ok: false, error: "只有待確認的派更可以確認" };
-      }
-      if (error.message.includes("not found")) {
-        return { ok: false, error: "找不到課堂" };
-      }
-      return { ok: false, error: "確認派更失敗" };
+      console.error("[confirmLessonPeriodsAction]", { error, lessonId });
+      return { ok: false, error: confirmLessonErrorMessage(error.message) };
     }
 
     revalidateSchedules();
     return { ok: true, data: undefined };
   } catch (error) {
-    console.error("[confirmLessonAction] unexpected", { error });
-    return { ok: false, error: "確認派更時發生錯誤" };
+    console.error("[confirmLessonPeriodsAction] unexpected", { error });
+    return { ok: false, error: "確認簽到時發生錯誤" };
   }
 }
 

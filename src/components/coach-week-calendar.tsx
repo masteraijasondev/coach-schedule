@@ -1,29 +1,39 @@
 "use client";
 
-import { confirmLessonAction } from "@/actions/lessons";
 import {
-  cancelLeaveAction,
+  cancelLeaveByIdAction,
   deleteAvailabilityAction,
   saveAvailabilityAction,
-  saveLeaveAction,
+  saveShortBreakAction,
 } from "@/actions/availability";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { CalendarLegend } from "@/components/calendar-legend";
+import { LessonCheckInForm } from "@/components/lesson-check-in-form";
+import {
+  CancelFullDayLeaveButton,
+  LeaveReportForm,
+} from "@/components/leave-report-form";
 import { Panel, SubmitButton } from "@/components/ui";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import {
-  overlappingLesson,
+  availabilitySegments,
   availabilityWeekDays,
   availabilityWeekStart,
   dayHasLessonOnDate,
   hongKongToday,
+  isFullDayLeave,
+  lessonMinutesInHongKong,
+  overlappingLesson,
   shiftAvailabilityWeek,
   type CalendarView,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
-import { formatAvailabilityTime } from "@/lib/format";
+import {
+  calendarAssignmentLabel,
+  formatAvailabilityTime,
+} from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { coachCalendarHref } from "@/lib/coach-href";
@@ -43,7 +53,10 @@ export type CoachWeekSlot = {
 };
 
 export type CoachWeekLeave = {
+  id?: string;
   leave_date: string;
+  start_minute?: number | null;
+  end_minute?: number | null;
 };
 
 export type CoachWeekLesson = {
@@ -146,11 +159,36 @@ export function CoachWeekCalendar({
     rows.push(availability);
     byDate.set(availability.available_date, rows);
   }
-  const leaveDates = new Set(leaves.map((leave) => leave.leave_date));
+  const leaveDates = new Set(
+    leaves.filter(isFullDayLeave).map((leave) => leave.leave_date),
+  );
+  const breaksByDate = new Map<string, CoachWeekLeave[]>();
+  for (const leave of leaves) {
+    if (isFullDayLeave(leave)) {
+      continue;
+    }
+    const rows = breaksByDate.get(leave.leave_date) ?? [];
+    rows.push(leave);
+    breaksByDate.set(leave.leave_date, rows);
+  }
   const nowMinute =
     Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
     Number(formatInTimeZone(now, TIMEZONE, "m"));
-  const { start: gridStart, end: gridEnd } = weekGridRange(availabilities);
+  const { start: gridStart, end: gridEnd } = weekGridRange([
+    ...availabilities,
+    ...leaves.flatMap((leave) =>
+      leave.start_minute != null && leave.end_minute != null
+        ? [{ start_minute: leave.start_minute, end_minute: leave.end_minute }]
+        : [],
+    ),
+    ...assignedLessons.map((lesson) => {
+      const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+      return {
+        start_minute: range.startMinute,
+        end_minute: range.endMinute,
+      };
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -163,10 +201,10 @@ export function CoachWeekCalendar({
       ) : (
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
-            <p className="text-sm text-stone-500">
-              選擇指定日期及時段，或報全日放假。每次新增、修改或刪除都會即時儲存。時間以
-              30 分鐘為單位。
-            </p>
+        <p className="text-sm text-stone-500">
+          選擇指定日期及時段報可返工，或報 Short Break／全日放假。待確認派更請加入實際上班時段後確認簽到；未加入的時間不計薪。每次新增、修改或刪除都會即時儲存。時間以
+          30 分鐘為單位。
+        </p>
             <div className="flex items-center justify-between gap-2">
               <Link
                 href={coachWeekHref(prevWeek, month, day, view)}
@@ -223,9 +261,6 @@ export function CoachWeekCalendar({
               nowMinute={days.includes(today) ? nowMinute : null}
               allDay={(date) => {
                 const onLeave = leaveDates.has(date);
-                const dayAvailabilities = onLeave
-                  ? []
-                  : (byDate.get(date) ?? []);
                 const suggestedStart = defaultStartMinute(date, today, now);
                 const hasAssigned = dayHasLessonOnDate(date, assignedLessons);
                 if (onLeave) {
@@ -235,13 +270,7 @@ export function CoachWeekCalendar({
                         放假
                       </p>
                       {suggestedStart != null ? (
-                        <ServerActionButton
-                          action={cancelLeaveAction.bind(null, date)}
-                          confirmMessage="確定取消這天放假？"
-                          className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
-                        >
-                          取消放假
-                        </ServerActionButton>
+                        <CancelFullDayLeaveButton date={date} />
                       ) : null}
                     </div>
                   );
@@ -274,23 +303,11 @@ export function CoachWeekCalendar({
                         <SubmitButton>新增</SubmitButton>
                       </ActionForm>
                     </details>
-                    {hasAssigned ? (
-                      <p className="text-center text-[10px] text-stone-500">
-                        已有派更，不可放假
-                      </p>
-                    ) : (
-                      <ServerActionButton
-                        action={saveLeaveAction.bind(null, date)}
-                        confirmMessage={
-                          dayAvailabilities.length > 0
-                            ? "將取消當日已報的可返工時段，改為全日放假。確定？"
-                            : "確定這天全日放假？"
-                        }
-                        className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
-                      >
-                        報放假
-                      </ServerActionButton>
-                    )}
+                    <LeaveReportForm
+                      date={date}
+                      suggestedStart={suggestedStart}
+                      canTakeFullDay={!hasAssigned}
+                    />
                   </div>
                 );
               }}
@@ -298,51 +315,138 @@ export function CoachWeekCalendar({
                 if (leaveDates.has(date)) {
                   return null;
                 }
-                return (byDate.get(date) ?? []).map((availability) => {
-                  const overlap = overlappingLesson(
-                    date,
-                    availability.start_minute,
-                    availability.end_minute,
-                    assignedLessons,
-                  );
-                  const pending = overlap?.status === "assigned";
-                  const confirmed = overlap?.status === "completed";
-                  const locked = overlap != null;
+                const breakBlocks = (breaksByDate.get(date) ?? []).map(
+                  (leave) => {
+                    const start = leave.start_minute ?? 0;
+                    const end = leave.end_minute ?? 0;
+                    const timeLabel = `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)}`;
+                    const { top, height } = eventPosition(
+                      start,
+                      end,
+                      gridStart,
+                      gridEnd,
+                    );
+                    const shell =
+                      "absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs";
+                    const started =
+                      availabilityStartsAt(date, start) <= now;
+                    if (started || !leave.id) {
+                      return (
+                        <div
+                          key={leave.id ?? `${date}-${start}`}
+                          className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                          style={{ top, height }}
+                        >
+                          <p className="font-medium tabular-nums">{timeLabel}</p>
+                          <p>Short Break</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <details
+                        key={leave.id}
+                        className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                        style={{ top, height }}
+                      >
+                        <summary className="cursor-pointer list-none font-medium tabular-nums">
+                          {timeLabel} Short Break
+                        </summary>
+                        <div className="min-w-[9rem] space-y-2 border-t border-rose-200 bg-white p-2 text-stone-900">
+                          <ActionForm
+                            action={saveShortBreakAction}
+                            className="space-y-2"
+                          >
+                            <input
+                              type="hidden"
+                              name="leave_id"
+                              value={leave.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="leave_date"
+                              value={date}
+                            />
+                            <AvailabilityTimeFields
+                              defaultStartMinute={start}
+                              defaultEndMinute={end}
+                            />
+                            <SubmitButton>儲存</SubmitButton>
+                          </ActionForm>
+                          <ServerActionButton
+                            action={cancelLeaveByIdAction.bind(null, leave.id)}
+                            confirmMessage="確定取消此時段 Short Break？"
+                            className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
+                          >
+                            刪除
+                          </ServerActionButton>
+                        </div>
+                      </details>
+                    );
+                  },
+                );
+                const availabilityBlocks = (byDate.get(date) ?? []).flatMap(
+                  (availability) => {
+                  const locked =
+                    overlappingLesson(
+                      date,
+                      availability.start_minute,
+                      availability.end_minute,
+                      assignedLessons,
+                    ) != null;
                   const editable = canEditAvailability(
                     availability,
                     now,
                     locked,
                   );
-                  const timeLabel = `${formatAvailabilityTime(
-                    availability.start_minute,
-                  )}–${formatAvailabilityTime(availability.end_minute)}`;
-                  const { top, height } = eventPosition(
+                  const shell =
+                    "absolute right-0.5 left-0.5 z-[1] overflow-auto rounded-sm border px-1 py-0.5 text-left text-xs";
+                  return availabilitySegments(
+                    date,
                     availability.start_minute,
                     availability.end_minute,
+                    assignedLessons,
+                  ).map((segment) => {
+                  const pending = segment.lesson?.status === "assigned";
+                  const confirmed = segment.lesson?.status === "completed";
+                  const timeLabel = `${formatAvailabilityTime(
+                    segment.startMinute,
+                  )}–${formatAvailabilityTime(segment.endMinute)}`;
+                  const { top, height } = eventPosition(
+                    segment.startMinute,
+                    segment.endMinute,
                     gridStart,
                     gridEnd,
                   );
-                  const shell =
-                    "absolute right-0.5 left-0.5 z-[1] overflow-auto rounded-sm border px-1 py-0.5 text-left text-xs";
+                  const key = `${availability.id}-${segment.startMinute}-${segment.endMinute}`;
 
-                  if (pending && overlap) {
-                    const canConfirm = new Date(overlap.starts_at) > now;
+                  if (pending && segment.lesson) {
+                    const canConfirm =
+                      new Date(segment.lesson.starts_at) > now;
+                    const lessonWindow = lessonMinutesInHongKong(
+                      segment.lesson.starts_at,
+                      segment.lesson.ends_at,
+                    );
                     return (
                       <div
-                        key={availability.id}
-                        className={`${shell} border-dashed border-amber-400 bg-amber-100 text-amber-950`}
+                        key={key}
+                        className={`${shell} overflow-visible border-dashed border-amber-400 bg-amber-100 text-amber-950`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
-                        <p>待確認</p>
+                        <p>{calendarAssignmentLabel("assigned")}</p>
                         {canConfirm ? (
-                          <ServerActionButton
-                            action={confirmLessonAction.bind(null, overlap.id)}
-                            confirmMessage="確定接受此派更？確認後才計入薪資。"
-                            className="mt-1 w-full min-h-11 rounded-md bg-stone-900 px-2 py-1 text-xs text-white disabled:opacity-60"
-                          >
-                            確認
-                          </ServerActionButton>
+                          <details className="mt-1 rounded-sm border border-dashed border-amber-300 bg-white text-stone-900">
+                            <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
+                              簽到
+                            </summary>
+                            <div className="min-w-[9rem] border-t border-amber-100 p-2">
+                              <LessonCheckInForm
+                                lessonId={segment.lesson.id}
+                                windowStart={lessonWindow.startMinute}
+                                windowEnd={lessonWindow.endMinute}
+                              />
+                            </div>
+                          </details>
                         ) : (
                           <p className="text-amber-800">已過開始時間</p>
                         )}
@@ -353,12 +457,12 @@ export function CoachWeekCalendar({
                   if (confirmed) {
                     return (
                       <div
-                        key={availability.id}
+                        key={key}
                         className={`${shell} border-emerald-400 bg-emerald-100 text-emerald-950`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
-                        <p>已確認</p>
+                        <p>{calendarAssignmentLabel("completed")}</p>
                       </div>
                     );
                   }
@@ -366,19 +470,23 @@ export function CoachWeekCalendar({
                   if (!editable) {
                     return (
                       <div
-                        key={availability.id}
-                        className={`${shell} border-stone-200 bg-stone-100 text-stone-600`}
+                        key={key}
+                        className={`${shell} ${
+                          locked
+                            ? "border-sky-200 bg-sky-50 text-sky-900"
+                            : "border-stone-200 bg-stone-100 text-stone-600"
+                        }`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
-                        <p>已開始</p>
+                        <p>{locked ? "可返工" : "已開始"}</p>
                       </div>
                     );
                   }
 
                   return (
                     <details
-                      key={availability.id}
+                      key={key}
                       className={`${shell} overflow-visible border-sky-300 bg-sky-100 text-sky-950`}
                       style={{ top, height }}
                     >
@@ -420,6 +528,9 @@ export function CoachWeekCalendar({
                     </details>
                   );
                 });
+                },
+                );
+                return [...breakBlocks, ...availabilityBlocks];
               }}
             />
             <p className="mt-2 text-sm text-stone-500">

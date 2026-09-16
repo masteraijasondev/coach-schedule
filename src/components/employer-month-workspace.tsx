@@ -8,6 +8,8 @@ import { EnsureStudentDirectory } from "@/components/student-directory-provider"
 import { Panel } from "@/components/ui";
 import {
   availabilityWeekStart,
+  availabilitySegments,
+  isFullDayLeave,
   lessonDayKey,
   overlappingLesson,
   payrollPeriodForDate,
@@ -21,10 +23,12 @@ import {
 } from "@/lib/calendar-history";
 import { employerCalendarHref } from "@/lib/employer-href";
 import {
+  calendarAssignmentLabel,
   formatAvailabilityTime,
   formatDateTime,
   formatLessonSizeLabel,
   formatMoneyOrPending,
+  leaveWindowLabel,
   lessonStatusLabel,
   nestedStudentName,
 } from "@/lib/format";
@@ -72,6 +76,8 @@ export type EmployerMonthLeave = {
   id: string;
   coach_id: string;
   leave_date: string;
+  start_minute?: number | null;
+  end_minute?: number | null;
 };
 
 export function EmployerMonthWorkspace({
@@ -133,7 +139,9 @@ export function EmployerMonthWorkspace({
   }
 
   const leaveByCoachDate = new Set(
-    leaves.map((leave) => `${leave.coach_id}:${leave.leave_date}`),
+    leaves
+      .filter(isFullDayLeave)
+      .map((leave) => `${leave.coach_id}:${leave.leave_date}`),
   );
   const availabilityByDay = new Map<
     string,
@@ -153,8 +161,11 @@ export function EmployerMonthWorkspace({
     const list = availabilityByDay.get(leave.leave_date) ?? [];
     list.push({
       id: leave.id,
-      label: `${coachName} 放假`,
+      label: `${coachName} ${leaveWindowLabel(leave)}`,
       coachName,
+      timeLabel: isFullDayLeave(leave)
+        ? undefined
+        : formatAvailabilityTime(leave.start_minute ?? 0),
       variant: "leave",
     });
     availabilityByDay.set(leave.leave_date, list);
@@ -168,25 +179,26 @@ export function EmployerMonthWorkspace({
       continue;
     }
     const coachName = coachMap.get(availability.coach_id) ?? "—";
-    const overlap = overlappingLesson(
+    const list = availabilityByDay.get(availability.available_date) ?? [];
+    for (const segment of availabilitySegments(
       availability.available_date,
       availability.start_minute,
       availability.end_minute,
       shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
-    );
-    const list = availabilityByDay.get(availability.available_date) ?? [];
-    list.push({
-      id: availability.id,
-      label: `${coachName} ${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
-      coachName,
-      timeLabel: formatAvailabilityTime(availability.start_minute),
-      variant:
-        overlap?.status === "assigned"
-          ? "pending"
-          : overlap?.status === "completed"
-            ? "confirmed"
-            : "slot",
-    });
+    )) {
+      list.push({
+        id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
+        label: `${coachName} ${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+        coachName,
+        timeLabel: formatAvailabilityTime(segment.startMinute),
+        variant:
+          segment.lesson?.status === "assigned"
+            ? "pending"
+            : segment.lesson?.status === "completed"
+              ? "confirmed"
+              : "slot",
+      });
+    }
     availabilityByDay.set(availability.available_date, list);
   }
 
@@ -229,6 +241,8 @@ export function EmployerMonthWorkspace({
       id: leave.id,
       coachId: leave.coach_id,
       coachName: coachMap.get(leave.coach_id) ?? "—",
+      start_minute: leave.start_minute,
+      end_minute: leave.end_minute,
     }));
 
   const selectedCoach =
@@ -290,10 +304,10 @@ export function EmployerMonthWorkspace({
   }
 
   return (
-    <>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          格內最多顯示兩項。點選日期後，全部詳情在下方。員工確認後才計入薪資。
+          格內最多顯示兩項。點選日期後，當日詳情與派更在右側。員工確認後才計入薪資。
         </p>
         <MonthCalendar
           month={month}
@@ -320,7 +334,10 @@ export function EmployerMonthWorkspace({
         />
       </Panel>
 
-      <section id="day" className="scroll-mt-4">
+      <section
+        id="day"
+        className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto"
+      >
         <Panel title={day}>
           <ul className="divide-y divide-stone-100">
             {dayLessons.map((lesson) => {
@@ -407,7 +424,9 @@ export function EmployerMonthWorkspace({
               {dayLeaves.map((leave) => (
                 <li key={leave.id} className="py-3">
                   <p className="font-medium">{leave.coachName}</p>
-                  <p className="mt-1 text-sm text-rose-800">全日放假</p>
+                  <p className="mt-1 text-sm text-rose-800">
+                    {isFullDayLeave(leave) ? "全日放假" : leaveWindowLabel(leave)}
+                  </p>
                 </li>
               ))}
               {dayAvailabilities.map((group) => {
@@ -419,12 +438,12 @@ export function EmployerMonthWorkspace({
                   selectedCoach?.id === group.coachId &&
                   group.slots.some(
                     (slot) =>
-                      slot.start === initialSelection.startMinute &&
-                      slot.end === initialSelection.slotEndMinute &&
+                      slot.start <= initialSelection.startMinute &&
+                      slot.end >= initialSelection.slotEndMinute &&
                       !overlappingLesson(
                         day,
-                        slot.start,
-                        slot.end,
+                        initialSelection.startMinute,
+                        initialSelection.slotEndMinute,
                         coachDayLessons,
                       ),
                   );
@@ -432,17 +451,18 @@ export function EmployerMonthWorkspace({
                   <li key={group.coachId} className="space-y-3 py-3">
                     <p className="font-medium">{group.coachName}</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {group.slots.map((slot) => {
-                        const overlap = overlappingLesson(
+                      {group.slots.flatMap((slot) =>
+                        availabilitySegments(
                           day,
                           slot.start,
                           slot.end,
                           coachDayLessons,
-                        );
+                        ).map((segment) => {
+                        const overlap = segment.lesson;
                         const selected =
                           selectedCoach?.id === group.coachId &&
-                          slotStart === slot.start &&
-                          slotEnd === slot.end;
+                          slotStart === segment.startMinute &&
+                          slotEnd === segment.endMinute;
                         if (overlap) {
                           const pending = overlap.status === "assigned";
                           const studentNames = (overlap.lesson_students ?? [])
@@ -450,7 +470,7 @@ export function EmployerMonthWorkspace({
                             .filter((name): name is string => Boolean(name));
                           return (
                             <span
-                              key={slot.id}
+                              key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
                               className={`rounded-md px-2 py-2 text-sm ${
                                 pending
                                   ? "bg-amber-100 text-amber-950"
@@ -458,10 +478,12 @@ export function EmployerMonthWorkspace({
                               }`}
                             >
                               <span className="tabular-nums">
-                                {formatAvailabilityTime(slot.start)}–
-                                {formatAvailabilityTime(slot.end)}
+                                {formatAvailabilityTime(segment.startMinute)}–
+                                {formatAvailabilityTime(segment.endMinute)}
                               </span>{" "}
-                              {pending ? "待確認" : "已確認"}
+                              {pending
+                                ? calendarAssignmentLabel("assigned")
+                                : calendarAssignmentLabel("completed")}
                               {typeMap.get(overlap.lesson_type_id)
                                 ? ` ·${typeMap.get(overlap.lesson_type_id)}`
                                 : ""}
@@ -473,21 +495,21 @@ export function EmployerMonthWorkspace({
                         }
                         return (
                           <a
-                            key={slot.id}
+                            key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
                             href={`${employerCalendarHref({
                               month,
                               day,
                               coach: group.coachId,
                               week: availabilityWeekStart(day),
-                              slotStart: slot.start,
-                              slotEnd: slot.end,
+                              slotStart: segment.startMinute,
+                              slotEnd: segment.endMinute,
                             })}#day`}
                             onClick={(event) =>
                               selectSlot(
                                 event,
                                 group.coachId,
-                                slot.start,
-                                slot.end,
+                                segment.startMinute,
+                                segment.endMinute,
                               )
                             }
                             className={`min-h-11 rounded-md border border-dashed px-2 py-2 text-sm tabular-nums ${
@@ -496,11 +518,12 @@ export function EmployerMonthWorkspace({
                                 : "border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100"
                             }`}
                           >
-                            {formatAvailabilityTime(slot.start)}–
-                            {formatAvailabilityTime(slot.end)} 可返工
+                            {formatAvailabilityTime(segment.startMinute)}–
+                            {formatAvailabilityTime(segment.endMinute)} 可返工
                           </a>
                         );
-                      })}
+                      }),
+                      )}
                     </div>
                     {selectedSlotOpen && initialSelection ? (
                       <>
@@ -533,6 +556,6 @@ export function EmployerMonthWorkspace({
           </div>
         </Panel>
       </section>
-    </>
+    </div>
   );
 }

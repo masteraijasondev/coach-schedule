@@ -79,6 +79,8 @@ export type StaffLeave = {
   id: string;
   coach_id: string;
   leave_date: string;
+  start_minute: number | null;
+  end_minute: number | null;
   created_at: string;
 };
 
