@@ -65,6 +65,7 @@ export function LessonCheckInForm({
       <p className="text-sm text-amber-800">只可簽到已經過去的時段</p>
     );
   }
+  const latestPastEnd = pastEnd;
 
   function addPeriod() {
     const next = { startMinute: draftStart, endMinute: draftEnd };
@@ -76,7 +77,7 @@ export function LessonCheckInForm({
       setAddError("簽到時段必須完全落在派更範圍內");
       return;
     }
-    if (next.endMinute > pastEnd) {
+    if (next.endMinute > latestPastEnd) {
       setAddError("只可簽到已經過去的時段");
       return;
     }
