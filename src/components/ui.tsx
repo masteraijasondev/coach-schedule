@@ -6,6 +6,7 @@ type Props = {
   defaultValue?: string;
   step?: string;
   min?: string;
+  minLength?: number;
 };
 
 export function Field({
@@ -16,6 +17,7 @@ export function Field({
   defaultValue,
   step,
   min,
+  minLength,
 }: Props) {
   return (
     <label className="block space-y-1 text-sm">
@@ -27,6 +29,7 @@ export function Field({
         defaultValue={defaultValue}
         step={step}
         min={min}
+        minLength={minLength}
         className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500"
       />
     </label>

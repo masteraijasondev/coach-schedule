@@ -1,4 +1,9 @@
-import { createCoachAction } from "@/actions/coaches";
+import {
+  createCoachAction,
+  deleteCoachAction,
+  resetCoachPasswordAction,
+  updateCoachNameAction,
+} from "@/actions/coaches";
 import { upsertCoachStudentRateAction } from "@/actions/rates";
 import { ActionForm } from "@/components/action-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
@@ -40,6 +45,7 @@ export default async function CoachesPage() {
               label="臨時密碼"
               name="temp_password"
               type="password"
+              minLength={8}
               required
             />
             <p className="text-xs text-stone-500">
@@ -52,19 +58,84 @@ export default async function CoachesPage() {
         <Panel title="教練列表">
           <ul className="divide-y divide-stone-100">
             {(coaches ?? []).map((coach) => (
-              <li
-                key={coach.id}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <p className="font-medium">{coach.full_name}</p>
+              <li key={coach.id} className="space-y-2 py-3">
+                <ActionForm
+                  action={updateCoachNameAction}
+                  className="flex flex-wrap items-end gap-2"
+                >
+                  <input type="hidden" name="coach_id" value={coach.id} />
+                  <div className="min-w-0 flex-1">
+                    <Field
+                      label="姓名"
+                      name="full_name"
+                      defaultValue={coach.full_name}
+                      required
+                    />
+                  </div>
+                  <SubmitButton>更新姓名</SubmitButton>
+                </ActionForm>
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-stone-500">{coach.email}</p>
+                  {coach.must_change_password ? (
+                    <span className="shrink-0 text-xs text-amber-700">
+                      待改密碼
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-xs text-stone-400">
+                      已啟用
+                    </span>
+                  )}
                 </div>
-                {coach.must_change_password ? (
-                  <span className="text-xs text-amber-700">待改密碼</span>
-                ) : (
-                  <span className="text-xs text-stone-400">已啟用</span>
-                )}
+                <details className="text-sm">
+                  <summary className="cursor-pointer text-stone-600">
+                    重設密碼或刪除帳號
+                  </summary>
+                  <div className="mt-3 space-y-4">
+                    <ActionForm
+                      action={resetCoachPasswordAction}
+                      className="space-y-3"
+                    >
+                      <input type="hidden" name="coach_id" value={coach.id} />
+                      <Field
+                        label="新密碼"
+                        name="password"
+                        type="password"
+                        minLength={8}
+                        required
+                      />
+                      <SelectField
+                        label="登入後必須更改密碼"
+                        name="must_change_password"
+                        required
+                        defaultValue="yes"
+                        options={[
+                          { value: "yes", label: "是" },
+                          { value: "no", label: "否" },
+                        ]}
+                      />
+                      <SubmitButton>重設密碼</SubmitButton>
+                    </ActionForm>
+                    <ActionForm
+                      action={deleteCoachAction}
+                      className="space-y-3"
+                    >
+                      <input type="hidden" name="coach_id" value={coach.id} />
+                      <label className="flex items-center gap-2 text-sm text-stone-700">
+                        <input
+                          type="checkbox"
+                          name="confirm_delete"
+                          value="1"
+                          required
+                        />
+                        確認刪除此帳號
+                      </label>
+                      <p className="text-xs text-stone-500">
+                        有課堂紀錄的教練無法刪除。
+                      </p>
+                      <SubmitButton variant="danger">刪除帳號</SubmitButton>
+                    </ActionForm>
+                  </div>
+                </details>
               </li>
             ))}
             {(coaches ?? []).length === 0 ? (
