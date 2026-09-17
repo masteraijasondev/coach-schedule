@@ -4,8 +4,15 @@ import { confirmLessonPeriodsAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { SubmitButton } from "@/components/ui";
-import { periodsOverlap, type CheckInPeriod } from "@/lib/check-in";
+import { hongKongToday } from "@/lib/calendar";
+import {
+  pastCheckInEndMinute,
+  periodsOverlap,
+  type CheckInPeriod,
+} from "@/lib/check-in";
+import { TIMEZONE } from "@/lib/constants";
 import { formatAvailabilityTime } from "@/lib/format";
+import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -23,22 +30,41 @@ function defaultEnd(windowStart: number, windowEnd: number): number {
 
 export function LessonCheckInForm({
   lessonId,
+  date,
   windowStart,
   windowEnd,
 }: {
   lessonId: string;
+  date: string;
   windowStart: number;
   windowEnd: number;
 }) {
   const router = useRouter();
-  const initialStart = snapStart(windowStart, windowEnd);
+  const now = new Date();
+  const nowMinute =
+    Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
+    Number(formatInTimeZone(now, TIMEZONE, "m"));
+  const pastEnd = pastCheckInEndMinute(
+    date,
+    windowStart,
+    windowEnd,
+    hongKongToday(),
+    nowMinute,
+  );
+  const initialStart = snapStart(windowStart, pastEnd ?? windowEnd);
   const [draftStart, setDraftStart] = useState(initialStart);
   const [draftEnd, setDraftEnd] = useState(
-    defaultEnd(initialStart, windowEnd),
+    defaultEnd(initialStart, pastEnd ?? windowEnd),
   );
   const [periods, setPeriods] = useState<CheckInPeriod[]>([]);
   const [addError, setAddError] = useState<string | null>(null);
   const payload = useMemo(() => JSON.stringify(periods), [periods]);
+
+  if (pastEnd == null) {
+    return (
+      <p className="text-sm text-amber-800">只可簽到已經過去的時段</p>
+    );
+  }
 
   function addPeriod() {
     const next = { startMinute: draftStart, endMinute: draftEnd };
@@ -48,6 +74,10 @@ export function LessonCheckInForm({
     }
     if (next.startMinute < windowStart || next.endMinute > windowEnd) {
       setAddError("簽到時段必須完全落在派更範圍內");
+      return;
+    }
+    if (next.endMinute > pastEnd) {
+      setAddError("只可簽到已經過去的時段");
       return;
     }
     if (periods.some((period) => periodsOverlap(period, next))) {
@@ -63,13 +93,13 @@ export function LessonCheckInForm({
   return (
     <div className="space-y-2">
       <p className="text-[10px] leading-snug text-amber-800">
-        只確認加入的時段；未加入的派更時間不當作已簽到，亦不計薪。
+        只可加入已經過去的時段再確認；未加入同未來的時間不計薪。
       </p>
       <AvailabilityTimeFields
         defaultStartMinute={initialStart}
-        defaultEndMinute={defaultEnd(initialStart, windowEnd)}
+        defaultEndMinute={defaultEnd(initialStart, pastEnd)}
         minMinute={windowStart}
-        maxMinute={windowEnd}
+        maxMinute={pastEnd}
         startName="check_in_start"
         endName="check_in_end"
         startValue={draftStart}

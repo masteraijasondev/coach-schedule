@@ -25,8 +25,8 @@ Coach-confirmed work periods inside an assignment. Only these periods count towa
 _Avoid_: 已完成 (as the user-facing label for pay eligibility)
 
 **確認派更 / 簽到**:
-The coach confirms actual work inside an assigned window by adding one or more time periods (same interaction as 報更), then confirming. Only added periods become 已確認簽到 and count toward payroll. Time not added is unconfirmed and unpaid; leftover availability can be assigned again.
-_Avoid_: Confirming the whole assigned window in one click
+The coach confirms actual work inside an assigned window by adding one or more time periods that have already ended, then confirming. Future time cannot be checked in. Only added past periods become 已確認簽到 and count toward payroll. Time not added is unconfirmed and unpaid; leftover availability can be assigned again.
+_Avoid_: Confirming the whole assigned window in one click; confirming time that has not yet ended
 
 **計薪課堂**:
 A confirmed lesson with a coach pay amount. Salary totals only these.

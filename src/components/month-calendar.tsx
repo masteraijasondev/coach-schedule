@@ -12,7 +12,7 @@ import {
 } from "@/lib/calendar";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
-const MAX_VISIBLE_BARS = 2;
+const MAX_VISIBLE_BARS = 5;
 
 type CalendarLesson = {
   id: string;
@@ -134,6 +134,7 @@ type Props = {
   todayHref?: string;
   showNames?: boolean;
   onSelectDay?: (day: string) => void;
+  legendItems?: { className: string; label: string }[];
 };
 
 export function MonthCalendar({
@@ -147,6 +148,7 @@ export function MonthCalendar({
   todayHref,
   showNames = false,
   onSelectDay,
+  legendItems,
 }: Props) {
   const cells = getMonthCells(month);
   const today = hongKongToday();
@@ -199,7 +201,7 @@ export function MonthCalendar({
           下月
         </Link>
       </div>
-      <CalendarLegend />
+      <CalendarLegend items={legendItems} />
       <div className="grid grid-cols-7 gap-1 text-center text-xs text-stone-500">
         {WEEKDAYS.map((d) => (
           <div key={d} className="py-1">
@@ -225,7 +227,7 @@ export function MonthCalendar({
               href={hrefForDay(day)}
               onClick={(event) => handleSelectDay(event, day)}
               className={[
-                "flex h-28 w-full flex-col overflow-hidden rounded-md border p-1 text-left",
+                "flex h-36 w-full flex-col overflow-hidden rounded-md border p-1 text-left",
                 inMonth
                   ? "border-stone-200 bg-white"
                   : "border-transparent bg-stone-50 text-stone-400",

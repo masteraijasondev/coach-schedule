@@ -40,6 +40,16 @@ export default async function CoachesPage() {
         <Panel title="新增教練帳號">
           <ActionForm action={createCoachAction} className="space-y-3">
             <Field label="姓名" name="full_name" required />
+            <SelectField
+              label="職位"
+              name="staff_kind"
+              required
+              defaultValue="coach"
+              options={[
+                { value: "coach", label: "Coach" },
+                { value: "operations", label: "Operation Staff" },
+              ]}
+            />
             <Field label="電郵" name="email" type="email" required />
             <Field
               label="臨時密碼"
@@ -72,7 +82,23 @@ export default async function CoachesPage() {
                       required
                     />
                   </div>
-                  <SubmitButton>更新姓名</SubmitButton>
+                  <div className="w-44">
+                    <SelectField
+                      label="職位"
+                      name="staff_kind"
+                      required
+                      defaultValue={
+                        coach.staff_kind === "operations"
+                          ? "operations"
+                          : "coach"
+                      }
+                      options={[
+                        { value: "coach", label: "Coach" },
+                        { value: "operations", label: "Operation Staff" },
+                      ]}
+                    />
+                  </div>
+                  <SubmitButton>更新</SubmitButton>
                 </ActionForm>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-stone-500">{coach.email}</p>

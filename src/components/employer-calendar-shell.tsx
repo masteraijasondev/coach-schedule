@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarFilterBar } from "@/components/calendar-filter";
 import { CalendarViewToggle } from "@/components/calendar-view-toggle";
 import { EmployerAssignWorkspace } from "@/components/employer-assign-workspace";
 import { EmployerCoachPicker } from "@/components/employer-coach-picker";
@@ -20,17 +21,24 @@ import {
   type CalendarView,
 } from "@/lib/calendar";
 import {
+  calendarHrefFromLocation,
   isModifiedClick,
   pushCalendarHref,
   readCalendarCoachId,
   readCalendarWeek,
+  replaceCalendarHref,
   useCalendarView,
   useCalendarWeek,
 } from "@/lib/calendar-history";
+import {
+  calendarFilterQuery,
+  parseCalendarFilter,
+  type CalendarFilter,
+} from "@/lib/calendar-filter";
 import { TIMEZONE } from "@/lib/constants";
-import { employerCalendarHref } from "@/lib/employer-href";
+import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import { formatInTimeZone } from "date-fns-tz";
-import { useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 export function EmployerCalendarShell({
   initialView,
@@ -49,6 +57,7 @@ export function EmployerCalendarShell({
   availabilities,
   leaves,
   remoteWeekPanel,
+  initialFilter,
 }: {
   initialView: CalendarView;
   month: string;
@@ -66,12 +75,46 @@ export function EmployerCalendarShell({
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
   remoteWeekPanel: ReactNode;
+  initialFilter: CalendarFilter;
 }) {
   const [view, setView] = useCalendarView(initialView);
   const [coachId, setCoachId] = useState(initialCoachId);
   const [week, setWeek] = useCalendarWeek(initialWeek);
+  const [filter, setFilter] = useState(initialFilter);
+  const visibleCoaches = coaches.filter((coach) =>
+    filter.staffIds.includes(coach.id),
+  );
   const selectedCoach =
-    coaches.find((coach) => coach.id === coachId) ?? null;
+    visibleCoaches.find((coach) => coach.id === coachId) ?? null;
+
+  useEffect(() => {
+    function onPop() {
+      const params = new URLSearchParams(window.location.search);
+      setFilter(
+        parseCalendarFilter(
+          { staff: params.get("staff"), status: params.get("status") },
+          coaches,
+        ),
+      );
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [coaches]);
+
+  function href(params: Parameters<typeof employerCalendarHrefWithFilter>[0]) {
+    return employerCalendarHrefWithFilter(params, filter, coaches);
+  }
+
+  function changeFilter(next: CalendarFilter) {
+    setFilter(next);
+    const query = calendarFilterQuery(next, coaches);
+    replaceCalendarHref(
+      calendarHrefFromLocation({
+        staff: query.staff ?? "",
+        status: query.status ?? "",
+      }),
+    );
+  }
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
   const weekInGrid = days.every(
@@ -149,13 +192,13 @@ export function EmployerCalendarShell({
         <h1 className="text-base font-semibold">全體教練日曆</h1>
         <CalendarViewToggle
           view={view}
-          monthHref={employerCalendarHref({
+          monthHref={href({
             month,
             day,
             coach: selectedCoach?.id,
             week,
           })}
-          weekHref={employerCalendarHref({
+          weekHref={href({
             month,
             day,
             coach: selectedCoach?.id,
@@ -165,6 +208,12 @@ export function EmployerCalendarShell({
           onViewChange={syncFromLocation}
         />
       </div>
+
+      <CalendarFilterBar
+        staff={coaches}
+        filter={filter}
+        onChange={changeFilter}
+      />
 
       <div hidden={view !== "month"}>
         <EmployerMonthWorkspace
@@ -181,16 +230,20 @@ export function EmployerCalendarShell({
           coaches={coaches}
           availabilities={availabilities}
           leaves={leaves}
+          filter={filter}
         />
       </div>
 
       <div hidden={view !== "week"} className="space-y-6">
         <Panel title="週曆">
           <p className="mb-3 text-sm text-stone-500">
-            選擇員工查看本週可返工。點選時段即可派更。
+            選擇員工查看本週可返工。點選時段即可派更。名單跟上方 Staff 篩選。
           </p>
+          {visibleCoaches.length === 0 ? (
+            <p className="text-sm text-stone-500">勾選至少一名員工才可睇週曆派更。</p>
+          ) : (
           <EmployerCoachPicker
-            coaches={coaches}
+            coaches={visibleCoaches}
             selectedCoachId={selectedCoach?.id}
             month={month}
             day={day}
@@ -201,6 +254,7 @@ export function EmployerCalendarShell({
               setWeek(readCalendarWeek(day));
             }}
           />
+          )}
         </Panel>
 
         {selectedCoach && weekInGrid ? (
@@ -216,22 +270,21 @@ export function EmployerCalendarShell({
               today={today}
               selectedDay={day}
               selectedSlot={initialSelection}
-              types={types}
-              prevWeekHref={employerCalendarHref({
+              prevWeekHref={href({
                 month,
                 day,
                 coach: selectedCoach.id,
                 week: shiftAvailabilityWeek(week, -1),
                 view: "week",
               })}
-              nextWeekHref={employerCalendarHref({
+              nextWeekHref={href({
                 month,
                 day,
                 coach: selectedCoach.id,
                 week: shiftAvailabilityWeek(week, 1),
                 view: "week",
               })}
-              currentWeekHref={employerCalendarHref({
+              currentWeekHref={href({
                 month,
                 day,
                 coach: selectedCoach.id,

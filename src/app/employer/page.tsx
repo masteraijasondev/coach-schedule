@@ -15,7 +15,8 @@ import {
   parseMonthParam,
   shiftAvailabilityWeek,
 } from "@/lib/calendar";
-import { employerCalendarHref } from "@/lib/employer-href";
+import { parseCalendarFilter, parseStaffKind } from "@/lib/calendar-filter";
+import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -27,6 +28,8 @@ type Props = {
     view?: string;
     slotStart?: string;
     slotEnd?: string;
+    staff?: string;
+    status?: string;
   }>;
 };
 
@@ -58,7 +61,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const [
     { data: lessons },
     { data: types },
-    { data: coaches },
     { data: availabilities },
     { data: leaves },
   ] = await Promise.all([
@@ -77,11 +79,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .eq("active", true)
       .order("name"),
     supabase
-      .from("profiles")
-      .select("id, full_name")
-      .eq("role", "coach")
-      .order("full_name"),
-    supabase
       .from("staff_availabilities")
       .select("id, coach_id, available_date, start_minute, end_minute")
       .gte("available_date", gridRange.start)
@@ -93,9 +90,36 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       .gte("leave_date", gridRange.start)
       .lte("leave_date", gridRange.end),
   ]);
+  // staff_kind comes from 017; keep the calendar usable until that migration is applied.
+  const coachesResult = await supabase
+    .from("profiles")
+    .select("id, full_name, staff_kind")
+    .eq("role", "coach")
+    .order("full_name");
+  const coaches =
+    coachesResult.error == null
+      ? coachesResult.data
+      : (
+          await supabase
+            .from("profiles")
+            .select("id, full_name")
+            .eq("role", "coach")
+            .order("full_name")
+        ).data;
 
+  const staff = (coaches ?? []).map((coach) => ({
+    id: coach.id,
+    full_name: coach.full_name,
+    staff_kind: parseStaffKind(
+      "staff_kind" in coach ? String(coach.staff_kind) : undefined,
+    ),
+  }));
+  const initialFilter = parseCalendarFilter(
+    { staff: params.staff, status: params.status },
+    staff,
+  );
   const selectedCoach =
-    (coaches ?? []).find((coach) => coach.id === params.coach) ?? null;
+    staff.find((coach) => coach.id === params.coach) ?? null;
   const lessonTypes = (types ?? []).map((type) => ({
     id: type.id,
     name: type.name,
@@ -133,9 +157,10 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       slotEnd={slotEnd}
       lessons={lessons ?? []}
       types={lessonTypes}
-      coaches={coaches ?? []}
+      coaches={staff}
       availabilities={availabilities ?? []}
       leaves={leaves ?? []}
+      initialFilter={initialFilter}
       remoteWeekPanel={
         selectedCoach && !weekInGrid ? (
           <EmployerAssignPanel
@@ -148,28 +173,39 @@ export default async function EmployerHomePage({ searchParams }: Props) {
             today={today}
             selectedDay={day}
             selectedSlot={initialSelection}
-            types={lessonTypes}
-            prevWeekHref={employerCalendarHref({
-              month,
-              day,
-              coach: selectedCoach.id,
-              week: prevWeek,
-              view: "week",
-            })}
-            nextWeekHref={employerCalendarHref({
-              month,
-              day,
-              coach: selectedCoach.id,
-              week: nextWeek,
-              view: "week",
-            })}
-            currentWeekHref={employerCalendarHref({
-              month,
-              day,
-              coach: selectedCoach.id,
-              week: currentWeek,
-              view: "week",
-            })}
+            prevWeekHref={employerCalendarHrefWithFilter(
+              {
+                month,
+                day,
+                coach: selectedCoach.id,
+                week: prevWeek,
+                view: "week",
+              },
+              initialFilter,
+              staff,
+            )}
+            nextWeekHref={employerCalendarHrefWithFilter(
+              {
+                month,
+                day,
+                coach: selectedCoach.id,
+                week: nextWeek,
+                view: "week",
+              },
+              initialFilter,
+              staff,
+            )}
+            currentWeekHref={employerCalendarHrefWithFilter(
+              {
+                month,
+                day,
+                coach: selectedCoach.id,
+                week: currentWeek,
+                view: "week",
+              },
+              initialFilter,
+              staff,
+            )}
             isCurrentWeek={week === currentWeek}
             slots={assignSlots}
             view="week"

@@ -42,13 +42,40 @@ export function parseCheckInPeriods(
   return { ok: true, periods };
 }
 
+export function pastCheckInEndMinute(
+  date: string,
+  windowStart: number,
+  windowEnd: number,
+  today: string,
+  nowMinute: number,
+): number | null {
+  let maxEnd = windowEnd;
+  if (date > today) {
+    return null;
+  }
+  if (date === today) {
+    maxEnd = Math.min(
+      windowEnd,
+      Math.floor(nowMinute / TIME_STEP_MINUTES) * TIME_STEP_MINUTES,
+    );
+  }
+  if (maxEnd <= windowStart) {
+    return null;
+  }
+  return maxEnd;
+}
+
 export function assertCheckInPeriods(
   periods: CheckInPeriod[],
   windowStart: number,
   windowEnd: number,
+  pastEndMinute: number | null,
 ): string | null {
   if (periods.length === 0) {
     return "請加入至少一個簽到時段";
+  }
+  if (pastEndMinute == null) {
+    return "只可簽到已經過去的時段";
   }
   const sorted = [...periods].sort(
     (a, b) => a.startMinute - b.startMinute,
@@ -61,6 +88,9 @@ export function assertCheckInPeriods(
       period.endMinute <= period.startMinute
     ) {
       return "簽到時段必須完全落在派更範圍內";
+    }
+    if (period.endMinute > pastEndMinute) {
+      return "只可簽到已經過去的時段";
     }
     if (
       period.startMinute % TIME_STEP_MINUTES !== 0 ||

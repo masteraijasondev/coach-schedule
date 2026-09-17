@@ -2,49 +2,17 @@
 
 import { createLessonAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
-import { LessonRegisterFields } from "@/components/lesson-register-fields";
-import { useStudentDirectory } from "@/components/student-directory-provider";
-import { Field, SubmitButton } from "@/components/ui";
+import { AvailabilityTimeFields } from "@/components/availability-time-fields";
+import { SubmitButton } from "@/components/ui";
 import { formatAvailabilityTime } from "@/lib/format";
-import type { PayMode } from "@/lib/types";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-const DEFAULT_DURATION_MINUTES = 60;
-const MAX_END_MINUTE = 23 * 60 + 55;
-
-type LessonTypeOption = {
-  id: string;
-  name: string;
-  pay_mode: PayMode;
-  default_duration_minutes: number;
-};
-
-function minutesToFormTime(minutes: number): string {
-  const capped = Math.min(Math.max(minutes, 0), MAX_END_MINUTE);
-  const snapped = Math.round(capped / 5) * 5;
-  const normalized = Math.min(snapped, MAX_END_MINUTE);
-  const hour = String(Math.floor(normalized / 60)).padStart(2, "0");
-  const minute = String(normalized % 60).padStart(2, "0");
-  return `${hour}:${minute}`;
-}
-
-function resolveEndMinute(
-  startMinute: number,
-  slotEndMinute: number,
-  durationMinutes: number,
-): number {
-  return Math.min(startMinute + durationMinutes, slotEndMinute, MAX_END_MINUTE);
-}
-
-function defaultTypeId(types: LessonTypeOption[]): string {
-  return types.find((t) => t.name === "PT")?.id ?? types[0]?.id ?? "";
-}
+const TIME_STEP_MINUTES = 30;
 
 export function EmployerAssignForm({
   coachId,
   coachName,
-  types,
   date,
   startMinute,
   slotEndMinute,
@@ -52,65 +20,60 @@ export function EmployerAssignForm({
 }: {
   coachId: string;
   coachName: string;
-  types: LessonTypeOption[];
   date: string;
   startMinute: number;
   slotEndMinute: number;
   clearHref: string;
 }) {
   const router = useRouter();
-  const { directory, ensureStudents } = useStudentDirectory();
-  const [typeId, setTypeId] = useState(() => defaultTypeId(types));
-  const durationMinutes =
-    types.find((t) => t.id === typeId)?.default_duration_minutes ??
-    DEFAULT_DURATION_MINUTES;
-  const payMode =
-    types.find((t) => t.id === typeId)?.pay_mode ?? "per_session";
-  const ptBlocked = payMode === "per_student" && directory.status !== "success";
-  const startTime = minutesToFormTime(startMinute);
-  const endTime = minutesToFormTime(
-    resolveEndMinute(startMinute, slotEndMinute, durationMinutes),
-  );
+  const [assignStart, setAssignStart] = useState(startMinute);
+  const [assignEnd, setAssignEnd] = useState(slotEndMinute);
+
+  useEffect(() => {
+    setAssignStart(startMinute);
+    setAssignEnd(slotEndMinute);
+  }, [startMinute, slotEndMinute]);
 
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-      <p className="font-medium">
-        派更給 {coachName}
-      </p>
+      <p className="font-medium">派更給 {coachName}</p>
       <p className="mt-1 text-sm tabular-nums text-stone-600">
-        {date} · {formatAvailabilityTime(startMinute)}–
-        {formatAvailabilityTime(
-          resolveEndMinute(startMinute, slotEndMinute, durationMinutes),
-        )}
+        {date} · 可返工 {formatAvailabilityTime(startMinute)}–
+        {formatAvailabilityTime(slotEndMinute)}
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        時間已依此時段填入。派更後為待確認；員工加入實際上班時段並確認簽到後才計入薪資，未加入的時間不計薪。
+        可只派其中一段，例如可返工 12:00–20:00，改成 16:00–20:00。派更後為待確認；員工簽到後才計入薪資。
       </p>
       <ActionForm
         action={createLessonAction}
-        className="mt-3 grid gap-3 sm:grid-cols-2"
+        className="mt-3 grid gap-3"
         onSuccess={() => {
           router.replace(clearHref);
         }}
       >
         <input type="hidden" name="coach_id" value={coachId} />
         <input type="hidden" name="date" value={date} />
-        <input type="hidden" name="start_time" value={startTime} />
-        <input type="hidden" name="end_time" value={endTime} />
-        <LessonRegisterFields
-          types={types}
-          students={directory.students}
-          studentDirectory={directory}
-          onRetryStudents={() => {
-            void ensureStudents();
+        <AvailabilityTimeFields
+          defaultStartMinute={startMinute}
+          defaultEndMinute={slotEndMinute}
+          minMinute={startMinute}
+          maxMinute={slotEndMinute}
+          startValue={assignStart}
+          endValue={assignEnd}
+          onStartChange={(next) => {
+            setAssignStart(next);
+            if (assignEnd <= next) {
+              setAssignEnd(Math.min(next + TIME_STEP_MINUTES, slotEndMinute));
+            }
           }}
-          defaultTypeId={typeId}
-          onTypeChange={setTypeId}
+          onEndChange={(next) => {
+            setAssignEnd(next);
+            if (assignStart >= next) {
+              setAssignStart(Math.max(next - TIME_STEP_MINUTES, startMinute));
+            }
+          }}
         />
-        <Field label="備註" name="notes" />
-        <div className="sm:col-span-2">
-          <SubmitButton disabled={ptBlocked}>派更</SubmitButton>
-        </div>
+        <SubmitButton>派更</SubmitButton>
       </ActionForm>
     </div>
   );

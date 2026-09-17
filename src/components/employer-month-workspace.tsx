@@ -2,9 +2,9 @@
 
 import { cancelLessonAction } from "@/actions/lessons";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
-import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { Panel } from "@/components/ui";
 import {
   availabilityWeekStart,
@@ -21,7 +21,13 @@ import {
   scrollToCalendarDay,
   useCalendarSelection,
 } from "@/lib/calendar-history";
-import { employerCalendarHref } from "@/lib/employer-href";
+import {
+  lessonStatusVisible,
+  variantVisible,
+  type CalendarFilter,
+  type StaffKind,
+} from "@/lib/calendar-filter";
+import { employerCalendarHref, employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import {
   calendarAssignmentLabel,
   formatAvailabilityTime,
@@ -62,6 +68,7 @@ export type EmployerMonthType = {
 export type EmployerMonthCoach = {
   id: string;
   full_name: string;
+  staff_kind: StaffKind;
 };
 
 export type EmployerMonthSlot = {
@@ -93,6 +100,7 @@ export function EmployerMonthWorkspace({
   coaches,
   availabilities,
   leaves,
+  filter,
 }: {
   month: string;
   day: string;
@@ -106,6 +114,7 @@ export function EmployerMonthWorkspace({
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
+  filter: CalendarFilter;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
     day: initialDay,
@@ -118,12 +127,26 @@ export function EmployerMonthWorkspace({
   const typeMap = new Map(types.map((type) => [type.id, type.name]));
   const payModeByType = new Map(types.map((type) => [type.id, type.pay_mode]));
   const coachMap = new Map(coaches.map((coach) => [coach.id, coach.full_name]));
+  const visibleStaff = new Set(filter.staffIds);
+
+  function calendarHref(
+    params: Parameters<typeof employerCalendarHref>[0],
+  ) {
+    return employerCalendarHrefWithFilter(params, filter, coaches);
+  }
 
   const lessonsByDay = new Map<
     string,
     { id: string; coachName: string; status?: string; timeLabel?: string }[]
   >();
   for (const lesson of lessons) {
+    if (
+      !lesson.coach_id ||
+      !visibleStaff.has(lesson.coach_id) ||
+      !lessonStatusVisible(lesson.status, filter.statuses)
+    ) {
+      continue;
+    }
     const key = lessonDayKey(lesson.starts_at);
     const coachName = lesson.coach_id
       ? (coachMap.get(lesson.coach_id) ?? "—")
@@ -157,6 +180,12 @@ export function EmployerMonthWorkspace({
     (lesson) => lesson.status === "assigned" || lesson.status === "completed",
   );
   for (const leave of leaves) {
+    if (
+      !visibleStaff.has(leave.coach_id) ||
+      !variantVisible("leave", filter.statuses)
+    ) {
+      continue;
+    }
     const coachName = coachMap.get(leave.coach_id) ?? "—";
     const list = availabilityByDay.get(leave.leave_date) ?? [];
     list.push({
@@ -171,6 +200,9 @@ export function EmployerMonthWorkspace({
     availabilityByDay.set(leave.leave_date, list);
   }
   for (const availability of availabilities) {
+    if (!visibleStaff.has(availability.coach_id)) {
+      continue;
+    }
     if (
       leaveByCoachDate.has(
         `${availability.coach_id}:${availability.available_date}`,
@@ -186,24 +218,34 @@ export function EmployerMonthWorkspace({
       availability.end_minute,
       shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
     )) {
+      const variant =
+        segment.lesson?.status === "assigned"
+          ? "pending"
+          : segment.lesson?.status === "completed"
+            ? "confirmed"
+            : "slot";
+      if (!variantVisible(variant, filter.statuses)) {
+        continue;
+      }
       list.push({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
         label: `${coachName} ${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
         coachName,
         timeLabel: formatAvailabilityTime(segment.startMinute),
-        variant:
-          segment.lesson?.status === "assigned"
-            ? "pending"
-            : segment.lesson?.status === "completed"
-              ? "confirmed"
-              : "slot",
+        variant,
       });
     }
     availabilityByDay.set(availability.available_date, list);
   }
 
-  const dayLessons = lessons.filter(
+  const dayLessonsForSplit = lessons.filter(
     (lesson) => lessonDayKey(lesson.starts_at) === day,
+  );
+  const dayLessons = dayLessonsForSplit.filter(
+    (lesson) =>
+      Boolean(lesson.coach_id) &&
+      visibleStaff.has(lesson.coach_id ?? "") &&
+      lessonStatusVisible(lesson.status, filter.statuses),
   );
   const dayAvailabilityByCoach = new Map<
     string,
@@ -214,6 +256,9 @@ export function EmployerMonthWorkspace({
   >();
   for (const availability of availabilities) {
     if (availability.available_date !== day) {
+      continue;
+    }
+    if (!visibleStaff.has(availability.coach_id)) {
       continue;
     }
     if (leaveByCoachDate.has(`${availability.coach_id}:${day}`)) {
@@ -236,7 +281,12 @@ export function EmployerMonthWorkspace({
     ([coachId, group]) => ({ coachId, ...group }),
   );
   const dayLeaves = leaves
-    .filter((leave) => leave.leave_date === day)
+    .filter(
+      (leave) =>
+        leave.leave_date === day &&
+        visibleStaff.has(leave.coach_id) &&
+        variantVisible("leave", filter.statuses),
+    )
     .map((leave) => ({
       id: leave.id,
       coachId: leave.coach_id,
@@ -255,7 +305,7 @@ export function EmployerMonthWorkspace({
     `/employer/salary/${coachId}?month=${payrollPeriodForDate(day)}`;
 
   function dayHref(target: string, coachId?: string) {
-    return `${employerCalendarHref({
+    return `${calendarHref({
       month: target.slice(0, 7),
       day: target,
       coach: coachId,
@@ -291,7 +341,7 @@ export function EmployerMonthWorkspace({
       slotEnd: end,
     });
     replaceCalendarHref(
-      `${employerCalendarHref({
+      `${calendarHref({
         month,
         day,
         coach: coachId,
@@ -307,7 +357,7 @@ export function EmployerMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          格內最多顯示兩項。點選日期後，當日詳情與派更在右側。員工確認後才計入薪資。
+          格內最多顯示五項。用上方篩選睇整體時段。點選日期後，當日詳情與派更在右側。
         </p>
         <MonthCalendar
           month={month}
@@ -316,15 +366,16 @@ export function EmployerMonthWorkspace({
           lessonsByDay={lessonsByDay}
           availabilityByDay={availabilityByDay}
           showNames
+          legendItems={EMPLOYER_CALENDAR_LEGEND}
           onSelectDay={selectDay}
-          todayHref={`${employerCalendarHref({
+          todayHref={`${calendarHref({
             month: today.slice(0, 7),
             day: today,
             coach: selectedCoach?.id,
             week: selectedCoach ? availabilityWeekStart(today) : undefined,
           })}#day`}
           monthHref={(target) =>
-            employerCalendarHref({
+            calendarHref({
               month: target,
               coach: selectedCoach?.id,
               week,
@@ -430,7 +481,7 @@ export function EmployerMonthWorkspace({
                 </li>
               ))}
               {dayAvailabilities.map((group) => {
-                const coachDayLessons = dayLessons.filter(
+                const coachDayLessons = dayLessonsForSplit.filter(
                   (lesson) => lesson.coach_id === group.coachId,
                 );
                 const selectedSlotOpen =
@@ -459,6 +510,14 @@ export function EmployerMonthWorkspace({
                           coachDayLessons,
                         ).map((segment) => {
                         const overlap = segment.lesson;
+                        const variant = overlap
+                          ? overlap.status === "assigned"
+                            ? "pending"
+                            : "confirmed"
+                          : "slot";
+                        if (!variantVisible(variant, filter.statuses)) {
+                          return null;
+                        }
                         const selected =
                           selectedCoach?.id === group.coachId &&
                           slotStart === segment.startMinute &&
@@ -496,7 +555,7 @@ export function EmployerMonthWorkspace({
                         return (
                           <a
                             key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                            href={`${employerCalendarHref({
+                            href={`${calendarHref({
                               month,
                               day,
                               coach: group.coachId,
@@ -526,23 +585,19 @@ export function EmployerMonthWorkspace({
                       )}
                     </div>
                     {selectedSlotOpen && initialSelection ? (
-                      <>
-                        <EnsureStudentDirectory />
-                        <EmployerAssignForm
-                          coachId={group.coachId}
-                          coachName={group.coachName}
-                          types={types}
-                          date={initialSelection.date}
-                          startMinute={initialSelection.startMinute}
-                          slotEndMinute={initialSelection.slotEndMinute}
-                          clearHref={employerCalendarHref({
-                            month,
-                            day,
-                            coach: group.coachId,
-                            week: availabilityWeekStart(day),
-                          })}
-                        />
-                      </>
+                      <EmployerAssignForm
+                        coachId={group.coachId}
+                        coachName={group.coachName}
+                        date={initialSelection.date}
+                        startMinute={initialSelection.startMinute}
+                        slotEndMinute={initialSelection.slotEndMinute}
+                        clearHref={calendarHref({
+                          month,
+                          day,
+                          coach: group.coachId,
+                          week: availabilityWeekStart(day),
+                        })}
+                      />
                     ) : null}
                   </li>
                 );

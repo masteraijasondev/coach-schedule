@@ -87,10 +87,16 @@ export function AvailabilityTimeFields({
   onEndChange?: (minutes: number) => void;
 }) {
   const starts = startOptions.filter(
-    (minutes) => minutes >= minMinute && minutes < maxMinute,
+    (minutes) =>
+      minutes >= minMinute &&
+      minutes < maxMinute &&
+      (endValue == null || minutes < endValue),
   );
   const ends = endOptions.filter(
-    (minutes) => minutes > minMinute && minutes <= maxMinute,
+    (minutes) =>
+      minutes > minMinute &&
+      minutes <= maxMinute &&
+      (startValue == null || minutes > startValue),
   );
 
   return (

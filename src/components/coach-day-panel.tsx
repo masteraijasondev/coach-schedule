@@ -23,6 +23,7 @@ import {
   overlappingLesson,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
+import { pastCheckInEndMinute } from "@/lib/check-in";
 import {
   calendarAssignmentLabel,
   formatAvailabilityTime,
@@ -112,6 +113,9 @@ export function CoachDayPanel({
 }) {
   const router = useRouter();
   const now = new Date();
+  const nowMinute =
+    Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
+    Number(formatInTimeZone(now, TIMEZONE, "m"));
   const shiftLessons = lessons.filter(
     (lesson) => lesson.status === "assigned" || lesson.status === "completed",
   );
@@ -217,15 +221,21 @@ export function CoachDayPanel({
               const timeLabel = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
               const pending = segment.lesson?.status === "assigned";
               const confirmed = segment.lesson?.status === "completed";
-              const canConfirm =
-                segment.lesson != null &&
-                new Date(segment.lesson.starts_at) > now;
               const lessonWindow = segment.lesson
                 ? lessonMinutesInHongKong(
                     segment.lesson.starts_at,
                     segment.lesson.ends_at,
                   )
                 : null;
+              const canConfirm =
+                lessonWindow != null &&
+                pastCheckInEndMinute(
+                  lessonWindow.date,
+                  lessonWindow.startMinute,
+                  lessonWindow.endMinute,
+                  today,
+                  nowMinute,
+                ) != null;
               return (
                 <div
                   key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
@@ -257,12 +267,13 @@ export function CoachDayPanel({
                     canConfirm && segment.lesson && lessonWindow ? (
                       <LessonCheckInForm
                         lessonId={segment.lesson.id}
+                        date={lessonWindow.date}
                         windowStart={lessonWindow.startMinute}
                         windowEnd={lessonWindow.endMinute}
                       />
                     ) : (
                       <p className="text-sm text-amber-800">
-                        已過開始時間，無法確認
+                        只可簽到已經過去的時段
                       </p>
                     )
                   ) : null}

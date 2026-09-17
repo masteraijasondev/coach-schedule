@@ -1,8 +1,7 @@
 "use client";
 
-import { CalendarLegend } from "@/components/calendar-legend";
+import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
-import { EnsureStudentDirectory } from "@/components/student-directory-provider";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import { availabilityWeekStart, availabilitySegments, isFullDayLeave, lessonMinutesInHongKong, overlappingLesson, shiftAvailabilityWeek } from "@/lib/calendar";
 import {
@@ -14,7 +13,6 @@ import {
 import { employerCalendarHref } from "@/lib/employer-href";
 import { calendarAssignmentLabel, formatAvailabilityTime } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
-import type { PayMode } from "@/lib/types";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 
@@ -45,13 +43,6 @@ type WeekLesson = {
   status?: string;
 };
 
-type LessonTypeOption = {
-  id: string;
-  name: string;
-  pay_mode: PayMode;
-  default_duration_minutes: number;
-};
-
 export function EmployerAssignWorkspace({
   coachId,
   coachName,
@@ -69,7 +60,6 @@ export function EmployerAssignWorkspace({
   lessons,
   selectedDay,
   selectedSlot,
-  types,
   view,
   nowMinute,
   onWeekNavigate,
@@ -90,7 +80,6 @@ export function EmployerAssignWorkspace({
   lessons: WeekLesson[];
   selectedDay?: string;
   selectedSlot?: SlotSelection | null;
-  types: LessonTypeOption[];
   view?: "month" | "week";
   nowMinute: number | null;
   onWeekNavigate?: (
@@ -238,7 +227,7 @@ export function EmployerAssignWorkspace({
       <p className="text-sm text-stone-500">
         點選可返工色塊即可派更。放假或 Short Break 以紅色顯示。
       </p>
-      <CalendarLegend />
+      <CalendarLegend items={EMPLOYER_CALENDAR_LEGEND} />
       <WeekTimeGrid
         days={days}
         today={today}
@@ -359,11 +348,9 @@ export function EmployerAssignWorkspace({
       />
       {openSlot && liveSlot ? (
         <section id="day" className="scroll-mt-4">
-          <EnsureStudentDirectory />
           <EmployerAssignForm
             coachId={coachId}
             coachName={coachName}
-            types={types}
             date={liveSlot.date}
             startMinute={liveSlot.startMinute}
             slotEndMinute={liveSlot.slotEndMinute}

@@ -1,11 +1,12 @@
 "use server";
 
-import { fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { requireCoach, requireEmployer } from "@/lib/auth";
-import { lessonMinutesInHongKong } from "@/lib/calendar";
+import { addDaysToYmd, lessonMinutesInHongKong, hongKongToday } from "@/lib/calendar";
 import {
   assertCheckInPeriods,
   parseCheckInPeriods,
+  pastCheckInEndMinute,
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { calculateLessonPay } from "@/lib/pay";
@@ -38,6 +39,9 @@ async function assertCoachAvailabilityCovers(
 }
 
 function parseHongKongDateTime(date: string, time: string): Date {
+  if (time === "24:00") {
+    return fromZonedTime(`${addDaysToYmd(date, 1)}T00:00:00`, TIMEZONE);
+  }
   return fromZonedTime(`${date}T${time}:00`, TIMEZONE);
 }
 
@@ -256,18 +260,32 @@ export async function createLessonAction(
   try {
     await requireEmployer();
 
-    const lessonTypeId = String(formData.get("lesson_type_id") ?? "");
     const date = String(formData.get("date") ?? "");
-    const startTime = String(formData.get("start_time") ?? "");
-    const endTime = String(formData.get("end_time") ?? "");
     const coachId = String(formData.get("coach_id") ?? "").trim();
     const notes = String(formData.get("notes") ?? "").trim() || null;
-    const studentId = String(formData.get("student_id") ?? "").trim() || null;
-    const headcountRaw = String(formData.get("headcount") ?? "");
-    const expectedHeadcountRaw = String(formData.get("expected_headcount") ?? "");
+    const startMinuteRaw = String(formData.get("start_minute") ?? "");
+    const endMinuteRaw = String(formData.get("end_minute") ?? "");
 
-    if (!lessonTypeId || !date || !startTime || !endTime || !coachId) {
-      return { ok: false, error: "請填寫課堂類型、時間與教練" };
+    let startTime = String(formData.get("start_time") ?? "");
+    let endTime = String(formData.get("end_time") ?? "");
+    if (startMinuteRaw !== "" || endMinuteRaw !== "") {
+      const startMinute = Number(startMinuteRaw);
+      const endMinute = Number(endMinuteRaw);
+      if (
+        !Number.isInteger(startMinute) ||
+        !Number.isInteger(endMinute) ||
+        startMinute < 0 ||
+        endMinute > 1440 ||
+        endMinute <= startMinute
+      ) {
+        return { ok: false, error: "請選擇有效的派更時段" };
+      }
+      startTime = minutesToClock(startMinute);
+      endTime = minutesToClock(endMinute);
+    }
+
+    if (!date || !startTime || !endTime || !coachId) {
+      return { ok: false, error: "請填寫時間與教練" };
     }
 
     const startTimeError = assertFiveMinuteTime(startTime);
@@ -286,19 +304,6 @@ export async function createLessonAction(
       return { ok: false, error: "結束時間必須晚於開始時間" };
     }
 
-    const rateResult = await resolveLessonPay({
-      coachId,
-      lessonTypeId,
-      studentId,
-      headcountRaw,
-      expectedHeadcountRaw,
-      startsAt,
-      endsAt,
-    });
-    if ("error" in rateResult) {
-      return { ok: false, error: rateResult.error };
-    }
-
     const coverError = await assertCoachAvailabilityCovers(
       coachId,
       startsAt,
@@ -314,6 +319,24 @@ export async function createLessonAction(
     }
 
     const supabase = await createClient();
+    let lessonTypeId = String(formData.get("lesson_type_id") ?? "").trim();
+    if (!lessonTypeId) {
+      const { data: fallbackType, error: typeError } = await supabase
+        .from("lesson_types")
+        .select("id")
+        .eq("active", true)
+        .order("name")
+        .limit(1)
+        .maybeSingle();
+      if (typeError || !fallbackType) {
+        console.error("[createLessonAction] fallback lesson type", {
+          error: typeError,
+        });
+        return { ok: false, error: "尚未設定課堂類型，無法派更" };
+      }
+      lessonTypeId = fallbackType.id;
+    }
+
     const { data: lesson, error } = await supabase
       .from("lessons")
       .insert({
@@ -322,10 +345,10 @@ export async function createLessonAction(
         ends_at: endsAt,
         status: "assigned",
         coach_id: coachId,
-        earned_amount_hkd: rateResult.amount,
-        student_fee_hkd: rateResult.studentFeeHkd ?? null,
-        headcount: rateResult.headcount ?? null,
-        expected_headcount: rateResult.expectedHeadcount ?? null,
+        earned_amount_hkd: null,
+        student_fee_hkd: null,
+        headcount: null,
+        expected_headcount: null,
         notes,
       })
       .select("id")
@@ -334,11 +357,6 @@ export async function createLessonAction(
     if (error || !lesson) {
       console.error("[createLessonAction]", { error });
       return { ok: false, error: "派更失敗" };
-    }
-
-    const linkResult = await linkLessonStudent(lesson.id, rateResult.studentId);
-    if (!linkResult.ok) {
-      return linkResult;
     }
 
     revalidateSchedules();
@@ -356,8 +374,8 @@ function minutesToClock(minutes: number): string {
 }
 
 function confirmLessonErrorMessage(message: string): string {
-  if (message.includes("already started")) {
-    return "課堂已開始，無法確認；請聯絡僱主取消或重派";
+  if (message.includes("still in the future")) {
+    return "只可簽到已經過去的時段";
   }
   if (message.includes("pending assignments")) {
     return "只有待確認的派更可以確認";
@@ -414,10 +432,21 @@ export async function confirmLessonPeriodsAction(
     }
 
     const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const now = new Date();
+    const nowMinute =
+      Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
+      Number(formatInTimeZone(now, TIMEZONE, "m"));
     const periodError = assertCheckInPeriods(
       parsed.periods,
       window.startMinute,
       window.endMinute,
+      pastCheckInEndMinute(
+        window.date,
+        window.startMinute,
+        window.endMinute,
+        hongKongToday(),
+        nowMinute,
+      ),
     );
     if (periodError) {
       return { ok: false, error: periodError };
@@ -446,6 +475,9 @@ export async function confirmLessonPeriodsAction(
         window.date,
         minutesToClock(period.endMinute),
       ).toISOString();
+      if (new Date(endsAt) > now) {
+        return { ok: false, error: "只可簽到已經過去的時段" };
+      }
       const rateResult = await resolveLessonPay({
         coachId: coach.id,
         lessonTypeId: lesson.lesson_type_id,

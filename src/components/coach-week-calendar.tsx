@@ -29,6 +29,7 @@ import {
   shiftAvailabilityWeek,
   type CalendarView,
 } from "@/lib/calendar";
+import { pastCheckInEndMinute } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import {
   calendarAssignmentLabel,
@@ -420,12 +421,18 @@ export function CoachWeekCalendar({
                   const key = `${availability.id}-${segment.startMinute}-${segment.endMinute}`;
 
                   if (pending && segment.lesson) {
-                    const canConfirm =
-                      new Date(segment.lesson.starts_at) > now;
                     const lessonWindow = lessonMinutesInHongKong(
                       segment.lesson.starts_at,
                       segment.lesson.ends_at,
                     );
+                    const canConfirm =
+                      pastCheckInEndMinute(
+                        lessonWindow.date,
+                        lessonWindow.startMinute,
+                        lessonWindow.endMinute,
+                        today,
+                        nowMinute,
+                      ) != null;
                     return (
                       <div
                         key={key}
@@ -442,13 +449,14 @@ export function CoachWeekCalendar({
                             <div className="min-w-[9rem] border-t border-amber-100 p-2">
                               <LessonCheckInForm
                                 lessonId={segment.lesson.id}
+                                date={lessonWindow.date}
                                 windowStart={lessonWindow.startMinute}
                                 windowEnd={lessonWindow.endMinute}
                               />
                             </div>
                           </details>
                         ) : (
-                          <p className="text-amber-800">已過開始時間</p>
+                          <p className="text-amber-800">只可簽到已經過去的時段</p>
                         )}
                       </div>
                     );

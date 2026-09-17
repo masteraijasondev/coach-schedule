@@ -16,6 +16,10 @@ export async function createCoachAction(
     const email = String(formData.get("email") ?? "").trim().toLowerCase();
     const fullName = String(formData.get("full_name") ?? "").trim();
     const tempPassword = String(formData.get("temp_password") ?? "");
+    const staffKind =
+      String(formData.get("staff_kind") ?? "") === "operations"
+        ? "operations"
+        : "coach";
 
     if (!email || !fullName || tempPassword.length < 8) {
       return { ok: false, error: "請填寫姓名、電郵，臨時密碼至少 8 字元" };
@@ -39,6 +43,7 @@ export async function createCoachAction(
       email,
       full_name: fullName,
       role: "coach",
+      staff_kind: staffKind,
       must_change_password: true,
     });
 
@@ -65,6 +70,10 @@ export async function updateCoachNameAction(
 
     const coachId = String(formData.get("coach_id") ?? "").trim();
     const fullName = String(formData.get("full_name") ?? "").trim();
+    const staffKind =
+      String(formData.get("staff_kind") ?? "") === "operations"
+        ? "operations"
+        : "coach";
 
     if (!coachId || !fullName) {
       return { ok: false, error: "請輸入教練姓名" };
@@ -78,7 +87,7 @@ export async function updateCoachNameAction(
     const supabase = await createClient();
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName })
+      .update({ full_name: fullName, staff_kind: staffKind })
       .eq("id", coachId)
       .eq("role", "coach");
 
