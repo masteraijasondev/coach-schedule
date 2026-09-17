@@ -2,7 +2,9 @@ import { createStudentAction, toggleStudentActiveAction } from "@/actions/studen
 import { ActionForm } from "@/components/action-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SubmitButton } from "@/components/ui";
+import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import { requireEmployer } from "@/lib/auth";
+import { formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function StudentsPage() {
@@ -10,8 +12,11 @@ export default async function StudentsPage() {
   const supabase = await createClient();
   const { data: students } = await supabase
     .from("students")
-    .select("*")
+    .select("id, name, notes, active")
     .order("name");
+  const { fees, error } = await lookupAirtableTuitions(
+    (students ?? []).map((student) => student.name),
+  );
 
   return (
     <div className="space-y-6">
@@ -26,6 +31,13 @@ export default async function StudentsPage() {
       </Panel>
 
       <Panel title="學生列表">
+        {error ? (
+          <p className="text-sm text-amber-700">{error}</p>
+        ) : (
+          <p className="text-sm text-stone-500">
+            本身學費來自 Airtable 近半年 PT 原價（未套券的最常見金額）。
+          </p>
+        )}
         <ul className="divide-y divide-stone-100">
           {(students ?? []).map((student) => (
             <li
@@ -34,6 +46,12 @@ export default async function StudentsPage() {
             >
               <div>
                 <p className="font-medium">{student.name}</p>
+                <p className="text-sm text-stone-500">
+                  本身學費：
+                  {fees.get(student.name) != null
+                    ? formatMoney(fees.get(student.name) ?? 0)
+                    : "Airtable 未有"}
+                </p>
                 {student.notes ? (
                   <p className="text-sm text-stone-500">{student.notes}</p>
                 ) : null}

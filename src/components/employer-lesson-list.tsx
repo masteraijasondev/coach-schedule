@@ -9,6 +9,7 @@ import {
   formatMoneyOrPending,
   lessonStatusLabel,
 } from "@/lib/format";
+import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import type { LessonStatus, PayMode } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -94,6 +95,16 @@ export async function EmployerLessonList({
   const coachLessons = (lessonRows ?? []) as LessonRow[];
   const typeName = new Map(types.map((type) => [type.id, type.name]));
   const payModeByType = new Map(types.map((type) => [type.id, type.pay_mode]));
+  const weekStudentNames = [
+    ...new Set(
+      coachLessons.flatMap((lesson) =>
+        (lesson.lesson_students ?? [])
+          .map(nestedStudentName)
+          .filter((name): name is string => Boolean(name)),
+      ),
+    ),
+  ];
+  const { fees: listedTuitions } = await lookupAirtableTuitions(weekStudentNames);
 
   return (
     <Panel title={`${coachName} 的派更列表`}>
@@ -139,6 +150,10 @@ export async function EmployerLessonList({
             const studentNames = (lesson.lesson_students ?? [])
               .map(nestedStudentName)
               .filter((name): name is string => Boolean(name));
+            const listedTuition =
+              studentNames
+                .map((name) => listedTuitions.get(name))
+                .find((amount) => amount != null) ?? null;
             return (
               <li key={lesson.id} className="space-y-2 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-2">
@@ -162,6 +177,9 @@ export async function EmployerLessonList({
                       <p className="text-sm text-stone-500">
                         學生學費：
                         {formatMoneyOrPending(lesson.student_fee_hkd)}
+                        {listedTuition != null
+                          ? ` · 本身 ${formatMoneyOrPending(listedTuition)}`
+                          : ""}
                       </p>
                     ) : null}
                     <p
@@ -198,6 +216,7 @@ export async function EmployerLessonList({
                         ? null
                         : Number(lesson.earned_amount_hkd)
                     }
+                    listedTuitionHkd={listedTuition}
                   />
                 ) : null}
               </li>

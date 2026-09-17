@@ -10,6 +10,7 @@ import {
   shiftMonth,
 } from "@/lib/calendar";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
+import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -78,6 +79,9 @@ export default async function EmployerCoachSalaryPage({
     (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
   );
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
+  const { fees: listedTuitions } = await lookupAirtableTuitions(
+    [...studentName.values()],
+  );
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
@@ -128,6 +132,12 @@ export default async function EmployerCoachSalaryPage({
         <ul className="divide-y divide-stone-100">
           {(lessons ?? []).map((lesson) => {
             const linkedStudentId = studentByLesson.get(lesson.id);
+            const studentLabel = linkedStudentId
+              ? (studentName.get(linkedStudentId) ?? "—")
+              : null;
+            const listedTuition = studentLabel
+              ? listedTuitions.get(studentLabel)
+              : undefined;
             const payMode = payModeByType.get(lesson.lesson_type_id);
             const sizeLabel = formatLessonSizeLabel(
               payMode,
@@ -146,7 +156,7 @@ export default async function EmployerCoachSalaryPage({
                     </p>
                     {linkedStudentId ? (
                       <p className="text-sm text-stone-500">
-                        學生：{studentName.get(linkedStudentId) ?? "—"}
+                        學生：{studentLabel}
                       </p>
                     ) : null}
                     {sizeLabel ? (
@@ -157,6 +167,9 @@ export default async function EmployerCoachSalaryPage({
                     {payMode === "per_student" ? (
                       <p className="text-stone-500">
                         學費 {formatMoneyOrPending(lesson.student_fee_hkd)}
+                        {listedTuition != null
+                          ? ` · 本身 ${formatMoney(listedTuition)}`
+                          : ""}
                       </p>
                     ) : null}
                     <p
@@ -182,6 +195,7 @@ export default async function EmployerCoachSalaryPage({
                       ? null
                       : Number(lesson.earned_amount_hkd)
                   }
+                  listedTuitionHkd={listedTuition ?? null}
                 />
               </li>
             );
