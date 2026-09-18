@@ -35,7 +35,7 @@ type Props = {
 
 export async function generateMetadata({}: Props): Promise<Metadata> {
   return {
-    title: `全體教練日曆`,
+    title: `全體員工日曆`,
   };
 }
 

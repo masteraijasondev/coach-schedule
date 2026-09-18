@@ -185,7 +185,7 @@ export default async function CoachesPage() {
           <p className="mb-3 text-sm text-amber-700">{listedError}</p>
         ) : (
           <p className="mb-3 text-sm text-stone-500">
-            學生學費用 Airtable 本身學費，教練薪資 = 學費 × 分成比例。呢度只改比例。
+            學生學費用 Airtable 本身學費，教練薪資 = 學費 × 分成比例。
           </p>
         )}
         <EmployerPtRateForm
