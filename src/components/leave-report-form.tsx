@@ -25,7 +25,7 @@ export function LeaveReportForm({
   return (
     <details className="relative z-[2] rounded-sm border border-dashed border-rose-200 bg-white text-xs">
       <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium text-rose-800">
-        報放假
+        申報放假
       </summary>
       <div className="min-w-[9rem] space-y-2 border-t border-rose-100 p-2">
         <ActionForm
@@ -40,19 +40,19 @@ export function LeaveReportForm({
               MINUTES_PER_DAY,
             )}
           />
-          <SubmitButton>報此時段</SubmitButton>
+          <SubmitButton>申報此時段</SubmitButton>
         </ActionForm>
         {canTakeFullDay ? (
           <ServerActionButton
             action={saveLeaveAction.bind(null, date)}
-            confirmMessage="確定這天全日放假？當日可返工時段會被取消。"
+            confirmMessage="確定當日全日放假？當日可返工時段將會取消。"
             className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
           >
             全日放假
           </ServerActionButton>
         ) : (
           <p className="text-center text-[10px] text-stone-500">
-            已有派更，不可全日放假
+            當日已有派更，不可全日放假
           </p>
         )}
       </div>
@@ -64,7 +64,7 @@ export function CancelFullDayLeaveButton({ date }: { date: string }) {
   return (
     <ServerActionButton
       action={cancelLeaveAction.bind(null, date)}
-      confirmMessage="確定取消這天全日放假？"
+      confirmMessage="確定取消當日全日放假？"
       className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
     >
       取消放假

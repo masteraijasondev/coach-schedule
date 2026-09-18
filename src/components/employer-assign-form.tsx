@@ -36,13 +36,13 @@ export function EmployerAssignForm({
 
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-      <p className="font-medium">派更給 {coachName}</p>
+      <p className="font-medium">為 {coachName} 派更</p>
       <p className="mt-1 text-sm tabular-nums text-stone-600">
         {date} · 可返工 {formatAvailabilityTime(startMinute)}–
         {formatAvailabilityTime(slotEndMinute)}
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        可只派其中一段，例如可返工 12:00–20:00，改成 16:00–20:00。派更後為待確認；員工簽到後才計入薪資。
+        可僅派其中一段時間。例如可返工為 12:00–20:00，可改為 16:00–20:00。派更後狀態為已派更，待簽到；員工簽到後方計入薪資。
       </p>
       <ActionForm
         action={createLessonAction}

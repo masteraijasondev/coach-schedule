@@ -55,8 +55,8 @@ export default async function CoachesPage() {
               required
               defaultValue="coach"
               options={[
-                { value: "coach", label: "Coach" },
-                { value: "operations", label: "Operation Staff" },
+                { value: "coach", label: "教練" },
+                { value: "operations", label: "營運人員" },
               ]}
             />
             <Field label="電郵" name="email" type="email" required />
@@ -102,8 +102,8 @@ export default async function CoachesPage() {
                           : "coach"
                       }
                       options={[
-                        { value: "coach", label: "Coach" },
-                        { value: "operations", label: "Operation Staff" },
+                        { value: "coach", label: "教練" },
+                        { value: "operations", label: "營運人員" },
                       ]}
                     />
                   </div>
@@ -113,7 +113,7 @@ export default async function CoachesPage() {
                   <p className="text-sm text-stone-500">{coach.email}</p>
                   {coach.must_change_password ? (
                     <span className="shrink-0 text-xs text-amber-700">
-                      待改密碼
+                      待更改密碼
                     </span>
                   ) : (
                     <span className="shrink-0 text-xs text-stone-400">
@@ -185,7 +185,7 @@ export default async function CoachesPage() {
           <p className="mb-3 text-sm text-amber-700">{listedError}</p>
         ) : (
           <p className="mb-3 text-sm text-stone-500">
-            學生學費用 Airtable 本身學費，教練薪資 = 學費 × 分成比例。
+            學生學費取自 Airtable 本身學費；教練薪資為學費乘以分成比例。此處僅可編輯分成比例。
           </p>
         )}
         <EmployerPtRateForm

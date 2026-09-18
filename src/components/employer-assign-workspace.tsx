@@ -296,10 +296,10 @@ export function EmployerAssignWorkspace({
             const className = selected
               ? "border-stone-900 bg-stone-900 text-white"
               : pending
-                ? "border-dashed border-amber-400 bg-amber-100 text-amber-950"
+                ? "border-dashed border-emerald-400 bg-emerald-100 text-emerald-950"
                 : confirmed
-                  ? "border-emerald-400 bg-emerald-100 text-emerald-950"
-                  : "border-sky-300 bg-sky-100 text-sky-950 hover:bg-sky-200";
+                  ? "border-sky-400 bg-sky-100 text-sky-950"
+                  : "border-amber-300 bg-amber-100 text-amber-950 hover:bg-amber-200";
             const key = `${slot.id}-${segment.startMinute}-${segment.endMinute}`;
             if (pending || confirmed) {
               return (
@@ -333,12 +333,12 @@ export function EmployerAssignWorkspace({
                 onClick={(event) =>
                   selectSlot(event, date, segment.startMinute, segment.endMinute)
                 }
-                title={`${label} 可返工`}
+                title={`${label} 待公司派更`}
                 className={`absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                 style={{ top, height }}
               >
                 <span className="tabular-nums">{label}</span>
-                <span className="mt-0.5 block truncate">可返工</span>
+                <span className="mt-0.5 block truncate">待公司派更</span>
               </Link>
             );
           }),

@@ -88,7 +88,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 僅計算已確認課堂；未填金額暫不計入總額。
+          結算期：{payrollPeriodLabel(period)} · 僅計算已簽到課堂；尚未填寫金額者不計入總額。
         </p>
         <ul className="divide-y divide-stone-100">
           {(lessons ?? []).map((lesson) => {
@@ -133,7 +133,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
             );
           })}
           {(lessons ?? []).length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">此結算期尚無已完成課堂</li>
+            <li className="py-3 text-sm text-stone-500">此結算期尚無已簽到課堂</li>
           ) : null}
         </ul>
       </Panel>

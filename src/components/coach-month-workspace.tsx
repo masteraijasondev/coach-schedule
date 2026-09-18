@@ -157,7 +157,7 @@ export function CoachMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          格內最多顯示兩項。點選日期後，當日詳情、報更與簽到在右側。
+          格內最多顯示兩項。點選日期後，當日詳情、申報與簽到顯示於右側。
         </p>
         <MonthCalendar
           month={month}

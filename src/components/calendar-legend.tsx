@@ -1,19 +1,14 @@
-const COACH_LEGEND = [
-  { className: "bg-sky-400", label: "可返工" },
-  { className: "bg-amber-400", label: "待確認" },
-  { className: "bg-emerald-500", label: "已確認簽到" },
+export const CALENDAR_LEGEND = [
+  { className: "bg-amber-400", label: "待公司派更" },
+  { className: "bg-emerald-400", label: "已派更，待簽到" },
+  { className: "bg-sky-500", label: "已簽到" },
   { className: "bg-rose-400", label: "放假或 Short Break" },
 ];
 
-export const EMPLOYER_CALENDAR_LEGEND = [
-  { className: "bg-sky-400", label: "待公司派更" },
-  { className: "bg-amber-400", label: "已確認" },
-  { className: "bg-rose-400", label: "放假" },
-  { className: "bg-emerald-500", label: "已確認簽到" },
-];
+export const EMPLOYER_CALENDAR_LEGEND = CALENDAR_LEGEND;
 
 export function CalendarLegend({
-  items = COACH_LEGEND,
+  items = CALENDAR_LEGEND,
 }: {
   items?: { className: string; label: string }[];
 }) {

@@ -237,10 +237,10 @@ export function EmployerCalendarShell({
       <div hidden={view !== "week"} className="space-y-6">
         <Panel title="週曆">
           <p className="mb-3 text-sm text-stone-500">
-            選擇員工查看本週可返工。點選時段即可派更。名單跟上方 Staff 篩選。
+            選擇員工以查看本週可返工時段。點選時段即可派更。名單跟隨上方篩選。
           </p>
           {visibleCoaches.length === 0 ? (
-            <p className="text-sm text-stone-500">勾選至少一名員工才可睇週曆派更。</p>
+            <p className="text-sm text-stone-500">請至少選取一名員工，方可於週曆派更。</p>
           ) : (
           <EmployerCoachPicker
             coaches={visibleCoaches}

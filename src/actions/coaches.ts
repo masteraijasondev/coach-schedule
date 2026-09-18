@@ -143,7 +143,7 @@ export async function resetCoachPasswordAction(
 
     if (profileError) {
       console.error("[resetCoachPasswordAction] profile", { profileError });
-      return { ok: false, error: "密碼已更新，但未能設定是否必須改密" };
+      return { ok: false, error: "密碼已更新，但未能設定是否必須更改密碼" };
     }
 
     const { error: signOutError } = await admin.auth.admin.signOut(coachId);

@@ -178,7 +178,7 @@ export async function EmployerLessonList({
                         學生學費：
                         {formatMoneyOrPending(lesson.student_fee_hkd)}
                         {listedTuition != null
-                          ? ` · 本身 ${formatMoneyOrPending(listedTuition)}`
+                          ? ` · 本身學費 ${formatMoneyOrPending(listedTuition)}`
                           : ""}
                       </p>
                     ) : null}
@@ -223,7 +223,7 @@ export async function EmployerLessonList({
             );
           })}
           {coachLessons.length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">此週尚未有派更</li>
+            <li className="py-3 text-sm text-stone-500">本週尚未有派更</li>
           ) : null}
         </ul>
       )}

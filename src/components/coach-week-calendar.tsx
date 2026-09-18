@@ -203,7 +203,7 @@ export function CoachWeekCalendar({
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
         <p className="text-sm text-stone-500">
-          選擇指定日期及時段報可返工，或報 Short Break／全日放假。待確認派更請加入實際上班時段後確認簽到；未加入的時間不計薪。每次新增、修改或刪除都會即時儲存。時間以
+          選擇指定日期及時段申報可返工，或申報 Short Break／全日放假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。時間以
           30 分鐘為單位。
         </p>
             <div className="flex items-center justify-between gap-2">
@@ -436,17 +436,17 @@ export function CoachWeekCalendar({
                     return (
                       <div
                         key={key}
-                        className={`${shell} overflow-visible border-dashed border-amber-400 bg-amber-100 text-amber-950`}
+                        className={`${shell} overflow-visible border-dashed border-emerald-400 bg-emerald-100 text-emerald-950`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
                         <p>{calendarAssignmentLabel("assigned")}</p>
                         {canConfirm ? (
-                          <details className="mt-1 rounded-sm border border-dashed border-amber-300 bg-white text-stone-900">
+                          <details className="mt-1 rounded-sm border border-dashed border-emerald-300 bg-white text-stone-900">
                             <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
                               簽到
                             </summary>
-                            <div className="min-w-[9rem] border-t border-amber-100 p-2">
+                            <div className="min-w-[9rem] border-t border-emerald-100 p-2">
                               <LessonCheckInForm
                                 lessonId={segment.lesson.id}
                                 date={lessonWindow.date}
@@ -456,7 +456,7 @@ export function CoachWeekCalendar({
                             </div>
                           </details>
                         ) : (
-                          <p className="text-amber-800">只可簽到已經過去的時段</p>
+                          <p className="text-emerald-800">只可簽到已經結束的時段</p>
                         )}
                       </div>
                     );
@@ -466,7 +466,7 @@ export function CoachWeekCalendar({
                     return (
                       <div
                         key={key}
-                        className={`${shell} border-emerald-400 bg-emerald-100 text-emerald-950`}
+                        className={`${shell} border-sky-400 bg-sky-100 text-sky-950`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
@@ -481,13 +481,13 @@ export function CoachWeekCalendar({
                         key={key}
                         className={`${shell} ${
                           locked
-                            ? "border-sky-200 bg-sky-50 text-sky-900"
+                            ? "border-amber-200 bg-amber-50 text-amber-900"
                             : "border-stone-200 bg-stone-100 text-stone-600"
                         }`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
-                        <p>{locked ? "可返工" : "已開始"}</p>
+                        <p>{locked ? "待公司派更" : "已開始"}</p>
                       </div>
                     );
                   }
@@ -495,7 +495,7 @@ export function CoachWeekCalendar({
                   return (
                     <details
                       key={key}
-                      className={`${shell} overflow-visible border-sky-300 bg-sky-100 text-sky-950`}
+                      className={`${shell} overflow-visible border-amber-300 bg-amber-100 text-amber-950`}
                       style={{ top, height }}
                     >
                       <summary className="cursor-pointer list-none font-medium tabular-nums">
@@ -542,7 +542,7 @@ export function CoachWeekCalendar({
               }}
             />
             <p className="mt-2 text-sm text-stone-500">
-              頂列報放假或新增時段。色塊對齊小時；紅線＝現在。
+              請於頂列申報放假或新增時段。色塊對齊整點；紅線表示現在時間。
             </p>
           </div>
         </Panel>

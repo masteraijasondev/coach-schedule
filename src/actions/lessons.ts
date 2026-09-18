@@ -32,7 +32,7 @@ async function assertCoachAvailabilityCovers(
   }
 
   if (data !== true) {
-    return "派更時段必須完全落在該教練已報可返工範圍內（放假日不可派）";
+    return "派更時段必須完全落在該教練已申報的可返工範圍內（放假日不可派更）";
   }
 
   return null;
@@ -375,10 +375,10 @@ function minutesToClock(minutes: number): string {
 
 function confirmLessonErrorMessage(message: string): string {
   if (message.includes("still in the future")) {
-    return "只可簽到已經過去的時段";
+    return "只可簽到已經結束的時段";
   }
   if (message.includes("pending assignments")) {
-    return "只有待確認的派更可以確認";
+    return "僅已派更、待簽到的時段可以確認簽到";
   }
   if (message.includes("not found")) {
     return "找不到課堂";
@@ -428,7 +428,7 @@ export async function confirmLessonPeriodsAction(
       return { ok: false, error: "讀取派更失敗" };
     }
     if (!lesson || lesson.status !== "assigned") {
-      return { ok: false, error: "只有待確認的派更可以確認" };
+      return { ok: false, error: "僅已派更、待簽到的時段可以確認簽到" };
     }
 
     const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
@@ -476,7 +476,7 @@ export async function confirmLessonPeriodsAction(
         minutesToClock(period.endMinute),
       ).toISOString();
       if (new Date(endsAt) > now) {
-        return { ok: false, error: "只可簽到已經過去的時段" };
+        return { ok: false, error: "只可簽到已經結束的時段" };
       }
       const rateResult = await resolveLessonPay({
         coachId: coach.id,

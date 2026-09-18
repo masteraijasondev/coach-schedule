@@ -114,11 +114,11 @@ export default async function EmployerCoachSalaryPage({
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 已有金額的課堂計入總額；待補課堂可在下方改價錢。
+          結算期：{payrollPeriodLabel(period)} · 已填寫金額的課堂計入總額；尚未填寫的課堂可於下方調整金額。
         </p>
         {pendingCount > 0 ? (
           <p className="mb-3 text-sm text-amber-700">
-            尚有 {pendingCount} 堂薪資待補，未計入上方總額。
+            尚有 {pendingCount} 堂薪資尚未填寫，未計入上方總額。
           </p>
         ) : null}
         <p className="mb-3 text-sm">
@@ -168,7 +168,7 @@ export default async function EmployerCoachSalaryPage({
                       <p className="text-stone-500">
                         學費 {formatMoneyOrPending(lesson.student_fee_hkd)}
                         {listedTuition != null
-                          ? ` · 本身 ${formatMoney(listedTuition)}`
+                          ? ` · 本身學費 ${formatMoney(listedTuition)}`
                           : ""}
                       </p>
                     ) : null}
@@ -202,7 +202,7 @@ export default async function EmployerCoachSalaryPage({
           })}
           {(lessons ?? []).length === 0 ? (
             <li className="py-3 text-sm text-stone-500">
-              此結算期尚無已確認課堂
+              此結算期尚無已簽到課堂
             </li>
           ) : null}
         </ul>

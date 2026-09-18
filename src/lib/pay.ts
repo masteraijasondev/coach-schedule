@@ -84,7 +84,7 @@ export async function calculateLessonPay(input: {
     }
     if (!rate) {
       return {
-        error: "尚未設定此教練的 MIIT 每人薪資，無法登記。",
+        error: "尚未設定此教練的 MIIT 每人薪資，無法計薪。",
       };
     }
     return { amount: Number(rate.amount_hkd) * count };
@@ -108,7 +108,7 @@ export async function calculateLessonPay(input: {
     }
     if (!rate) {
       return {
-        error: "尚未設定此教練的 PTA 時薪，無法登記。",
+        error: "尚未設定此教練的 PTA 時薪，無法計薪。",
       };
     }
     const hours = minutes / 60;
@@ -128,7 +128,7 @@ export async function calculateLessonPay(input: {
   }
   if (!rate) {
     return {
-      error: "尚未設定此課堂類型的薪資規則，無法登記。",
+      error: "尚未設定此課堂類型的薪資規則，無法計薪。",
     };
   }
   return { amount: Number(rate.amount_hkd) };

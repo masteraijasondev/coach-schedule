@@ -10,15 +10,15 @@ export const CALENDAR_STATUSES = [
 export type CalendarStatus = (typeof CALENDAR_STATUSES)[number];
 
 export const STAFF_KIND_LABELS: Record<StaffKind, string> = {
-  operations: "營運",
+  operations: "營運人員",
   coach: "教練",
 };
 
 export const CALENDAR_STATUS_LABELS: Record<CalendarStatus, string> = {
   available: "待公司派更",
-  assigned: "已確認",
-  leave: "放假",
-  checked_in: "已確認簽到",
+  assigned: "已派更，待簽到",
+  leave: "放假或 Short Break",
+  checked_in: "已簽到",
 };
 
 export type FilterStaff = {

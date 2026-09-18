@@ -35,7 +35,7 @@ export default async function StudentsPage() {
           <p className="text-sm text-amber-700">{error}</p>
         ) : (
           <p className="text-sm text-stone-500">
-            本身學費來自 Airtable 近半年 PT 原價（未套券的最常見金額）。
+            本身學費取自 Airtable 近半年私人訓練原價（未使用禮券的最常見金額）。
           </p>
         )}
         <ul className="divide-y divide-stone-100">
@@ -50,7 +50,7 @@ export default async function StudentsPage() {
                   本身學費：
                   {fees.get(student.name) != null
                     ? formatMoney(fees.get(student.name) ?? 0)
-                    : "Airtable 未有"}
+                    : "Airtable 尚無資料"}
                 </p>
                 {student.notes ? (
                   <p className="text-sm text-stone-500">{student.notes}</p>

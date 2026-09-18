@@ -146,7 +146,7 @@ export function CoachDayPanel({
   return (
     <Panel title={day}>
       <p className="text-sm text-stone-600">
-        待確認 {pendingCount} · 已確認簽到 {confirmedCount}
+        已派更，待簽到 {pendingCount} · 已簽到 {confirmedCount}
       </p>
       {fullDayLeave ? (
         <div className="mt-3 space-y-2">
@@ -160,8 +160,8 @@ export function CoachDayPanel({
       ) : (
         <div className="mt-3 space-y-3">
           {canReport ? (
-            <div className="rounded-md border border-dashed border-sky-200 bg-sky-50 p-3">
-              <p className="mb-2 text-sm font-medium text-sky-950">報可返工</p>
+            <div className="rounded-md border border-dashed border-amber-200 bg-amber-50 p-3">
+              <p className="mb-2 text-sm font-medium text-amber-950">申報可返工</p>
               <ActionForm
                 action={saveAvailabilityAction}
                 className="space-y-2"
@@ -241,19 +241,19 @@ export function CoachDayPanel({
                   key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
                   className={`space-y-2 rounded-md border px-3 py-2 ${
                     pending
-                      ? "border-amber-200 bg-amber-50"
+                      ? "border-emerald-200 bg-emerald-50"
                       : confirmed
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-sky-200 bg-sky-50"
+                        ? "border-sky-200 bg-sky-50"
+                        : "border-amber-200 bg-amber-50"
                   }`}
                 >
                   <p
                     className={`text-sm font-medium tabular-nums ${
                       pending
-                        ? "text-amber-950"
+                        ? "text-emerald-950"
                         : confirmed
-                          ? "text-emerald-950"
-                          : "text-sky-950"
+                          ? "text-sky-950"
+                          : "text-amber-950"
                     }`}
                   >
                     {timeLabel}{" "}
@@ -261,7 +261,7 @@ export function CoachDayPanel({
                       ? calendarAssignmentLabel("assigned")
                       : confirmed
                         ? calendarAssignmentLabel("completed")
-                        : "可返工"}
+                        : "待公司派更"}
                   </p>
                   {pending ? (
                     canConfirm && segment.lesson && lessonWindow ? (
@@ -272,8 +272,8 @@ export function CoachDayPanel({
                         windowEnd={lessonWindow.endMinute}
                       />
                     ) : (
-                      <p className="text-sm text-amber-800">
-                        只可簽到已經過去的時段
+                      <p className="text-sm text-emerald-800">
+                        只可簽到已經結束的時段
                       </p>
                     )
                   ) : null}
@@ -318,8 +318,8 @@ export function CoachDayPanel({
           dayLessons.length === 0 ? (
             <p className="text-sm text-stone-500">
               {canReport
-                ? "這天尚未有可返工或派更。可在上方報可返工。"
-                : "這天尚未有可返工或派更"}
+                ? "當日尚未有可返工或派更。可於上方申報可返工。"
+                : "當日尚未有可返工或派更"}
             </p>
           ) : null}
         </div>

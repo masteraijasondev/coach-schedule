@@ -75,7 +75,7 @@ export function assertCheckInPeriods(
     return "請加入至少一個簽到時段";
   }
   if (pastEndMinute == null) {
-    return "只可簽到已經過去的時段";
+    return "只可簽到已經結束的時段";
   }
   const sorted = [...periods].sort(
     (a, b) => a.startMinute - b.startMinute,
@@ -90,7 +90,7 @@ export function assertCheckInPeriods(
       return "簽到時段必須完全落在派更範圍內";
     }
     if (period.endMinute > pastEndMinute) {
-      return "只可簽到已經過去的時段";
+      return "只可簽到已經結束的時段";
     }
     if (
       period.startMinute % TIME_STEP_MINUTES !== 0 ||

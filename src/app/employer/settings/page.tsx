@@ -3,10 +3,10 @@ import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 
 const LINKS = [
-  { href: "/employer/coaches", label: "教練", hint: "帳號、PT 費率" },
+  { href: "/employer/coaches", label: "教練", hint: "帳號與私人訓練費率" },
   { href: "/employer/students", label: "學生", hint: "學生名單" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
-  { href: "/employer/rates", label: "薪資規則", hint: "各類型計薪" },
+  { href: "/employer/rates", label: "薪資規則", hint: "各類型計薪方式" },
 ];
 
 export default async function EmployerSettingsPage() {

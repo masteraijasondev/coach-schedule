@@ -41,7 +41,7 @@ export async function upsertCoachStudentRateAction(
     }
     const studentFee = await lookupAirtableTuition(student?.name);
     if (studentFee == null) {
-      return { ok: false, error: "此學生 Airtable 未有本身學費，無法用比例計薪" };
+      return { ok: false, error: "此學生於 Airtable 尚無本身學費，無法按比例計算薪資" };
     }
     const payRatio = payRatioFromPercent(percent);
     const coachPay = coachPayFromFeeRatio(studentFee, payRatio);

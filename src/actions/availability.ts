@@ -76,13 +76,13 @@ function availabilityDatabaseError(message: string): string {
     return "找不到此時段，請重新整理後再試";
   }
   if (message.includes("leave day")) {
-    return "此時段已報放假或 Short Break";
+    return "此時段已申報放假或 Short Break";
   }
   if (message.includes("locked by an assigned lesson")) {
     return "此時段已有派更，不可修改或刪除可返工時間";
   }
   if (message.includes("assigned work")) {
-    return "此時段已有派更，不可報放假";
+    return "此時段已有派更，不可申報放假";
   }
   return "儲存可返工時間失敗";
 }
@@ -121,7 +121,7 @@ export async function saveLeaveAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[saveLeaveAction] unexpected", { error });
-    return { ok: false, error: "報放假時發生錯誤" };
+    return { ok: false, error: "申報放假時發生錯誤" };
   }
 }
 

@@ -37,9 +37,9 @@ type EventBar = {
 };
 
 const VARIANT_CHIP_CLASS: Record<EventBar["variant"], string> = {
-  pending: "bg-amber-100 text-amber-900",
-  confirmed: "bg-emerald-100 text-emerald-900",
-  slot: "bg-sky-100 text-sky-900",
+  pending: "bg-emerald-100 text-emerald-900",
+  confirmed: "bg-sky-100 text-sky-900",
+  slot: "bg-amber-100 text-amber-900",
   leave: "bg-rose-100 text-rose-800",
 };
 

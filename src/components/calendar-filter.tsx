@@ -16,10 +16,10 @@ import {
 import type { ReactNode } from "react";
 
 const STATUS_DOT: Record<CalendarStatus, string> = {
-  available: "bg-sky-400",
-  assigned: "bg-amber-400",
+  available: "bg-amber-400",
+  assigned: "bg-emerald-400",
   leave: "bg-rose-400",
-  checked_in: "bg-emerald-500",
+  checked_in: "bg-sky-500",
 };
 
 function chipClass(
@@ -149,7 +149,7 @@ export function CalendarFilterBar({
         <div>
           <p className="text-sm font-medium text-stone-900">篩選月曆</p>
           <p className="mt-0.5 text-xs text-stone-500">
-            撳一下即可顯示或隱藏；角色會一次過揀晒嗰組員工。
+            點選即可顯示或隱藏。點選職位可一次選取該組全部員工。
           </p>
         </div>
         <button
@@ -190,10 +190,10 @@ export function CalendarFilterBar({
       </FilterSection>
 
       {filter.staffIds.length === 0 && staff.length > 0 ? (
-        <p className="text-xs text-amber-700">未選員工，月曆暫時係空嘅。</p>
+        <p className="text-xs text-amber-700">尚未選取員工，月曆將不會顯示任何時段。</p>
       ) : null}
       {filter.statuses.length === 0 ? (
-        <p className="text-xs text-amber-700">未選狀態，時段暫時會隱藏。</p>
+        <p className="text-xs text-amber-700">尚未選取狀態，相關時段將會隱藏。</p>
       ) : null}
 
       <FilterSection title="狀態" hint={statusHint}>

@@ -30,7 +30,7 @@ export function formatMoneyOrPending(
   amount: number | null | undefined,
 ): string {
   if (amount == null) {
-    return "待補";
+    return "尚未填寫";
   }
   return formatMoney(Number(amount));
 }
@@ -74,10 +74,10 @@ export function leaveWindowLabel(leave: {
 
 export function calendarAssignmentLabel(status: string): string {
   if (status === "assigned") {
-    return "待確認";
+    return "已派更，待簽到";
   }
   if (status === "completed") {
-    return "已確認簽到";
+    return "已簽到";
   }
   return status;
 }
@@ -103,9 +103,9 @@ export function lessonStatusLabel(status: LessonStatus): string {
     case "open":
       return "開放申請";
     case "assigned":
-      return "待員工確認";
+      return "已派更，待簽到";
     case "completed":
-      return "已確認";
+      return "已簽到";
     case "cancelled":
       return "已取消";
     default:

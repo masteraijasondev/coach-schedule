@@ -181,7 +181,7 @@ async function loadTuitionIndex(): Promise<CacheEntry> {
     return cache;
   }
   if (!airtableToken()) {
-    cache = { at: now, byLocalName: new Map(), error: "未設定 Airtable" };
+    cache = { at: now, byLocalName: new Map(), error: "尚未設定 Airtable" };
     return cache;
   }
 
@@ -271,7 +271,7 @@ async function loadTuitionIndex(): Promise<CacheEntry> {
     cache = {
       at: now,
       byLocalName: new Map(),
-      error: "無法讀取 Airtable 學費",
+      error: "無法讀取 Airtable 學費資料",
     };
     return cache;
   }

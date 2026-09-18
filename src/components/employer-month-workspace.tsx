@@ -357,7 +357,7 @@ export function EmployerMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          格內最多顯示五項。用上方篩選睇整體時段。點選日期後，當日詳情與派更在右側。
+          格內最多顯示五項。請使用上方篩選查看整體時段。點選日期後，當日詳情與派更顯示於右側。
         </p>
         <MonthCalendar
           month={month}
@@ -435,7 +435,7 @@ export function EmployerMonthWorkspace({
                         }
                       >
                         {pending
-                          ? "待員工確認後才計薪"
+                          ? "已派更，待簽到後方計入薪資"
                           : `教練薪資：${formatMoneyOrPending(lesson.earned_amount_hkd)}`}
                       </p>
                     </div>
@@ -445,7 +445,7 @@ export function EmployerMonthWorkspace({
                           href={salaryHref(lesson.coach_id)}
                           className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 py-1.5 text-sm"
                         >
-                          改價錢
+                          調整金額
                         </Link>
                       ) : null}
                       {lesson.status !== "cancelled" ? (
@@ -463,7 +463,7 @@ export function EmployerMonthWorkspace({
               );
             })}
             {dayLessons.length === 0 ? (
-              <li className="py-3 text-sm text-stone-500">這天尚未有課堂</li>
+              <li className="py-3 text-sm text-stone-500">當日尚未有課堂</li>
             ) : null}
           </ul>
 
@@ -532,8 +532,8 @@ export function EmployerMonthWorkspace({
                               key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
                               className={`rounded-md px-2 py-2 text-sm ${
                                 pending
-                                  ? "bg-amber-100 text-amber-950"
-                                  : "bg-emerald-100 text-emerald-950"
+                                  ? "bg-emerald-100 text-emerald-950"
+                                  : "bg-sky-100 text-sky-950"
                               }`}
                             >
                               <span className="tabular-nums">
@@ -574,11 +574,11 @@ export function EmployerMonthWorkspace({
                             className={`min-h-11 rounded-md border border-dashed px-2 py-2 text-sm tabular-nums ${
                               selected
                                 ? "border-stone-900 bg-stone-900 text-white"
-                                : "border-sky-300 bg-sky-50 text-sky-900 hover:bg-sky-100"
+                                : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
                             }`}
                           >
                             {formatAvailabilityTime(segment.startMinute)}–
-                            {formatAvailabilityTime(segment.endMinute)} 可返工
+                            {formatAvailabilityTime(segment.endMinute)} 待公司派更
                           </a>
                         );
                       }),
@@ -604,7 +604,7 @@ export function EmployerMonthWorkspace({
               })}
               {dayLeaves.length === 0 && dayAvailabilities.length === 0 ? (
                 <li className="py-3 text-sm text-stone-500">
-                  這天尚未有人報可返工或放假
+                  當日尚未有人申報可返工或放假
                 </li>
               ) : null}
             </ul>

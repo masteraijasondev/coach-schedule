@@ -77,7 +77,7 @@ export function EmployerPtRateForm({
           本身學費：
           {student?.listedFeeHkd != null
             ? formatMoney(student.listedFeeHkd)
-            : "Airtable 未有"}
+            : "Airtable 尚無資料"}
         </p>
       </label>
       <label className="block space-y-1 text-sm">
@@ -95,7 +95,7 @@ export function EmployerPtRateForm({
         <p className="text-xs text-stone-500">
           教練薪資：
           {previewPay != null ? formatMoney(previewPay) : "—"}
-          （學費 × 比例）
+          （學費乘以比例）
         </p>
       </label>
       <div className="flex items-end">

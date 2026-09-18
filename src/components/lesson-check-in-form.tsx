@@ -62,7 +62,7 @@ export function LessonCheckInForm({
 
   if (pastEnd == null) {
     return (
-      <p className="text-sm text-amber-800">只可簽到已經過去的時段</p>
+      <p className="text-sm text-amber-800">只可簽到已經結束的時段</p>
     );
   }
   const latestPastEnd = pastEnd;
@@ -78,7 +78,7 @@ export function LessonCheckInForm({
       return;
     }
     if (next.endMinute > latestPastEnd) {
-      setAddError("只可簽到已經過去的時段");
+      setAddError("只可簽到已經結束的時段");
       return;
     }
     if (periods.some((period) => periodsOverlap(period, next))) {
@@ -94,7 +94,7 @@ export function LessonCheckInForm({
   return (
     <div className="space-y-2">
       <p className="text-[10px] leading-snug text-amber-800">
-        只可加入已經過去的時段再確認；未加入同未來的時間不計薪。
+        只可加入已經結束的時段再確認；未加入及尚未結束的時段不計入薪資。
       </p>
       <AvailabilityTimeFields
         defaultStartMinute={initialStart}
