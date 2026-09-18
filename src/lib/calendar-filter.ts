@@ -10,8 +10,8 @@ export const CALENDAR_STATUSES = [
 export type CalendarStatus = (typeof CALENDAR_STATUSES)[number];
 
 export const STAFF_KIND_LABELS: Record<StaffKind, string> = {
-  operations: "All Operation Staff",
-  coach: "All Coach",
+  operations: "營運",
+  coach: "教練",
 };
 
 export const CALENDAR_STATUS_LABELS: Record<CalendarStatus, string> = {

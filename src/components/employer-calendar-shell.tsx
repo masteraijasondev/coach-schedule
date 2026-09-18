@@ -189,7 +189,7 @@ export function EmployerCalendarShell({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-base font-semibold">全體教練日曆</h1>
+        <h1 className="text-base font-semibold">全體員工日曆</h1>
         <CalendarViewToggle
           view={view}
           monthHref={href({

@@ -11,54 +11,98 @@ import {
   type CalendarFilter,
   type CalendarStatus,
   type FilterStaff,
+  type StaffKind,
 } from "@/lib/calendar-filter";
+import type { ReactNode } from "react";
 
-function Checkbox({
-  label,
-  checked,
-  indeterminate = false,
+const STATUS_DOT: Record<CalendarStatus, string> = {
+  available: "bg-sky-400",
+  assigned: "bg-amber-400",
+  leave: "bg-rose-400",
+  checked_in: "bg-emerald-500",
+};
+
+function chipClass(
+  active: boolean,
+  mixed = false,
   disabled = false,
-  onChange,
+  shape: "pill" | "group" = "pill",
+) {
+  return [
+    "inline-flex min-h-11 items-center gap-1.5 border px-3 text-sm transition-colors sm:min-h-9",
+    shape === "group" ? "rounded-md font-medium" : "rounded-full",
+    disabled
+      ? "cursor-not-allowed border-stone-200 bg-stone-50 text-stone-400"
+      : active
+        ? mixed
+          ? "border-stone-400 bg-stone-100 text-stone-800"
+          : "border-stone-900 bg-stone-900 text-white"
+        : "border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50",
+  ].join(" ");
+}
+
+function Chip({
+  label,
+  pressed,
+  mixed = false,
+  disabled = false,
+  shape = "pill",
+  dotClassName,
+  ariaLabel,
+  onClick,
 }: {
   label: string;
-  checked: boolean;
-  indeterminate?: boolean;
+  pressed: boolean;
+  mixed?: boolean;
   disabled?: boolean;
-  onChange: () => void;
+  shape?: "pill" | "group";
+  dotClassName?: string;
+  ariaLabel?: string;
+  onClick: () => void;
 }) {
   return (
-    <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 text-sm text-stone-800">
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        ref={(node) => {
-          if (node) {
-            node.indeterminate = indeterminate;
-          }
-        }}
-        onChange={onChange}
-        className="h-4 w-4 rounded border-stone-300 text-stone-900 disabled:cursor-not-allowed"
-      />
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      aria-pressed={mixed ? "mixed" : pressed}
+      disabled={disabled}
+      onClick={onClick}
+      className={chipClass(pressed, mixed, disabled, shape)}
+    >
+      {dotClassName ? (
+        <span
+          className={`size-2 shrink-0 rounded-full ${dotClassName} ${pressed && !mixed ? "ring-2 ring-white/40" : ""}`}
+          aria-hidden
+        />
+      ) : null}
       {label}
-    </label>
+    </button>
   );
 }
 
-function FilterGroup({
+function FilterSection({
   title,
+  hint,
+  stacked = false,
   children,
 }: {
   title: string;
-  children: React.ReactNode;
+  hint?: string;
+  stacked?: boolean;
+  children: ReactNode;
 }) {
   return (
-    <fieldset className="min-w-0">
-      <legend className="mb-1 text-xs font-medium uppercase tracking-wide text-stone-500">
-        {title}
-      </legend>
-      <div className="flex flex-wrap gap-x-4 gap-y-1">{children}</div>
-    </fieldset>
+    <section className="min-w-0 space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-xs font-medium tracking-wide text-stone-500">
+          {title}
+        </h2>
+        {hint ? <p className="text-xs text-stone-400">{hint}</p> : null}
+      </div>
+      <div className={stacked ? "flex flex-col gap-2" : "flex flex-wrap gap-2"}>
+        {children}
+      </div>
+    </section>
   );
 }
 
@@ -71,6 +115,13 @@ export function CalendarFilterBar({
   filter: CalendarFilter;
   onChange: (next: CalendarFilter) => void;
 }) {
+  const allStaffIds = staff.map((person) => person.id);
+  const allStaffSelected =
+    staff.length > 0 && filter.staffIds.length === staff.length;
+  const allStatusesSelected =
+    filter.statuses.length === CALENDAR_STATUSES.length;
+  const isDefault = allStaffSelected && allStatusesSelected;
+
   function setStaffIds(staffIds: string[]) {
     onChange({ ...filter, staffIds });
   }
@@ -79,66 +130,127 @@ export function CalendarFilterBar({
     onChange({ ...filter, statuses });
   }
 
+  function reset() {
+    onChange({
+      staffIds: allStaffIds,
+      statuses: [...CALENDAR_STATUSES],
+    });
+  }
+
+  const staffHint =
+    staff.length === 0
+      ? undefined
+      : `${filter.staffIds.length}/${staff.length}`;
+  const statusHint = `${filter.statuses.length}/${CALENDAR_STATUSES.length}`;
+
   return (
-    <div className="space-y-3 rounded-lg border border-stone-200 bg-white p-4">
-      <p className="text-sm text-stone-500">
-        勾選要看的角色、員工與狀態，月曆格內只顯示符合的時段。
-      </p>
-      <div className="grid gap-4 md:grid-cols-3">
-        <FilterGroup title="Role">
-          {STAFF_KINDS.map((kind) => {
-            const state = staffKindSelected(staff, filter.staffIds, kind);
-            const hasKind = staff.some((person) => person.staff_kind === kind);
-            return (
-              <Checkbox
-                key={kind}
-                label={STAFF_KIND_LABELS[kind]}
-                checked={state.checked}
-                indeterminate={state.indeterminate}
-                disabled={!hasKind}
-                onChange={() =>
-                  setStaffIds(toggleStaffKind(staff, filter.staffIds, kind))
-                }
-              />
-            );
-          })}
-        </FilterGroup>
-        <FilterGroup title="Staff">
-          {staff.map((person) => (
-            <Checkbox
-              key={person.id}
-              label={person.full_name}
-              checked={filter.staffIds.includes(person.id)}
-              onChange={() =>
-                setStaffIds(
-                  toggleId(
-                    filter.staffIds,
-                    person.id,
-                    staff.map((item) => item.id),
-                  ),
-                )
-              }
-            />
-          ))}
-          {staff.length === 0 ? (
-            <p className="text-sm text-stone-500">尚未有員工</p>
-          ) : null}
-        </FilterGroup>
-        <FilterGroup title="Status">
-          {CALENDAR_STATUSES.map((status) => (
-            <Checkbox
-              key={status}
-              label={CALENDAR_STATUS_LABELS[status]}
-              checked={filter.statuses.includes(status)}
-              onChange={() =>
-                setStatuses(
-                  toggleId(filter.statuses, status, CALENDAR_STATUSES),
-                )
-              }
-            />
-          ))}
-        </FilterGroup>
+    <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-stone-900">篩選月曆</p>
+          <p className="mt-0.5 text-xs text-stone-500">
+            撳一下即可顯示或隱藏；角色會一次過揀晒嗰組員工。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={reset}
+          disabled={isDefault}
+          className="shrink-0 rounded-full px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100 disabled:invisible"
+        >
+          重設
+        </button>
       </div>
+
+      <FilterSection title="員工" hint={staffHint} stacked>
+        {STAFF_KINDS.map((kind) => {
+          const ofKind = staff.filter((person) => person.staff_kind === kind);
+          if (ofKind.length === 0) {
+            return null;
+          }
+          return (
+            <StaffKindGroup
+              key={kind}
+              kind={kind}
+              people={ofKind}
+              selectedIds={filter.staffIds}
+              allStaff={staff}
+              onToggleKind={() =>
+                setStaffIds(toggleStaffKind(staff, filter.staffIds, kind))
+              }
+              onTogglePerson={(id) =>
+                setStaffIds(toggleId(filter.staffIds, id, allStaffIds))
+              }
+            />
+          );
+        })}
+        {staff.length === 0 ? (
+          <p className="text-sm text-stone-500">尚未有員工</p>
+        ) : null}
+      </FilterSection>
+
+      {filter.staffIds.length === 0 && staff.length > 0 ? (
+        <p className="text-xs text-amber-700">未選員工，月曆暫時係空嘅。</p>
+      ) : null}
+      {filter.statuses.length === 0 ? (
+        <p className="text-xs text-amber-700">未選狀態，時段暫時會隱藏。</p>
+      ) : null}
+
+      <FilterSection title="狀態" hint={statusHint}>
+        {CALENDAR_STATUSES.map((status) => (
+          <Chip
+            key={status}
+            label={CALENDAR_STATUS_LABELS[status]}
+            pressed={filter.statuses.includes(status)}
+            dotClassName={STATUS_DOT[status]}
+            onClick={() =>
+              setStatuses(toggleId(filter.statuses, status, CALENDAR_STATUSES))
+            }
+          />
+        ))}
+      </FilterSection>
+    </div>
+  );
+}
+
+function StaffKindGroup({
+  kind,
+  people,
+  selectedIds,
+  allStaff,
+  onToggleKind,
+  onTogglePerson,
+}: {
+  kind: StaffKind;
+  people: FilterStaff[];
+  selectedIds: string[];
+  allStaff: FilterStaff[];
+  onToggleKind: () => void;
+  onTogglePerson: (id: string) => void;
+}) {
+  const state = staffKindSelected(allStaff, selectedIds, kind);
+  return (
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
+      <Chip
+        label={STAFF_KIND_LABELS[kind]}
+        shape="group"
+        pressed={state.checked || state.indeterminate}
+        mixed={state.indeterminate}
+        ariaLabel={
+          state.checked
+            ? `取消全部${STAFF_KIND_LABELS[kind]}`
+            : `全選${STAFF_KIND_LABELS[kind]}`
+        }
+        onClick={onToggleKind}
+      />
+      {people.map((person) => (
+        <Chip
+          key={person.id}
+          label={person.full_name}
+          pressed={selectedIds.includes(person.id)}
+          onClick={() => onTogglePerson(person.id)}
+        />
+      ))}
     </div>
   );
 }
