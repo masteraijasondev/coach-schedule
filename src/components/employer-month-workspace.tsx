@@ -36,7 +36,6 @@ import {
   formatMoneyOrPending,
   leaveWindowLabel,
   lessonStatusLabel,
-  nestedStudentName,
 } from "@/lib/format";
 import type { LessonStatus, PayMode } from "@/lib/types";
 import Link from "next/link";
@@ -53,9 +52,7 @@ export type EmployerMonthLesson = {
   student_fee_hkd: number | null;
   headcount: number | null;
   expected_headcount: number | null;
-  lesson_students:
-    | { students: { name: string } | { name: string }[] | null }[]
-    | null;
+  student_names: string[];
 };
 
 export type EmployerMonthType = {
@@ -392,9 +389,7 @@ export function EmployerMonthWorkspace({
         <Panel title={day}>
           <ul className="divide-y divide-stone-100">
             {dayLessons.map((lesson) => {
-              const studentNames = (lesson.lesson_students ?? [])
-                .map(nestedStudentName)
-                .filter((name): name is string => Boolean(name));
+              const studentNames = lesson.student_names;
               const sizeLabel = formatLessonSizeLabel(
                 payModeByType.get(lesson.lesson_type_id),
                 lesson.headcount,
@@ -524,9 +519,7 @@ export function EmployerMonthWorkspace({
                           slotEnd === segment.endMinute;
                         if (overlap) {
                           const pending = overlap.status === "assigned";
-                          const studentNames = (overlap.lesson_students ?? [])
-                            .map(nestedStudentName)
-                            .filter((name): name is string => Boolean(name));
+                          const studentNames = overlap.student_names;
                           return (
                             <span
                               key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}

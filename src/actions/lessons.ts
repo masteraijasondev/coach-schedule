@@ -14,13 +14,16 @@ import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, PayMode } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
 async function assertCoachAvailabilityCovers(
   coachId: string,
   startsAt: string,
   endsAt: string,
+  supabase?: SupabaseServerClient,
 ): Promise<string | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("coach_availability_covers", {
+  const client = supabase ?? (await createClient());
+  const { data, error } = await client.rpc("coach_availability_covers", {
     p_coach_id: coachId,
     p_starts_at: startsAt,
     p_ends_at: endsAt,
@@ -80,9 +83,10 @@ async function assertNoCoachOverlap(
   startsAt: string,
   endsAt: string,
   excludeLessonId?: string,
+  supabase?: SupabaseServerClient,
 ): Promise<string | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("coach_has_overlap", {
+  const client = supabase ?? (await createClient());
+  const { data, error } = await client.rpc("coach_has_overlap", {
     p_coach_id: coachId,
     p_starts_at: startsAt,
     p_ends_at: endsAt,
@@ -304,37 +308,34 @@ export async function createLessonAction(
       return { ok: false, error: "結束時間必須晚於開始時間" };
     }
 
-    const coverError = await assertCoachAvailabilityCovers(
-      coachId,
-      startsAt,
-      endsAt,
-    );
+    const supabase = await createClient();
+    const requestedTypeId = String(formData.get("lesson_type_id") ?? "").trim();
+    const [coverError, overlapError, fallbackTypeResult] = await Promise.all([
+      assertCoachAvailabilityCovers(coachId, startsAt, endsAt, supabase),
+      assertNoCoachOverlap(coachId, startsAt, endsAt, undefined, supabase),
+      requestedTypeId
+        ? Promise.resolve({ data: { id: requestedTypeId }, error: null })
+        : supabase
+            .from("lesson_types")
+            .select("id")
+            .eq("active", true)
+            .order("name")
+            .limit(1)
+            .maybeSingle(),
+    ]);
     if (coverError) {
       return { ok: false, error: coverError };
     }
-
-    const overlapError = await assertNoCoachOverlap(coachId, startsAt, endsAt);
     if (overlapError) {
       return { ok: false, error: overlapError };
     }
 
-    const supabase = await createClient();
-    let lessonTypeId = String(formData.get("lesson_type_id") ?? "").trim();
-    if (!lessonTypeId) {
-      const { data: fallbackType, error: typeError } = await supabase
-        .from("lesson_types")
-        .select("id")
-        .eq("active", true)
-        .order("name")
-        .limit(1)
-        .maybeSingle();
-      if (typeError || !fallbackType) {
-        console.error("[createLessonAction] fallback lesson type", {
-          error: typeError,
-        });
-        return { ok: false, error: "尚未設定課堂類型，無法派更" };
-      }
-      lessonTypeId = fallbackType.id;
+    const lessonTypeId = fallbackTypeResult.data?.id;
+    if (fallbackTypeResult.error || !lessonTypeId) {
+      console.error("[createLessonAction] fallback lesson type", {
+        error: fallbackTypeResult.error,
+      });
+      return { ok: false, error: "尚未設定課堂類型，無法派更" };
     }
 
     const { data: lesson, error } = await supabase

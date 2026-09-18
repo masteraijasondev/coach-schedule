@@ -15,9 +15,9 @@ import {
   parseMonthParam,
   shiftAvailabilityWeek,
 } from "@/lib/calendar";
-import { parseCalendarFilter, parseStaffKind } from "@/lib/calendar-filter";
+import { parseCalendarFilter } from "@/lib/calendar-filter";
+import { loadEmployerCalendarData } from "@/lib/employer-calendar-data";
 import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
-import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   searchParams: Promise<{
@@ -51,81 +51,25 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const weekEnd = days[6];
   const prevWeek = shiftAvailabilityWeek(week, -1);
   const nextWeek = shiftAvailabilityWeek(week, 1);
-  const { start, end } = monthBoundsIso(month);
-  const gridRange = monthGridDateRange(month);
   const slotStart = parseMinuteParam(params.slotStart);
   const slotEnd = parseMinuteParam(params.slotEnd);
   const view = parseCalendarView(params.view);
 
-  const supabase = await createClient();
-  const [
-    { data: lessons },
-    { data: types },
-    { data: availabilities },
-    { data: leaves },
-  ] = await Promise.all([
-    supabase
-      .from("lessons")
-      .select(
-        "id, lesson_type_id, coach_id, starts_at, ends_at, status, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount, lesson_students ( students ( name ) )",
-      )
-      .neq("status", "cancelled")
-      .gte("starts_at", start)
-      .lt("starts_at", end)
-      .order("starts_at", { ascending: true }),
-    supabase
-      .from("lesson_types")
-      .select("id, name, default_duration_minutes, pay_mode")
-      .eq("active", true)
-      .order("name"),
-    supabase
-      .from("staff_availabilities")
-      .select("id, coach_id, available_date, start_minute, end_minute")
-      .gte("available_date", gridRange.start)
-      .lte("available_date", gridRange.end)
-      .order("start_minute"),
-    supabase
-      .from("staff_leaves")
-      .select("id, coach_id, leave_date, start_minute, end_minute")
-      .gte("leave_date", gridRange.start)
-      .lte("leave_date", gridRange.end),
-  ]);
-  // staff_kind comes from 017; keep the calendar usable until that migration is applied.
-  const coachesResult = await supabase
-    .from("profiles")
-    .select("id, full_name, staff_kind")
-    .eq("role", "coach")
-    .order("full_name");
-  const coaches =
-    coachesResult.error == null
-      ? coachesResult.data
-      : (
-          await supabase
-            .from("profiles")
-            .select("id, full_name")
-            .eq("role", "coach")
-            .order("full_name")
-        ).data;
-
-  const staff = (coaches ?? []).map((coach) => ({
-    id: coach.id,
-    full_name: coach.full_name,
-    staff_kind: parseStaffKind(
-      "staff_kind" in coach ? String(coach.staff_kind) : undefined,
-    ),
-  }));
+  const { start, end } = monthBoundsIso(month);
+  const gridRange = monthGridDateRange(month);
+  const { lessons, types, coaches: staff, availabilities, leaves } =
+    await loadEmployerCalendarData({
+      lessonStart: start,
+      lessonEnd: end,
+      gridStart: gridRange.start,
+      gridEnd: gridRange.end,
+    });
   const initialFilter = parseCalendarFilter(
     { staff: params.staff, status: params.status },
     staff,
   );
   const selectedCoach =
     staff.find((coach) => coach.id === params.coach) ?? null;
-  const lessonTypes = (types ?? []).map((type) => ({
-    id: type.id,
-    name: type.name,
-    pay_mode: type.pay_mode,
-    default_duration_minutes: type.default_duration_minutes,
-  }));
   const weekInGrid = days.every(
     (date) => date >= gridRange.start && date <= gridRange.end,
   );
@@ -155,11 +99,11 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       coachId={selectedCoach?.id}
       slotStart={slotStart}
       slotEnd={slotEnd}
-      lessons={lessons ?? []}
-      types={lessonTypes}
+      lessons={lessons}
+      types={types}
       coaches={staff}
-      availabilities={availabilities ?? []}
-      leaves={leaves ?? []}
+      availabilities={availabilities}
+      leaves={leaves}
       initialFilter={initialFilter}
       remoteWeekPanel={
         selectedCoach && !weekInGrid ? (
