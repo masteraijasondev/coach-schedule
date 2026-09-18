@@ -1,3 +1,5 @@
+import { lookupAirtableTuition } from "@/lib/airtable-tuition";
+import { coachPayFromFeeRatio } from "@/lib/pt-rate";
 import type { PayMode } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,12 +19,19 @@ export async function calculateLessonPay(input: {
     if (!input.studentId) {
       return { error: "請選擇學生" };
     }
-    const { data: rate, error } = await supabase
-      .from("coach_student_rates")
-      .select("amount_hkd, student_fee_hkd")
-      .eq("coach_id", input.coachId)
-      .eq("student_id", input.studentId)
-      .maybeSingle();
+    const [{ data: rate, error }, { data: student }] = await Promise.all([
+      supabase
+        .from("coach_student_rates")
+        .select("amount_hkd, student_fee_hkd, pay_ratio")
+        .eq("coach_id", input.coachId)
+        .eq("student_id", input.studentId)
+        .maybeSingle(),
+      supabase
+        .from("students")
+        .select("name")
+        .eq("id", input.studentId)
+        .maybeSingle(),
+    ]);
 
     if (error) {
       console.error("[calculateLessonPay] coach_student_rates", { error });
@@ -31,11 +40,30 @@ export async function calculateLessonPay(input: {
     if (!rate) {
       return { amount: null, studentFeeHkd: null };
     }
-    return {
-      amount: Number(rate.amount_hkd),
-      studentFeeHkd:
-        rate.student_fee_hkd == null ? null : Number(rate.student_fee_hkd),
-    };
+    try {
+      const listedFee = await lookupAirtableTuition(student?.name);
+      const ratio = rate.pay_ratio == null ? null : Number(rate.pay_ratio);
+      const studentFee =
+        listedFee ??
+        (rate.student_fee_hkd == null ? null : Number(rate.student_fee_hkd));
+      if (ratio != null && studentFee != null) {
+        return {
+          amount: coachPayFromFeeRatio(studentFee, ratio),
+          studentFeeHkd: studentFee,
+        };
+      }
+      return {
+        amount: Number(rate.amount_hkd),
+        studentFeeHkd: studentFee,
+      };
+    } catch (lookupError) {
+      console.error("[calculateLessonPay] listed tuition", { error: lookupError });
+      return {
+        amount: Number(rate.amount_hkd),
+        studentFeeHkd:
+          rate.student_fee_hkd == null ? null : Number(rate.student_fee_hkd),
+      };
+    }
   }
 
   if (input.payMode === "per_head") {

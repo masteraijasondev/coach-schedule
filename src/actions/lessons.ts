@@ -592,6 +592,10 @@ export async function updateLessonFeesAction(
               student_id: link.student_id,
               amount_hkd: coachPay,
               student_fee_hkd: studentFee,
+              pay_ratio:
+                studentFee > 0
+                  ? Math.round((coachPay / studentFee) * 10000) / 10000
+                  : null,
             },
             { onConflict: "coach_id,student_id" },
           );

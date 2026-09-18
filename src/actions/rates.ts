@@ -1,6 +1,11 @@
 "use server";
 
+import { lookupAirtableTuition } from "@/lib/airtable-tuition";
 import { requireEmployer } from "@/lib/auth";
+import {
+  coachPayFromFeeRatio,
+  payRatioFromPercent,
+} from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";
@@ -13,26 +18,41 @@ export async function upsertCoachStudentRateAction(
     await requireEmployer();
     const coachId = String(formData.get("coach_id") ?? "");
     const studentId = String(formData.get("student_id") ?? "");
-    const coachPay = Number(formData.get("amount_hkd") ?? NaN);
-    const studentFee = Number(formData.get("student_fee_hkd") ?? NaN);
+    const percent = Number(formData.get("pay_ratio_percent") ?? NaN);
 
     if (!coachId || !studentId) {
       return { ok: false, error: "請選擇教練與學生" };
     }
-    if (!Number.isFinite(coachPay) || coachPay < 0) {
-      return { ok: false, error: "教練薪資金額無效" };
-    }
-    if (!Number.isFinite(studentFee) || studentFee < 0) {
-      return { ok: false, error: "學生學費金額無效" };
+    if (!Number.isFinite(percent) || percent < 0) {
+      return { ok: false, error: "分成比例無效" };
     }
 
     const supabase = await createClient();
+    const { data: student, error: studentError } = await supabase
+      .from("students")
+      .select("name")
+      .eq("id", studentId)
+      .maybeSingle();
+    if (studentError) {
+      console.error("[upsertCoachStudentRateAction] student", {
+        error: studentError,
+      });
+      return { ok: false, error: "讀取學生失敗" };
+    }
+    const studentFee = await lookupAirtableTuition(student?.name);
+    if (studentFee == null) {
+      return { ok: false, error: "此學生 Airtable 未有本身學費，無法用比例計薪" };
+    }
+    const payRatio = payRatioFromPercent(percent);
+    const coachPay = coachPayFromFeeRatio(studentFee, payRatio);
+
     const { error } = await supabase.from("coach_student_rates").upsert(
       {
         coach_id: coachId,
         student_id: studentId,
         amount_hkd: coachPay,
         student_fee_hkd: studentFee,
+        pay_ratio: payRatio,
       },
       { onConflict: "coach_id,student_id" },
     );

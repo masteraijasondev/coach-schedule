@@ -4,13 +4,18 @@ import {
   resetCoachPasswordAction,
   updateCoachNameAction,
 } from "@/actions/coaches";
-import { upsertCoachStudentRateAction } from "@/actions/rates";
 import { ActionForm } from "@/components/action-form";
+import { EmployerPtRateForm } from "@/components/employer-pt-rate-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import { requireEmployer } from "@/lib/auth";
 import { formatMoney } from "@/lib/format";
+import {
+  coachPayFromFeeRatio,
+  derivedPayRatio,
+  formatPayRatioPercent,
+} from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CoachesPage() {
@@ -28,7 +33,7 @@ export default async function CoachesPage() {
         .select("id, name")
         .eq("active", true)
         .order("name"),
-      supabase.from("coach_student_rates").select("coach_id, student_id, amount_hkd, student_fee_hkd"),
+      supabase.from("coach_student_rates").select("coach_id, student_id, amount_hkd, student_fee_hkd, pay_ratio"),
     ]);
 
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
@@ -175,59 +180,25 @@ export default async function CoachesPage() {
         </Panel>
       </div>
 
-      <Panel title="教練 PT 費率（學生學費 + 教練薪資）">
+      <Panel title="教練 PT 費率（分成比例）">
         {listedError ? (
           <p className="mb-3 text-sm text-amber-700">{listedError}</p>
         ) : (
           <p className="mb-3 text-sm text-stone-500">
-            本身學費從 Airtable 讀近半年 PT 原價，方便對照你入嘅學生學費。
+            學生學費用 Airtable 本身學費，教練薪資 = 學費 × 分成比例。呢度只改比例。
           </p>
         )}
-        <ActionForm
-          action={upsertCoachStudentRateAction}
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
-        >
-          <SelectField
-            label="教練"
-            name="coach_id"
-            required
-            options={(coaches ?? []).map((c) => ({
-              value: c.id,
-              label: c.full_name,
-            }))}
-          />
-          <SelectField
-            label="學生"
-            name="student_id"
-            required
-            options={(students ?? []).map((s) => ({
-              value: s.id,
-              label:
-                listedTuitions.get(s.name) != null
-                  ? `${s.name}（本身 ${formatMoney(listedTuitions.get(s.name) ?? 0)}）`
-                  : s.name,
-            }))}
-          />
-          <Field
-            label="學生學費（港幣）"
-            name="student_fee_hkd"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-          />
-          <Field
-            label="教練薪資（港幣）"
-            name="amount_hkd"
-            type="number"
-            step="0.01"
-            min="0"
-            required
-          />
-          <div className="flex items-end">
-            <SubmitButton>儲存</SubmitButton>
-          </div>
-        </ActionForm>
+        <EmployerPtRateForm
+          coaches={(coaches ?? []).map((coach) => ({
+            id: coach.id,
+            full_name: coach.full_name,
+          }))}
+          students={(students ?? []).map((student) => ({
+            id: student.id,
+            name: student.name,
+            listedFeeHkd: listedTuitions.get(student.name) ?? null,
+          }))}
+        />
 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
@@ -236,7 +207,7 @@ export default async function CoachesPage() {
                 <th className="py-2 pr-3 font-medium">教練</th>
                 <th className="py-2 pr-3 font-medium">學生</th>
                 <th className="py-2 pr-3 font-medium">本身學費</th>
-                <th className="py-2 pr-3 font-medium">學生學費</th>
+                <th className="py-2 pr-3 font-medium">分成比例</th>
                 <th className="py-2 font-medium">教練薪資</th>
               </tr>
             </thead>
@@ -244,6 +215,17 @@ export default async function CoachesPage() {
               {(studentRates ?? []).map((rate) => {
                 const name = studentName.get(rate.student_id) ?? "學生";
                 const listed = listedTuitions.get(name);
+                const ratio = derivedPayRatio(
+                  Number(rate.amount_hkd),
+                  rate.student_fee_hkd == null
+                    ? null
+                    : Number(rate.student_fee_hkd),
+                  rate.pay_ratio == null ? null : Number(rate.pay_ratio),
+                );
+                const coachPay =
+                  listed != null && ratio != null
+                    ? coachPayFromFeeRatio(listed, ratio)
+                    : Number(rate.amount_hkd);
                 return (
                 <tr key={`${rate.coach_id}-${rate.student_id}`}>
                   <td className="py-3 pr-3">
@@ -254,12 +236,10 @@ export default async function CoachesPage() {
                     {listed != null ? formatMoney(listed) : "—"}
                   </td>
                   <td className="py-3 pr-3">
-                    {rate.student_fee_hkd != null
-                      ? formatMoney(Number(rate.student_fee_hkd))
-                      : "—"}
+                    {ratio != null ? `${formatPayRatioPercent(ratio)}%` : "—"}
                   </td>
                   <td className="py-3">
-                    {formatMoney(Number(rate.amount_hkd))}
+                    {formatMoney(coachPay)}
                   </td>
                 </tr>
                 );
