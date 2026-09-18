@@ -63,13 +63,6 @@ function variantOf(
   return "slot";
 }
 
-function startTime(timeLabel?: string): string {
-  if (!timeLabel) {
-    return "";
-  }
-  return timeLabel.slice(0, 5);
-}
-
 function displayName(name: string, showNames: boolean): string {
   if (!showNames || name === "課堂" || name === "—" || name === "") {
     return "";
@@ -86,9 +79,7 @@ function barFromAvailability(
   const text =
     variant === "leave"
       ? item.label
-      : [startTime(item.timeLabel) || startTime(item.label), name]
-          .filter(Boolean)
-          .join(" ");
+      : [item.timeLabel, name].filter(Boolean).join(" ");
   return {
     id: item.id,
     text,
@@ -105,7 +96,7 @@ function barFromLesson(lesson: CalendarLesson, showNames: boolean): EventBar {
   const name = displayName(lesson.coachName, showNames);
   return {
     id: lesson.id,
-    text: [startTime(lesson.timeLabel), name].filter(Boolean).join(" "),
+    text: [lesson.timeLabel, name].filter(Boolean).join(" "),
     variant,
     sortKey: `1-${lesson.timeLabel ?? ""}`,
   };
@@ -251,7 +242,7 @@ export function MonthCalendar({
                   <div
                     key={bar.id}
                     title={bar.text}
-                    className={`truncate rounded-sm px-1 py-0.5 text-left text-xs font-medium ${VARIANT_CHIP_CLASS[bar.variant]}`}
+                    className={`truncate rounded-sm px-1 py-0.5 text-left text-xs font-medium tabular-nums ${VARIANT_CHIP_CLASS[bar.variant]}`}
                   >
                     {bar.text}
                   </div>

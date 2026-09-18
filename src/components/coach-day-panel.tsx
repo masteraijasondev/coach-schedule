@@ -4,15 +4,17 @@ import {
   cancelLeaveByIdAction,
   deleteAvailabilityAction,
   saveAvailabilityAction,
+  saveShortBreakAction,
 } from "@/actions/availability";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
-import {
-  CancelFullDayLeaveButton,
-  LeaveReportForm,
-} from "@/components/leave-report-form";
+import { CancelFullDayLeaveButton } from "@/components/leave-report-form";
 import { ServerActionButton } from "@/components/server-action-button";
+import {
+  StaffShiftChip,
+  StaffShiftComposer,
+} from "@/components/staff-shift-composer";
 import { Panel, SubmitButton } from "@/components/ui";
 import {
   availabilitySegments,
@@ -27,14 +29,12 @@ import { pastCheckInEndMinute } from "@/lib/check-in";
 import {
   calendarAssignmentLabel,
   formatAvailabilityTime,
-  leaveWindowLabel,
 } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 
 const DEFAULT_START_MINUTE = 9 * 60;
-const DEFAULT_DURATION_MINUTES = 60;
 const MINUTES_PER_DAY = 1440;
 
 export type CoachDayLesson = {
@@ -149,8 +149,8 @@ export function CoachDayPanel({
         已派更，待簽到 {pendingCount} · 已簽到 {confirmedCount}
       </p>
       {fullDayLeave ? (
-        <div className="mt-3 space-y-2">
-          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+        <div className="mt-3 flex flex-col gap-2">
+          <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
             全日放假
           </div>
           {suggestedStart != null ? (
@@ -158,51 +158,52 @@ export function CoachDayPanel({
           ) : null}
         </div>
       ) : (
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 flex flex-col gap-2">
           {canReport ? (
-            <div className="rounded-md border border-dashed border-amber-200 bg-amber-50 p-3">
-              <p className="mb-2 text-sm font-medium text-amber-950">申報可返工</p>
-              <ActionForm
-                action={saveAvailabilityAction}
-                className="space-y-2"
-                onSuccess={refresh}
-              >
-                <input type="hidden" name="available_date" value={day} />
-                <AvailabilityTimeFields
-                  defaultStartMinute={suggestedStart}
-                  defaultEndMinute={Math.min(
-                    suggestedStart + DEFAULT_DURATION_MINUTES,
-                    MINUTES_PER_DAY,
-                  )}
-                />
-                <SubmitButton>新增</SubmitButton>
-              </ActionForm>
-              <div className="mt-2">
-                <LeaveReportForm
-                  date={day}
-                  suggestedStart={suggestedStart}
-                  canTakeFullDay={!hasAssigned}
-                />
-              </div>
-            </div>
+            <StaffShiftComposer
+              date={day}
+              suggestedStart={suggestedStart}
+              canTakeFullDay={!hasAssigned}
+            />
           ) : null}
-          {shortBreaks.map((leave) => (
-            <div
-              key={leave.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900"
-            >
-              <p>{leaveWindowLabel(leave)}</p>
-              {suggestedStart != null && leave.id ? (
-                <ServerActionButton
-                  action={cancelLeaveByIdAction.bind(null, leave.id)}
-                  confirmMessage="確定取消此時段 Short Break？"
-                  className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
-                >
-                  刪除
-                </ServerActionButton>
-              ) : null}
-            </div>
-          ))}
+          {shortBreaks.map((leave) => {
+            const timeLabel = `${formatAvailabilityTime(leave.start_minute ?? 0)}–${formatAvailabilityTime(leave.end_minute ?? 0)}`;
+            const editable = suggestedStart != null && Boolean(leave.id);
+            return (
+              <StaffShiftChip
+                key={leave.id}
+                label={`${timeLabel} Short Break`}
+                tone="leave"
+              >
+                {editable ? (
+                  <div className="flex flex-col gap-2">
+                    <ActionForm
+                      action={saveShortBreakAction}
+                      className="flex flex-col gap-2"
+                      onSuccess={refresh}
+                    >
+                      <input type="hidden" name="leave_id" value={leave.id} />
+                      <input type="hidden" name="leave_date" value={day} />
+                      <AvailabilityTimeFields
+                        defaultStartMinute={leave.start_minute ?? 0}
+                        defaultEndMinute={leave.end_minute ?? 0}
+                      />
+                      <SubmitButton className="w-full min-w-0">
+                        儲存
+                      </SubmitButton>
+                    </ActionForm>
+                    <ServerActionButton
+                      action={cancelLeaveByIdAction.bind(null, leave.id)}
+                      confirmMessage="確定取消此時段 Short Break？"
+                      className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
+                    >
+                      刪除
+                    </ServerActionButton>
+                  </div>
+                ) : null}
+              </StaffShiftChip>
+            );
+          })}
           {daySlots.flatMap((slot) => {
             const locked =
               overlappingLesson(
@@ -236,35 +237,14 @@ export function CoachDayPanel({
                   today,
                   nowMinute,
                 ) != null;
-              return (
-                <div
-                  key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                  className={`space-y-2 rounded-md border px-3 py-2 ${
-                    pending
-                      ? "border-emerald-200 bg-emerald-50"
-                      : confirmed
-                        ? "border-sky-200 bg-sky-50"
-                        : "border-amber-200 bg-amber-50"
-                  }`}
-                >
-                  <p
-                    className={`text-sm font-medium tabular-nums ${
-                      pending
-                        ? "text-emerald-950"
-                        : confirmed
-                          ? "text-sky-950"
-                          : "text-amber-950"
-                    }`}
+              if (pending) {
+                return (
+                  <StaffShiftChip
+                    key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
+                    label={`${timeLabel} ${calendarAssignmentLabel("assigned")}`}
+                    tone="pending"
                   >
-                    {timeLabel}{" "}
-                    {pending
-                      ? calendarAssignmentLabel("assigned")
-                      : confirmed
-                        ? calendarAssignmentLabel("completed")
-                        : "待公司派更"}
-                  </p>
-                  {pending ? (
-                    canConfirm && segment.lesson && lessonWindow ? (
+                    {canConfirm && segment.lesson && lessonWindow ? (
                       <LessonCheckInForm
                         lessonId={segment.lesson.id}
                         date={lessonWindow.date}
@@ -275,13 +255,30 @@ export function CoachDayPanel({
                       <p className="text-sm text-emerald-800">
                         只可簽到已經結束的時段
                       </p>
-                    )
-                  ) : null}
-                  {!pending && !confirmed && editable ? (
-                    <div className="space-y-2">
+                    )}
+                  </StaffShiftChip>
+                );
+              }
+              if (confirmed) {
+                return (
+                  <StaffShiftChip
+                    key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
+                    label={`${timeLabel} ${calendarAssignmentLabel("completed")}`}
+                    tone="confirmed"
+                  />
+                );
+              }
+              return (
+                <StaffShiftChip
+                  key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
+                  label={`${timeLabel} 可返工`}
+                  tone="slot"
+                >
+                  {editable ? (
+                    <div className="flex flex-col gap-2">
                       <ActionForm
                         action={saveAvailabilityAction}
-                        className="space-y-2"
+                        className="flex flex-col gap-2"
                         onSuccess={refresh}
                       >
                         <input
@@ -298,7 +295,9 @@ export function CoachDayPanel({
                           defaultStartMinute={slot.start_minute}
                           defaultEndMinute={slot.end_minute}
                         />
-                        <SubmitButton>儲存</SubmitButton>
+                        <SubmitButton className="w-full min-w-0">
+                          儲存
+                        </SubmitButton>
                       </ActionForm>
                       <ServerActionButton
                         action={deleteAvailabilityAction.bind(null, slot.id)}
@@ -309,18 +308,15 @@ export function CoachDayPanel({
                       </ServerActionButton>
                     </div>
                   ) : null}
-                </div>
+                </StaffShiftChip>
               );
             });
           })}
           {shortBreaks.length === 0 &&
           daySlots.length === 0 &&
-          dayLessons.length === 0 ? (
-            <p className="text-sm text-stone-500">
-              {canReport
-                ? "當日尚未有可返工或派更。可於上方申報可返工。"
-                : "當日尚未有可返工或派更"}
-            </p>
+          dayLessons.length === 0 &&
+          !canReport ? (
+            <p className="text-sm text-stone-500">當日尚未有可返工或派更</p>
           ) : null}
         </div>
       )}

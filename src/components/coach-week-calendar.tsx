@@ -11,10 +11,8 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { CalendarLegend } from "@/components/calendar-legend";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
-import {
-  CancelFullDayLeaveButton,
-  LeaveReportForm,
-} from "@/components/leave-report-form";
+import { CancelFullDayLeaveButton } from "@/components/leave-report-form";
+import { StaffShiftComposer } from "@/components/staff-shift-composer";
 import { Panel, SubmitButton } from "@/components/ui";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import {
@@ -42,7 +40,6 @@ import Link from "next/link";
 import type { MouseEvent } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
-const DEFAULT_DURATION_MINUTES = 60;
 const MINUTES_PER_DAY = 1440;
 
 export type CoachWeekSlot = {
@@ -280,36 +277,12 @@ export function CoachWeekCalendar({
                   return null;
                 }
                 return (
-                  <div className="space-y-1">
-                    <details className="relative z-[2] rounded-sm border border-dashed border-stone-300 bg-white text-xs">
-                      <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium text-stone-600">
-                        ＋ 新增
-                      </summary>
-                      <ActionForm
-                        action={saveAvailabilityAction}
-                        className="min-w-[9rem] space-y-2 border-t border-stone-200 p-2"
-                      >
-                        <input
-                          type="hidden"
-                          name="available_date"
-                          value={date}
-                        />
-                        <AvailabilityTimeFields
-                          defaultStartMinute={suggestedStart}
-                          defaultEndMinute={Math.min(
-                            suggestedStart + DEFAULT_DURATION_MINUTES,
-                            MINUTES_PER_DAY,
-                          )}
-                        />
-                        <SubmitButton>新增</SubmitButton>
-                      </ActionForm>
-                    </details>
-                    <LeaveReportForm
-                      date={date}
-                      suggestedStart={suggestedStart}
-                      canTakeFullDay={!hasAssigned}
-                    />
-                  </div>
+                  <StaffShiftComposer
+                    date={date}
+                    suggestedStart={suggestedStart}
+                    canTakeFullDay={!hasAssigned}
+                    compact
+                  />
                 );
               }}
               events={(date) => {

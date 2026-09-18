@@ -107,7 +107,7 @@ export function CoachMonthWorkspace({
       coachName,
       timeLabel: isFullDayLeave(leave)
         ? undefined
-        : formatAvailabilityTime(leave.start_minute ?? 0),
+        : `${formatAvailabilityTime(leave.start_minute ?? 0)}–${formatAvailabilityTime(leave.end_minute ?? 0)}`,
       variant: "leave",
     });
     availabilityByDay.set(leave.leave_date, list);
@@ -129,7 +129,7 @@ export function CoachMonthWorkspace({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
         label: `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
         coachName,
-        timeLabel: formatAvailabilityTime(segment.startMinute),
+        timeLabel: `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
         variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
       });
     }
