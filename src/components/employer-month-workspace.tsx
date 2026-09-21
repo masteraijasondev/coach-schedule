@@ -427,7 +427,7 @@ export function EmployerMonthWorkspace({
                         {formatDateTime(lesson.ends_at).slice(11)}
                       </p>
                       <p className="text-sm text-stone-500">
-                        教練：
+                        員工：
                         {lesson.coach_id
                           ? (coachMap.get(lesson.coach_id) ?? "—")
                           : "—"}
