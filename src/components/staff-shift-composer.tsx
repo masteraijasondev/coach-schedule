@@ -29,20 +29,6 @@ function Chevron({ up = false }: { up?: boolean }) {
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden className="size-4 shrink-0">
-      <path
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.5"
-        d="M8 3.5v9M3.5 8h9"
-      />
-    </svg>
-  );
-}
-
 const CHIP_TONE = {
   slot: "bg-slate-100 text-stone-700",
   pending: "bg-emerald-50 text-emerald-950",
@@ -142,12 +128,14 @@ export function StaffShiftComposer({
           onClick={() => setOpen(true)}
           aria-expanded={false}
           aria-label="新增可返工或放假時段"
-          className={`inline-flex w-full cursor-pointer items-center justify-center gap-1.5 border border-stone-200 bg-white font-medium text-stone-800 shadow-sm transition-colors hover:border-stone-300 hover:bg-stone-50 active:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 ${
-            compact ? "h-8 rounded-lg" : "min-h-11 rounded-xl px-4 text-sm"
+          className={`flex w-full cursor-pointer items-center rounded-2xl bg-slate-100 font-medium text-stone-600 transition-colors hover:bg-slate-200 active:bg-slate-300 ${
+            compact ? "h-8 justify-center px-2" : "justify-between px-4 py-3 text-sm"
           }`}
         >
-          <PlusIcon />
           {compact ? null : <span>報更 / 報假</span>}
+          <span aria-hidden className="text-xl font-light leading-none text-stone-500">
+            ＋
+          </span>
         </button>
       )}
     </div>
