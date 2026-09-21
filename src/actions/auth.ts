@@ -1,9 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getSiteUrl } from "@/lib/supabase/env";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import type { ActionResult } from "@/lib/types";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -16,23 +15,14 @@ function isNextRedirect(error: unknown): boolean {
   );
 }
 
-async function resolveSiteOrigin(): Promise<string> {
-  const configured = getSiteUrl();
-  if (configured) {
-    return configured;
+function recoveryLinkError(message: string): string {
+  if (
+    message.includes("code verifier") ||
+    message.includes("both auth code and code verifier")
+  ) {
+    return "請用申請重設時的同一個瀏覽器開啟連結，或重新申請";
   }
-  const headerStore = await headers();
-  const origin = headerStore.get("origin");
-  if (origin) {
-    return origin;
-  }
-  const host =
-    headerStore.get("x-forwarded-host") ?? headerStore.get("host");
-  const proto = headerStore.get("x-forwarded-proto") ?? "http";
-  if (host) {
-    return `${proto}://${host}`;
-  }
-  return "http://localhost:3000";
+  return "重設連結無效或已過期，請重新申請";
 }
 
 export async function loginAction(
@@ -72,35 +62,48 @@ export async function loginAction(
   }
 }
 
-export async function requestPasswordResetAction(
+export async function confirmRecoverySessionAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    const email = String(formData.get("email") ?? "").trim().toLowerCase();
-    if (!email || !email.includes("@")) {
-      return { ok: false, error: "請輸入有效電郵" };
-    }
-
-    const origin = await resolveSiteOrigin();
-    const redirectTo = `${origin}/auth/confirm?next=/reset-password`;
+    const code = String(formData.get("code") ?? "").trim();
+    const tokenHash = String(formData.get("token_hash") ?? "").trim();
+    const type = (String(formData.get("type") ?? "recovery") ||
+      "recovery") as EmailOtpType;
     const supabase = await createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo,
-    });
 
-    if (error) {
-      console.error("[requestPasswordResetAction]", {
-        message: error.message,
-        status: error.status,
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error("[confirmRecoverySessionAction] exchangeCodeForSession", {
+          message: error.message,
+        });
+        return { ok: false, error: recoveryLinkError(error.message) };
+      }
+    } else if (tokenHash) {
+      const { error } = await supabase.auth.verifyOtp({
+        type,
+        token_hash: tokenHash,
       });
-      return { ok: false, error: "無法寄出重設連結，請稍後再試" };
+      if (error) {
+        console.error("[confirmRecoverySessionAction] verifyOtp", {
+          message: error.message,
+          type,
+        });
+        return { ok: false, error: recoveryLinkError(error.message) };
+      }
+    } else {
+      return { ok: false, error: "重設連結無效或已過期，請重新申請" };
     }
 
-    return { ok: true, data: undefined };
+    redirect("/reset-password");
   } catch (error) {
-    console.error("[requestPasswordResetAction] unexpected", { error });
-    return { ok: false, error: "無法寄出重設連結，請稍後再試" };
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    console.error("[confirmRecoverySessionAction] unexpected", { error });
+    return { ok: false, error: "重設連結無效或已過期，請重新申請" };
   }
 }
 

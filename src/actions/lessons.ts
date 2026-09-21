@@ -456,14 +456,23 @@ export async function confirmLessonPeriodsAction(
     }
 
     const supabase = await createClient();
-    const { data: lesson, error: lessonError } = await supabase
-      .from("lessons")
-      .select(
-        "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount",
-      )
-      .eq("id", lessonId)
-      .eq("coach_id", coach.id)
-      .maybeSingle();
+    const [lessonResult, linkResult] = await Promise.all([
+      supabase
+        .from("lessons")
+        .select(
+          "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount",
+        )
+        .eq("id", lessonId)
+        .eq("coach_id", coach.id)
+        .maybeSingle(),
+      supabase
+        .from("lesson_students")
+        .select("student_id")
+        .eq("lesson_id", lessonId)
+        .maybeSingle(),
+    ]);
+    const { data: lesson, error: lessonError } = lessonResult;
+    const link = linkResult.data;
 
     if (lessonError) {
       console.error("[confirmLessonPeriodsAction] load", { error: lessonError });
@@ -494,17 +503,15 @@ export async function confirmLessonPeriodsAction(
       return { ok: false, error: periodError };
     }
 
-    const { data: link } = await supabase
-      .from("lesson_students")
-      .select("student_id")
-      .eq("lesson_id", lessonId)
-      .maybeSingle();
-
     const periodsWithPay: {
       start_minute: number;
       end_minute: number;
       earned_amount_hkd: number | null;
     }[] = [];
+    const payByDuration = new Map<
+      number,
+      Awaited<ReturnType<typeof resolveLessonPay>>
+    >();
 
     for (const period of [...parsed.periods].sort(
       (a, b) => a.startMinute - b.startMinute,
@@ -520,19 +527,25 @@ export async function confirmLessonPeriodsAction(
       if (new Date(endsAt) > now) {
         return { ok: false, error: "只可簽到已經結束的時段" };
       }
-      const rateResult = await resolveLessonPay({
-        coachId: coach.id,
-        lessonTypeId: lesson.lesson_type_id,
-        studentId: link?.student_id ?? null,
-        headcountRaw:
-          lesson.headcount == null ? "" : String(lesson.headcount),
-        expectedHeadcountRaw:
-          lesson.expected_headcount == null
-            ? ""
-            : String(lesson.expected_headcount),
-        startsAt,
-        endsAt,
-      });
+      const durationMinutes =
+        (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000;
+      let rateResult = payByDuration.get(durationMinutes);
+      if (!rateResult) {
+        rateResult = await resolveLessonPay({
+          coachId: coach.id,
+          lessonTypeId: lesson.lesson_type_id,
+          studentId: link?.student_id ?? null,
+          headcountRaw:
+            lesson.headcount == null ? "" : String(lesson.headcount),
+          expectedHeadcountRaw:
+            lesson.expected_headcount == null
+              ? ""
+              : String(lesson.expected_headcount),
+          startsAt,
+          endsAt,
+        });
+        payByDuration.set(durationMinutes, rateResult);
+      }
       if ("error" in rateResult) {
         return { ok: false, error: rateResult.error };
       }

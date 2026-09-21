@@ -10,6 +10,7 @@ import {
   lessonStatusLabel,
 } from "@/lib/format";
 import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
+import { groupStudentNames } from "@/lib/employer-calendar-data";
 import type { LessonStatus, PayMode } from "@/lib/types";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
@@ -30,25 +31,7 @@ type LessonRow = {
   student_fee_hkd: number | null;
   headcount: number | null;
   expected_headcount: number | null;
-  lesson_students:
-    | {
-        students: { name: string } | { name: string }[] | null;
-      }[]
-    | null;
 };
-
-function nestedStudentName(row: {
-  students: { name: string } | { name: string }[] | null;
-}): string | null {
-  const related = row.students;
-  if (!related) {
-    return null;
-  }
-  if (Array.isArray(related)) {
-    return related[0]?.name ?? null;
-  }
-  return related.name;
-}
 
 export async function EmployerLessonList({
   coachId,
@@ -73,17 +56,26 @@ export async function EmployerLessonList({
 }) {
   const { start, end } = availabilityWeekBoundsIso(listWeek);
   const supabase = await createClient();
-  const { data: lessonRows, error } = await supabase
-    .from("lessons")
-    .select(
-      "id, lesson_type_id, starts_at, ends_at, status, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount, lesson_students ( students ( name ) )",
-    )
-    .eq("coach_id", coachId)
-    .neq("status", "cancelled")
-    .gte("starts_at", start)
-    .lt("starts_at", end)
-    .order("starts_at", { ascending: true });
+  const tuitionWarm = lookupAirtableTuitions([]);
+  const [lessonsResult, namesResult] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select(
+        "id, lesson_type_id, starts_at, ends_at, status, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount",
+      )
+      .eq("coach_id", coachId)
+      .neq("status", "cancelled")
+      .gte("starts_at", start)
+      .lt("starts_at", end)
+      .order("starts_at", { ascending: true }),
+    supabase.rpc("employer_calendar_student_names", {
+      p_start: start,
+      p_end: end,
+    }),
+  ]);
+  await tuitionWarm;
 
+  const error = lessonsResult.error ?? namesResult.error;
   if (error) {
     console.error("[EmployerLessonList] load lessons", {
       error,
@@ -92,17 +84,17 @@ export async function EmployerLessonList({
     });
   }
 
-  const coachLessons = (lessonRows ?? []) as LessonRow[];
+  const coachLessons = (lessonsResult.data ?? []) as LessonRow[];
+  const lessonIds = new Set(coachLessons.map((lesson) => lesson.id));
+  const namesByLesson = groupStudentNames(
+    (namesResult.data as { lesson_id: string; student_name: string }[] | null)?.filter(
+      (row) => lessonIds.has(row.lesson_id),
+    ) ?? null,
+  );
   const typeName = new Map(types.map((type) => [type.id, type.name]));
   const payModeByType = new Map(types.map((type) => [type.id, type.pay_mode]));
   const weekStudentNames = [
-    ...new Set(
-      coachLessons.flatMap((lesson) =>
-        (lesson.lesson_students ?? [])
-          .map(nestedStudentName)
-          .filter((name): name is string => Boolean(name)),
-      ),
-    ),
+    ...new Set([...namesByLesson.values()].flat()),
   ];
   const { fees: listedTuitions } = await lookupAirtableTuitions(weekStudentNames);
 
@@ -147,9 +139,7 @@ export async function EmployerLessonList({
               lesson.headcount,
               lesson.expected_headcount,
             );
-            const studentNames = (lesson.lesson_students ?? [])
-              .map(nestedStudentName)
-              .filter((name): name is string => Boolean(name));
+            const studentNames = namesByLesson.get(lesson.id) ?? [];
             const listedTuition =
               studentNames
                 .map((name) => listedTuitions.get(name))

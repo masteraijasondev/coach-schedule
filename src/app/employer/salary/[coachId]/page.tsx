@@ -11,6 +11,7 @@ import {
 } from "@/lib/calendar";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
 import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
+import { relatedStudentName } from "@/lib/employer-calendar-data";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -29,6 +30,7 @@ export default async function EmployerCoachSalaryPage({
   const { start, end } = payrollPeriodBoundsIso(period);
 
   const supabase = await createClient();
+  const tuitionWarm = lookupAirtableTuitions([]);
   const [{ data: coach }, { data: lessons }] = await Promise.all([
     supabase
       .from("profiles")
@@ -53,35 +55,37 @@ export default async function EmployerCoachSalaryPage({
   }
 
   const lessonIds = (lessons ?? []).map((l) => l.id);
-  const [{ data: types }, { data: lessonStudents }, { data: students }] =
-    await Promise.all([
-      [...new Set((lessons ?? []).map((l) => l.lesson_type_id))].length
-        ? supabase
-            .from("lesson_types")
-            .select("id, name, pay_mode")
-            .in(
-              "id",
-              [...new Set((lessons ?? []).map((l) => l.lesson_type_id))],
-            )
-        : Promise.resolve({ data: [] }),
-      lessonIds.length
-        ? supabase
-            .from("lesson_students")
-            .select("lesson_id, student_id")
-            .in("lesson_id", lessonIds)
-        : Promise.resolve({ data: [] }),
-      supabase.from("students").select("id, name"),
-    ]);
+  const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
+  const [{ data: types }, { data: lessonStudents }] = await Promise.all([
+    typeIds.length
+      ? supabase
+          .from("lesson_types")
+          .select("id, name, pay_mode")
+          .in("id", typeIds)
+      : Promise.resolve({ data: [] }),
+    lessonIds.length
+      ? supabase
+          .from("lesson_students")
+          .select("lesson_id, student_id, students(name)")
+          .in("lesson_id", lessonIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+  await tuitionWarm;
 
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
-  const studentByLesson = new Map(
-    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
-  );
-  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
-  const { fees: listedTuitions } = await lookupAirtableTuitions(
-    [...studentName.values()],
-  );
+  const studentByLesson = new Map<string, string>();
+  const studentName = new Map<string, string>();
+  for (const row of lessonStudents ?? []) {
+    studentByLesson.set(row.lesson_id, row.student_id);
+    const name = relatedStudentName(row.students);
+    if (name) {
+      studentName.set(row.student_id, name);
+    }
+  }
+  const { fees: listedTuitions } = await lookupAirtableTuitions([
+    ...studentName.values(),
+  ]);
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),

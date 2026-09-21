@@ -21,11 +21,12 @@ import { createClient } from "@/lib/supabase/server";
 export default async function CoachesPage() {
   await requireEmployer();
   const supabase = await createClient();
+  const tuitionWarm = lookupAirtableTuitions([]);
   const [{ data: coaches }, { data: students }, { data: studentRates }] =
     await Promise.all([
       supabase
         .from("profiles")
-        .select("*")
+        .select("id, email, full_name, staff_kind, must_change_password")
         .eq("role", "coach")
         .order("full_name"),
       supabase
@@ -33,8 +34,11 @@ export default async function CoachesPage() {
         .select("id, name")
         .eq("active", true)
         .order("name"),
-      supabase.from("coach_student_rates").select("coach_id, student_id, amount_hkd, student_fee_hkd, pay_ratio"),
+      supabase
+        .from("coach_student_rates")
+        .select("coach_id, student_id, amount_hkd, student_fee_hkd, pay_ratio"),
     ]);
+  await tuitionWarm;
 
   const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
   const coachName = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));

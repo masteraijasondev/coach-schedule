@@ -22,7 +22,7 @@ export default async function RatesPage() {
         .select("id, name, pay_mode")
         .eq("active", true)
         .order("name"),
-      supabase.from("coach_rates").select("*"),
+      supabase.from("coach_rates").select("coach_id, lesson_type_id, amount_hkd"),
     ]);
 
   const coachName = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));

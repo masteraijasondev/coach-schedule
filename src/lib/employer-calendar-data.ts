@@ -27,16 +27,35 @@ function attachStudentNames(
   lessons: LessonRow[],
   names: { lesson_id: string; student_name: string }[] | null,
 ): EmployerMonthLesson[] {
+  const namesByLesson = groupStudentNames(names);
+  return lessons.map((lesson) => ({
+    ...lesson,
+    student_names: namesByLesson.get(lesson.id) ?? [],
+  }));
+}
+
+export function groupStudentNames(
+  names: { lesson_id: string; student_name: string }[] | null,
+): Map<string, string[]> {
   const namesByLesson = new Map<string, string[]>();
   for (const row of names ?? []) {
     const list = namesByLesson.get(row.lesson_id) ?? [];
     list.push(row.student_name);
     namesByLesson.set(row.lesson_id, list);
   }
-  return lessons.map((lesson) => ({
-    ...lesson,
-    student_names: namesByLesson.get(lesson.id) ?? [],
-  }));
+  return namesByLesson;
+}
+
+export function relatedStudentName(
+  related: { name: string } | { name: string }[] | null | undefined,
+): string | null {
+  if (!related) {
+    return null;
+  }
+  if (Array.isArray(related)) {
+    return related[0]?.name ?? null;
+  }
+  return related.name;
 }
 
 export async function loadEmployerCalendarData(range: {

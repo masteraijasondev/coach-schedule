@@ -35,6 +35,7 @@ type CacheEntry = {
 };
 
 let cache: CacheEntry | null = null;
+let inflight: Promise<CacheEntry> | null = null;
 
 function airtableToken(): string | null {
   return process.env.AIRTABLE_API_TOKEN?.trim() || null;
@@ -180,6 +181,16 @@ async function loadTuitionIndex(): Promise<CacheEntry> {
   if (cache && now - cache.at < CACHE_MS) {
     return cache;
   }
+  if (inflight) {
+    return inflight;
+  }
+  inflight = loadTuitionIndexUncached(now).finally(() => {
+    inflight = null;
+  });
+  return inflight;
+}
+
+async function loadTuitionIndexUncached(now: number): Promise<CacheEntry> {
   if (!airtableToken()) {
     cache = { at: now, byLocalName: new Map(), error: "尚未設定 Airtable" };
     return cache;

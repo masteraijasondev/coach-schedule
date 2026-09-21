@@ -43,18 +43,21 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (
-    user &&
-    (pathname === "/login" ||
-      pathname === "/forgot-password" ||
-      pathname === "/")
-  ) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, must_change_password")
-      .eq("id", user.id)
-      .single();
+  if (!user) {
+    return supabaseResponse;
+  }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, must_change_password")
+    .eq("id", user.id)
+    .single();
+
+  if (
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname === "/"
+  ) {
     const url = request.nextUrl.clone();
     if (profile?.must_change_password) {
       url.pathname = "/change-password";
@@ -66,18 +69,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (
-    user &&
-    pathname !== "/change-password" &&
-    pathname !== "/reset-password" &&
-    pathname !== "/login"
-  ) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, must_change_password")
-      .eq("id", user.id)
-      .single();
-
+  if (pathname !== "/change-password" && pathname !== "/reset-password") {
     if (profile?.must_change_password) {
       const url = request.nextUrl.clone();
       url.pathname = "/change-password";

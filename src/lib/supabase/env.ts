@@ -5,12 +5,6 @@ function requiredEnv(name: string, value: string | undefined): string {
   return value;
 }
 
-/** Public app origin for auth email redirects (optional; falls back to request). */
-export function getSiteUrl(): string | null {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  return configured ? configured.replace(/\/$/, "") : null;
-}
-
 export function getSupabaseUrl(): string {
   return requiredEnv(
     "NEXT_PUBLIC_SUPABASE_URL",

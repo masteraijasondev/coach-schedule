@@ -8,6 +8,7 @@ import {
   shiftMonth,
 } from "@/lib/calendar";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
+import { relatedStudentName } from "@/lib/employer-calendar-data";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -44,22 +45,21 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
     lessonIds.length
       ? supabase
           .from("lesson_students")
-          .select("lesson_id, student_id")
+          .select("lesson_id, student_id, students(name)")
           .in("lesson_id", lessonIds)
       : Promise.resolve({ data: [] }),
   ]);
-  const studentIds = [
-    ...new Set((lessonStudents ?? []).map((row) => row.student_id)),
-  ];
-  const { data: students } = studentIds.length
-    ? await supabase.from("students").select("id, name").in("id", studentIds)
-    : { data: [] };
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
-  const studentByLesson = new Map(
-    (lessonStudents ?? []).map((row) => [row.lesson_id, row.student_id]),
-  );
-  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
+  const studentByLesson = new Map<string, string>();
+  const studentName = new Map<string, string>();
+  for (const row of lessonStudents ?? []) {
+    studentByLesson.set(row.lesson_id, row.student_id);
+    const name = relatedStudentName(row.students);
+    if (name) {
+      studentName.set(row.student_id, name);
+    }
+  }
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),

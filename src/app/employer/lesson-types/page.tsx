@@ -20,7 +20,7 @@ export default async function LessonTypesPage() {
   const supabase = await createClient();
   const { data: types } = await supabase
     .from("lesson_types")
-    .select("*")
+    .select("id, name, default_duration_minutes, pay_mode, active")
     .order("name");
 
   return (
