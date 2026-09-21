@@ -13,7 +13,7 @@ export function SubmitButton({
   children: React.ReactNode;
   pendingLabel?: string;
   disabled?: boolean;
-  variant?: "primary" | "danger" | "secondary";
+  variant?: "primary" | "danger" | "secondary" | "leave";
   className?: string;
 }) {
   const { pending } = useFormStatus();
@@ -21,9 +21,11 @@ export function SubmitButton({
   const tone =
     variant === "danger"
       ? "bg-red-700 hover:bg-red-800 text-white"
-      : variant === "secondary"
-        ? "bg-stone-200 text-stone-800 hover:bg-stone-300"
-        : "bg-stone-900 text-white hover:bg-stone-800";
+      : variant === "leave"
+        ? "bg-rose-700 hover:bg-rose-800 text-white"
+        : variant === "secondary"
+          ? "bg-stone-200 text-stone-800 hover:bg-stone-300"
+          : "bg-stone-900 text-white hover:bg-stone-800";
 
   return (
     <button

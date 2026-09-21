@@ -12,8 +12,12 @@ const endOptions = Array.from(
   (_, index) => (index + 1) * TIME_STEP_MINUTES,
 );
 
-const selectClass =
-  "w-full min-w-[6.5rem] appearance-none rounded-md border border-stone-300 bg-white bg-[length:0.75rem] bg-[right_0.6rem_center] bg-no-repeat py-2 pl-2.5 pr-8 text-base tabular-nums text-stone-900 outline-none focus:border-stone-500 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2378716c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]";
+const SELECT_CLASS = {
+  default:
+    "w-full min-w-[6.5rem] appearance-none rounded-md border border-stone-300 bg-white bg-[length:0.75rem] bg-[right_0.6rem_center] bg-no-repeat py-2 pl-2.5 pr-8 text-base tabular-nums text-stone-900 outline-none focus:border-stone-500 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2378716c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+  leave:
+    "w-full min-w-[6.5rem] appearance-none rounded-md border border-rose-200 bg-white bg-[length:0.75rem] bg-[right_0.6rem_center] bg-no-repeat py-2 pl-2.5 pr-8 text-base tabular-nums text-rose-950 outline-none focus:border-rose-400 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%239f1239' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+} as const;
 
 function TimeSelect({
   label,
@@ -21,16 +25,21 @@ function TimeSelect({
   options,
   current,
   onChange,
+  tone = "default",
 }: {
   label: string;
   name: string;
   options: number[];
   current: number;
   onChange?: (minutes: number) => void;
+  tone?: keyof typeof SELECT_CLASS;
 }) {
+  const selectClass = SELECT_CLASS[tone];
+  const labelClass = tone === "leave" ? "text-rose-800" : "text-stone-600";
+
   return (
     <label className="space-y-1 text-sm">
-      <span className="text-stone-600">{label}</span>
+      <span className={labelClass}>{label}</span>
       {onChange ? (
         <select
           name={name}
@@ -74,6 +83,7 @@ export function AvailabilityTimeFields({
   endValue,
   onStartChange,
   onEndChange,
+  tone = "default",
 }: {
   defaultStartMinute: number;
   defaultEndMinute: number;
@@ -85,6 +95,7 @@ export function AvailabilityTimeFields({
   endValue?: number;
   onStartChange?: (minutes: number) => void;
   onEndChange?: (minutes: number) => void;
+  tone?: keyof typeof SELECT_CLASS;
 }) {
   const starts = startOptions.filter(
     (minutes) =>
@@ -107,6 +118,7 @@ export function AvailabilityTimeFields({
         options={starts}
         current={startValue ?? defaultStartMinute}
         onChange={onStartChange}
+        tone={tone}
       />
       <TimeSelect
         label="結束"
@@ -114,6 +126,7 @@ export function AvailabilityTimeFields({
         options={ends}
         current={endValue ?? defaultEndMinute}
         onChange={onEndChange}
+        tone={tone}
       />
     </div>
   );

@@ -25,8 +25,8 @@ export function LeaveReportForm({
   onSuccess?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-rose-200 bg-white p-3">
-      <p className="mb-2 text-center text-sm font-medium text-rose-800">
+    <div className="rounded-xl bg-rose-50 p-3">
+      <p className="mb-2 text-center text-sm font-medium text-rose-900">
         報放假
       </p>
       <div className="flex flex-col gap-2">
@@ -37,19 +37,22 @@ export function LeaveReportForm({
         >
           <input type="hidden" name="leave_date" value={date} />
           <AvailabilityTimeFields
+            tone="leave"
             defaultStartMinute={suggestedStart}
             defaultEndMinute={Math.min(
               suggestedStart + DEFAULT_DURATION_MINUTES,
               MINUTES_PER_DAY,
             )}
           />
-          <SubmitButton className="w-full min-w-0">報此時段</SubmitButton>
+          <SubmitButton variant="leave" className="w-full min-w-0">
+            報此時段
+          </SubmitButton>
         </ActionForm>
         {canTakeFullDay ? (
           <ServerActionButton
             action={saveLeaveAction.bind(null, date)}
             confirmMessage="確定當日全日放假？當日可返工時段將會取消。"
-            className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-sm text-rose-800 disabled:opacity-60"
+            className="w-full min-h-11 rounded-md border border-rose-300 bg-rose-100 px-2 py-1 text-sm font-medium text-rose-900 hover:bg-rose-200 disabled:opacity-60"
           >
             全日放假
           </ServerActionButton>

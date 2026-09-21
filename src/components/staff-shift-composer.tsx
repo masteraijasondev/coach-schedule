@@ -95,24 +95,29 @@ export function StaffShiftComposer({
             onClick={() => setOpen(false)}
             className="mb-3 flex w-full items-center justify-between text-sm font-medium text-stone-800"
           >
-            報可返工
+            報更 / 報假
             <Chevron up />
           </button>
-          <ActionForm
-            action={saveAvailabilityAction}
-            className="flex flex-col gap-2"
-            onSuccess={closeAndRefresh}
-          >
-            <input type="hidden" name="available_date" value={date} />
-            <AvailabilityTimeFields
-              defaultStartMinute={suggestedStart}
-              defaultEndMinute={Math.min(
-                suggestedStart + DEFAULT_DURATION_MINUTES,
-                MINUTES_PER_DAY,
-              )}
-            />
-            <SubmitButton className="w-full min-w-0">新增</SubmitButton>
-          </ActionForm>
+          <div className="rounded-xl bg-slate-100 p-3">
+            <p className="mb-2 text-center text-sm font-medium text-stone-700">
+              報更
+            </p>
+            <ActionForm
+              action={saveAvailabilityAction}
+              className="flex flex-col gap-2"
+              onSuccess={closeAndRefresh}
+            >
+              <input type="hidden" name="available_date" value={date} />
+              <AvailabilityTimeFields
+                defaultStartMinute={suggestedStart}
+                defaultEndMinute={Math.min(
+                  suggestedStart + DEFAULT_DURATION_MINUTES,
+                  MINUTES_PER_DAY,
+                )}
+              />
+              <SubmitButton className="w-full min-w-0">新增</SubmitButton>
+            </ActionForm>
+          </div>
           <div className="mt-3">
             <LeaveReportForm
               date={date}
