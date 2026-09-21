@@ -75,7 +75,7 @@ export default async function LessonTypesPage() {
               >
                 <button
                   type="submit"
-                  className="text-sm text-stone-600 underline"
+                  className="cursor-pointer text-sm text-stone-600 underline"
                 >
                   {type.active ? "停用" : "啟用"}
                 </button>

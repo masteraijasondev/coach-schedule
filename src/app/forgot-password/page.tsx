@@ -64,7 +64,7 @@ function ForgotPasswordForm() {
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex min-h-10 min-w-28 items-center justify-center rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex min-h-10 min-w-28 cursor-pointer items-center justify-center rounded-md bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
           {pending ? "處理中…" : "寄出重設連結"}
         </button>

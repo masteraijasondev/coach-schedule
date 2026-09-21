@@ -29,16 +29,22 @@ export function EmployerAssignForm({
   const router = useRouter();
   const [assignStart, setAssignStart] = useState(startMinute);
   const [assignEnd, setAssignEnd] = useState(slotEndMinute);
+  const [releaseStart, setReleaseStart] = useState(startMinute);
+  const [releaseEnd, setReleaseEnd] = useState(slotEndMinute);
   const [releaseRemainder, setReleaseRemainder] = useState(true);
 
   useEffect(() => {
     setAssignStart(startMinute);
     setAssignEnd(slotEndMinute);
+    setReleaseStart(startMinute);
+    setReleaseEnd(slotEndMinute);
     setReleaseRemainder(true);
   }, [startMinute, slotEndMinute]);
 
   const hasRemainder =
     assignStart > startMinute || assignEnd < slotEndMinute;
+  const releasingAll =
+    releaseStart === startMinute && releaseEnd === slotEndMinute;
 
   function goClear() {
     router.replace(clearHref);
@@ -52,82 +58,107 @@ export function EmployerAssignForm({
         {formatAvailabilityTime(slotEndMinute)}
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        可僅派其中一段時間。例如可返工為 12:00–18:00，可改為 12:30–16:30。其餘時間可標為暫無需要，員工日曆會以灰色顯示，表示公司暫不需要該時段。
+        派更與暫無需要可各自選擇時段。例如可返工為 12:00–18:00，可派 12:30–16:30，並將 16:30–18:00 標為暫無需要。
       </p>
-      <div className="mt-3 grid gap-3">
-        <AvailabilityTimeFields
-          defaultStartMinute={startMinute}
-          defaultEndMinute={slotEndMinute}
-          minMinute={startMinute}
-          maxMinute={slotEndMinute}
-          startValue={assignStart}
-          endValue={assignEnd}
-          onStartChange={(next) => {
-            setAssignStart(next);
-            if (assignEnd <= next) {
-              setAssignEnd(Math.min(next + TIME_STEP_MINUTES, slotEndMinute));
-            }
-          }}
-          onEndChange={(next) => {
-            setAssignEnd(next);
-            if (assignStart >= next) {
-              setAssignStart(Math.max(next - TIME_STEP_MINUTES, startMinute));
-            }
-          }}
-        />
-        {hasRemainder ? (
-          <label className="flex items-start gap-2 text-sm text-stone-700">
-            <input
-              type="checkbox"
-              checked={releaseRemainder}
-              onChange={(event) => setReleaseRemainder(event.target.checked)}
-              className="mt-0.5 size-4 rounded border-stone-300"
-            />
-            <span>
-              將其餘可返工時間標為暫無需要（
-              {assignStart > startMinute
-                ? `${formatAvailabilityTime(startMinute)}–${formatAvailabilityTime(assignStart)}`
-                : null}
-              {assignStart > startMinute && assignEnd < slotEndMinute
-                ? "、"
-                : null}
-              {assignEnd < slotEndMinute
-                ? `${formatAvailabilityTime(assignEnd)}–${formatAvailabilityTime(slotEndMinute)}`
-                : null}
-              ）
-            </span>
-          </label>
-        ) : null}
+      <div className="mt-3 grid gap-4">
         <ActionForm
           action={createLessonAction}
-          className="grid gap-3"
+          className="grid gap-3 rounded-md border border-stone-200 bg-white p-3"
           onSuccess={goClear}
         >
+          <p className="text-sm font-medium text-stone-800">派更時段</p>
           <input type="hidden" name="coach_id" value={coachId} />
           <input type="hidden" name="date" value={date} />
-          <input type="hidden" name="start_minute" value={assignStart} />
-          <input type="hidden" name="end_minute" value={assignEnd} />
           <input type="hidden" name="slot_start_minute" value={startMinute} />
           <input type="hidden" name="slot_end_minute" value={slotEndMinute} />
+          <AvailabilityTimeFields
+            defaultStartMinute={startMinute}
+            defaultEndMinute={slotEndMinute}
+            minMinute={startMinute}
+            maxMinute={slotEndMinute}
+            startValue={assignStart}
+            endValue={assignEnd}
+            onStartChange={(next) => {
+              setAssignStart(next);
+              if (assignEnd <= next) {
+                setAssignEnd(Math.min(next + TIME_STEP_MINUTES, slotEndMinute));
+              }
+            }}
+            onEndChange={(next) => {
+              setAssignEnd(next);
+              if (assignStart >= next) {
+                setAssignStart(Math.max(next - TIME_STEP_MINUTES, startMinute));
+              }
+            }}
+          />
+          {hasRemainder ? (
+            <label className="flex items-start gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={releaseRemainder}
+                onChange={(event) => setReleaseRemainder(event.target.checked)}
+                className="mt-0.5 size-4 rounded border-stone-300"
+              />
+              <span>
+                將其餘可返工時間標為暫無需要（
+                {assignStart > startMinute
+                  ? `${formatAvailabilityTime(startMinute)}–${formatAvailabilityTime(assignStart)}`
+                  : null}
+                {assignStart > startMinute && assignEnd < slotEndMinute
+                  ? "、"
+                  : null}
+                {assignEnd < slotEndMinute
+                  ? `${formatAvailabilityTime(assignEnd)}–${formatAvailabilityTime(slotEndMinute)}`
+                  : null}
+                ）
+              </span>
+            </label>
+          ) : null}
           {hasRemainder && releaseRemainder ? (
             <input type="hidden" name="release_remainder" value="1" />
           ) : null}
-          <SubmitButton>派更</SubmitButton>
+          <SubmitButton>
+            {`派更（${formatAvailabilityTime(assignStart)}–${formatAvailabilityTime(assignEnd)}）`}
+          </SubmitButton>
         </ActionForm>
         <ActionForm
           action={releaseAvailabilityAction}
-          className="grid gap-3"
+          className="grid gap-3 rounded-md border border-stone-200 bg-white p-3"
           onSuccess={goClear}
         >
+          <p className="text-sm font-medium text-stone-800">暫無需要時段</p>
+          <p className="text-sm text-stone-500">
+            只會釋放下面選中的時間，其餘可返工維持待派更。
+          </p>
           <input type="hidden" name="coach_id" value={coachId} />
           <input type="hidden" name="date" value={date} />
-          <input type="hidden" name="start_minute" value={assignStart} />
-          <input type="hidden" name="end_minute" value={assignEnd} />
+          <AvailabilityTimeFields
+            defaultStartMinute={startMinute}
+            defaultEndMinute={slotEndMinute}
+            minMinute={startMinute}
+            maxMinute={slotEndMinute}
+            startValue={releaseStart}
+            endValue={releaseEnd}
+            onStartChange={(next) => {
+              setReleaseStart(next);
+              if (releaseEnd <= next) {
+                setReleaseEnd(Math.min(next + TIME_STEP_MINUTES, slotEndMinute));
+              }
+            }}
+            onEndChange={(next) => {
+              setReleaseEnd(next);
+              if (releaseStart >= next) {
+                setReleaseStart(Math.max(next - TIME_STEP_MINUTES, startMinute));
+              }
+            }}
+          />
           <SubmitButton
             variant="secondary"
             className="w-full min-w-0 border border-stone-400 bg-stone-200 text-stone-800 hover:bg-stone-300"
           >
-            {`暫無需要（${formatAvailabilityTime(assignStart)}–${formatAvailabilityTime(assignEnd)}）`}
+            {releasingAll
+              ? `整段暫無需要（${formatAvailabilityTime(releaseStart)}–${formatAvailabilityTime(releaseEnd)}）`
+              : `暫無需要（${formatAvailabilityTime(releaseStart)}–${formatAvailabilityTime(releaseEnd)}）`}
           </SubmitButton>
         </ActionForm>
       </div>

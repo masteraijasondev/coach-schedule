@@ -45,7 +45,7 @@ export function AppHeader({
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
-            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-stone-300 px-3 text-sm font-medium hover:bg-stone-100 md:hidden"
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-md border border-stone-300 px-3 text-sm font-medium hover:bg-stone-100 md:hidden"
             aria-expanded={open}
             aria-controls="app-nav-menu"
             onClick={() => setOpen((current) => !current)}
@@ -55,7 +55,7 @@ export function AppHeader({
           <form action={logoutAction}>
             <button
               type="submit"
-              className="min-h-11 rounded-md border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
+              className="min-h-11 cursor-pointer rounded-md border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100"
             >
               登出
             </button>

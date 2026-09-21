@@ -124,7 +124,7 @@ export function LessonRegisterFields({
                   <button
                     type="button"
                     onClick={onRetryStudents}
-                    className="text-sm text-stone-600 underline"
+                    className="cursor-pointer text-sm text-stone-600 underline"
                   >
                     重試
                   </button>

@@ -110,7 +110,7 @@ export function LessonCheckInForm({
       />
       <button
         type="button"
-        className="w-full min-h-11 rounded-md border border-amber-300 bg-white px-2 py-1 text-xs text-amber-950"
+        className="min-h-11 w-full cursor-pointer rounded-md border border-amber-300 bg-white px-2 py-1 text-xs text-amber-950"
         onClick={addPeriod}
       >
         加入此時段
@@ -133,7 +133,7 @@ export function LessonCheckInForm({
               </span>
               <button
                 type="button"
-                className="min-h-11 rounded-md px-2 text-red-700"
+                className="min-h-11 cursor-pointer rounded-md px-2 text-red-700"
                 onClick={() =>
                   setPeriods(
                     periods.filter(
