@@ -360,6 +360,47 @@ export async function createLessonAction(
       return { ok: false, error: "派更失敗" };
     }
 
+    const releaseRemainder = String(formData.get("release_remainder") ?? "") === "1";
+    const slotStart = Number(formData.get("slot_start_minute"));
+    const slotEnd = Number(formData.get("slot_end_minute"));
+    const assignStart = Number(startMinuteRaw);
+    const assignEnd = Number(endMinuteRaw);
+    if (
+      releaseRemainder &&
+      Number.isInteger(slotStart) &&
+      Number.isInteger(slotEnd) &&
+      Number.isInteger(assignStart) &&
+      Number.isInteger(assignEnd)
+    ) {
+      const leftovers: [number, number][] = [];
+      if (slotStart < assignStart) {
+        leftovers.push([slotStart, assignStart]);
+      }
+      if (assignEnd < slotEnd) {
+        leftovers.push([assignEnd, slotEnd]);
+      }
+      for (const [start, end] of leftovers) {
+        const { error: releaseError } = await supabase.rpc(
+          "release_staff_availability",
+          {
+            p_coach_id: coachId,
+            p_date: date,
+            p_start_minute: start,
+            p_end_minute: end,
+          },
+        );
+        if (releaseError) {
+          console.error("[createLessonAction] release remainder", {
+            error: releaseError,
+            coachId,
+            date,
+            start,
+            end,
+          });
+        }
+      }
+    }
+
     revalidateSchedules();
     return { ok: true, data: undefined };
   } catch (error) {

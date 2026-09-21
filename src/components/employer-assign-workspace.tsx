@@ -1,7 +1,9 @@
 "use client";
 
+import { restoreReleasedAvailabilityAction } from "@/actions/availability";
 import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { ServerActionButton } from "@/components/server-action-button";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import { availabilityWeekStart, availabilitySegments, isFullDayLeave, lessonMinutesInHongKong, overlappingLesson, shiftAvailabilityWeek } from "@/lib/calendar";
 import {
@@ -11,7 +13,7 @@ import {
   useCalendarSelection,
 } from "@/lib/calendar-history";
 import { employerCalendarHref } from "@/lib/employer-href";
-import { calendarAssignmentLabel, formatAvailabilityTime } from "@/lib/format";
+import { calendarAssignmentLabel, calendarSlotLabel, formatAvailabilityTime } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
 import Link from "next/link";
 import type { MouseEvent } from "react";
@@ -21,6 +23,7 @@ type AvailabilitySlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 type SlotSelection = {
@@ -135,6 +138,7 @@ export function EmployerAssignWorkspace({
     liveSlot != null &&
     slots.some(
       (slot) =>
+        !slot.released &&
         slot.available_date === liveSlot.date &&
         slot.start_minute <= liveSlot.startMinute &&
         slot.end_minute >= liveSlot.slotEndMinute &&
@@ -225,7 +229,7 @@ export function EmployerAssignWorkspace({
         </Link>
       ) : null}
       <p className="text-sm text-stone-500">
-        點選可返工色塊即可派更。放假或 Short Break 以紅色顯示。
+        點選可返工色塊即可派更或標為暫無需要。放假或 Short Break 以紅色顯示。
       </p>
       <CalendarLegend items={EMPLOYER_CALENDAR_LEGEND} />
       <WeekTimeGrid
@@ -273,8 +277,36 @@ export function EmployerAssignWorkspace({
                 </div>
               );
             });
-          const availabilityBlocks = (byDate.get(date) ?? []).flatMap((slot) =>
-            availabilitySegments(
+          const availabilityBlocks = (byDate.get(date) ?? []).flatMap((slot) => {
+            if (slot.released) {
+              const { top, height } = eventPosition(
+                slot.start_minute,
+                slot.end_minute,
+                gridStart,
+                gridEnd,
+              );
+              const label = `${formatAvailabilityTime(slot.start_minute)}–${formatAvailabilityTime(slot.end_minute)}`;
+              return [
+                <div
+                  key={slot.id}
+                  title={`${label} ${calendarSlotLabel(true)}`}
+                  className="absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border border-stone-300 bg-stone-200 px-1 py-0.5 text-left text-xs font-medium text-stone-700"
+                  style={{ top, height }}
+                >
+                  <span className="tabular-nums">{label}</span>
+                  <span className="mt-0.5 block truncate">
+                    {calendarSlotLabel(true)}
+                  </span>
+                  <ServerActionButton
+                    action={restoreReleasedAvailabilityAction.bind(null, slot.id)}
+                    className="mt-1 min-h-8 w-full rounded-sm border border-stone-400 px-1 py-0.5 text-[10px] text-stone-800 disabled:opacity-60"
+                  >
+                    恢復待派更
+                  </ServerActionButton>
+                </div>,
+              ];
+            }
+            return availabilitySegments(
               date,
               slot.start_minute,
               slot.end_minute,
@@ -341,8 +373,8 @@ export function EmployerAssignWorkspace({
                 <span className="mt-0.5 block truncate">待公司派更</span>
               </Link>
             );
-          }),
-          );
+          });
+          });
           return [...breakBlocks, ...availabilityBlocks];
         }}
       />

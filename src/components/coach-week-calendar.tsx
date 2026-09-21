@@ -31,6 +31,7 @@ import { pastCheckInEndMinute } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import {
   calendarAssignmentLabel,
+  calendarSlotLabel,
   formatAvailabilityTime,
 } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
@@ -48,6 +49,7 @@ export type CoachWeekSlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 export type CoachWeekLeave = {
@@ -360,6 +362,27 @@ export function CoachWeekCalendar({
                 );
                 const availabilityBlocks = (byDate.get(date) ?? []).flatMap(
                   (availability) => {
+                  if (availability.released) {
+                    const timeLabel = `${formatAvailabilityTime(
+                      availability.start_minute,
+                    )}–${formatAvailabilityTime(availability.end_minute)}`;
+                    const { top, height } = eventPosition(
+                      availability.start_minute,
+                      availability.end_minute,
+                      gridStart,
+                      gridEnd,
+                    );
+                    return [
+                      <div
+                        key={availability.id}
+                        className="absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border border-stone-300 bg-stone-200 px-1 py-0.5 text-left text-xs text-stone-700"
+                        style={{ top, height }}
+                      >
+                        <p className="font-medium tabular-nums">{timeLabel}</p>
+                        <p>{calendarSlotLabel(true)}</p>
+                      </div>,
+                    ];
+                  }
                   const locked =
                     overlappingLesson(
                       date,

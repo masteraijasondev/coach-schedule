@@ -34,6 +34,7 @@ const CHIP_TONE = {
   pending: "bg-emerald-50 text-emerald-950",
   confirmed: "bg-sky-50 text-sky-950",
   leave: "bg-rose-50 text-rose-900",
+  released: "bg-stone-100 text-stone-500",
 } as const;
 
 export function StaffShiftChip({

@@ -28,6 +28,7 @@ import { TIMEZONE } from "@/lib/constants";
 import { pastCheckInEndMinute } from "@/lib/check-in";
 import {
   calendarAssignmentLabel,
+  calendarSlotLabel,
   formatAvailabilityTime,
 } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
@@ -50,6 +51,7 @@ export type CoachDaySlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 export type CoachDayLeave = {
@@ -205,6 +207,16 @@ export function CoachDayPanel({
             );
           })}
           {daySlots.flatMap((slot) => {
+            if (slot.released) {
+              const timeLabel = `${formatAvailabilityTime(slot.start_minute)}–${formatAvailabilityTime(slot.end_minute)}`;
+              return [
+                <StaffShiftChip
+                  key={slot.id}
+                  label={`${timeLabel} ${calendarSlotLabel(true)}`}
+                  tone="released"
+                />,
+              ];
+            }
             const locked =
               overlappingLesson(
                 day,

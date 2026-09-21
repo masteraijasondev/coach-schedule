@@ -10,6 +10,7 @@ type AvailabilitySlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 type SlotSelection = {
@@ -85,7 +86,7 @@ export async function EmployerAssignPanel({
     slots == null
       ? supabase
           .from("staff_availabilities")
-          .select("id, available_date, start_minute, end_minute")
+          .select("id, available_date, start_minute, end_minute, released")
           .eq("coach_id", coachId)
           .gte("available_date", week)
           .lte("available_date", weekEnd)

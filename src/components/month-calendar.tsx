@@ -26,13 +26,13 @@ type CalendarAvailability = {
   label: string;
   coachName: string;
   timeLabel?: string;
-  variant?: "slot" | "leave" | "pending" | "confirmed";
+  variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
 };
 
 type EventBar = {
   id: string;
   text: string;
-  variant: "pending" | "confirmed" | "slot" | "leave";
+  variant: "pending" | "confirmed" | "slot" | "leave" | "released";
   sortKey: string;
 };
 
@@ -41,6 +41,7 @@ const VARIANT_CHIP_CLASS: Record<EventBar["variant"], string> = {
   confirmed: "bg-sky-100 text-sky-900",
   slot: "bg-amber-100 text-amber-900",
   leave: "bg-rose-100 text-rose-800",
+  released: "bg-stone-200 text-stone-600",
 };
 
 function variantOf(
@@ -50,7 +51,8 @@ function variantOf(
   if (
     variant === "leave" ||
     variant === "pending" ||
-    variant === "confirmed"
+    variant === "confirmed" ||
+    variant === "released"
   ) {
     return variant;
   }

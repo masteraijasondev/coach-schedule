@@ -3,6 +3,7 @@
 import { loginAction } from "@/actions/auth";
 import { ActionForm } from "@/components/action-form";
 import { Field, SubmitButton } from "@/components/ui";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -15,7 +16,15 @@ export default function LoginPage() {
         <ActionForm action={loginAction} className="space-y-4">
           <Field label="電郵" name="email" type="email" required />
           <Field label="密碼" name="password" type="password" required />
-          <SubmitButton>登入</SubmitButton>
+          <div className="flex items-center justify-between gap-3">
+            <SubmitButton>登入</SubmitButton>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-stone-600 underline hover:text-stone-900"
+            >
+              忘記密碼？
+            </Link>
+          </div>
         </ActionForm>
       </div>
     </div>

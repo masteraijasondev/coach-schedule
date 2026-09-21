@@ -1,5 +1,6 @@
 "use client";
 
+import { restoreReleasedAvailabilityAction } from "@/actions/availability";
 import { cancelLessonAction } from "@/actions/lessons";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
@@ -30,6 +31,7 @@ import {
 import { employerCalendarHref, employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import {
   calendarAssignmentLabel,
+  calendarSlotLabel,
   formatAvailabilityTime,
   formatDateTime,
   formatLessonSizeLabel,
@@ -74,6 +76,7 @@ export type EmployerMonthSlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 export type EmployerMonthLeave = {
@@ -170,7 +173,7 @@ export function EmployerMonthWorkspace({
       label: string;
       coachName: string;
       timeLabel?: string;
-      variant?: "slot" | "leave" | "pending" | "confirmed";
+      variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
     }[]
   >();
   const shiftLessons = lessons.filter(
@@ -209,6 +212,20 @@ export function EmployerMonthWorkspace({
     }
     const coachName = coachMap.get(availability.coach_id) ?? "—";
     const list = availabilityByDay.get(availability.available_date) ?? [];
+    if (availability.released) {
+      if (!variantVisible("released", filter.statuses)) {
+        continue;
+      }
+      list.push({
+        id: availability.id,
+        label: `${coachName} ${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+        coachName,
+        timeLabel: `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+        variant: "released",
+      });
+      availabilityByDay.set(availability.available_date, list);
+      continue;
+    }
     for (const segment of availabilitySegments(
       availability.available_date,
       availability.start_minute,
@@ -248,7 +265,7 @@ export function EmployerMonthWorkspace({
     string,
     {
       coachName: string;
-      slots: { id: string; start: number; end: number }[];
+      slots: { id: string; start: number; end: number; released: boolean }[];
     }
   >();
   for (const availability of availabilities) {
@@ -265,12 +282,13 @@ export function EmployerMonthWorkspace({
     const existing = dayAvailabilityByCoach.get(availability.coach_id);
     const group = existing ?? {
       coachName,
-      slots: [] as { id: string; start: number; end: number }[],
+      slots: [] as { id: string; start: number; end: number; released: boolean }[],
     };
     group.slots.push({
       id: availability.id,
       start: availability.start_minute,
       end: availability.end_minute,
+      released: Boolean(availability.released),
     });
     dayAvailabilityByCoach.set(availability.coach_id, group);
   }
@@ -484,6 +502,7 @@ export function EmployerMonthWorkspace({
                   selectedCoach?.id === group.coachId &&
                   group.slots.some(
                     (slot) =>
+                      !slot.released &&
                       slot.start <= initialSelection.startMinute &&
                       slot.end >= initialSelection.slotEndMinute &&
                       !overlappingLesson(
@@ -497,8 +516,34 @@ export function EmployerMonthWorkspace({
                   <li key={group.coachId} className="space-y-3 py-3">
                     <p className="font-medium">{group.coachName}</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {group.slots.flatMap((slot) =>
-                        availabilitySegments(
+                      {group.slots.flatMap((slot) => {
+                        if (slot.released) {
+                          if (!variantVisible("released", filter.statuses)) {
+                            return [];
+                          }
+                          return [
+                            <span
+                              key={slot.id}
+                              className="inline-flex flex-wrap items-center gap-2 rounded-md bg-stone-200 px-2 py-2 text-sm text-stone-700"
+                            >
+                              <span className="tabular-nums">
+                                {formatAvailabilityTime(slot.start)}–
+                                {formatAvailabilityTime(slot.end)}{" "}
+                                {calendarSlotLabel(true)}
+                              </span>
+                              <ServerActionButton
+                                action={restoreReleasedAvailabilityAction.bind(
+                                  null,
+                                  slot.id,
+                                )}
+                                className="min-h-11 rounded-md border border-stone-400 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+                              >
+                                恢復待派更
+                              </ServerActionButton>
+                            </span>,
+                          ];
+                        }
+                        return availabilitySegments(
                           day,
                           slot.start,
                           slot.end,
@@ -574,8 +619,8 @@ export function EmployerMonthWorkspace({
                             {formatAvailabilityTime(segment.endMinute)} 待公司派更
                           </a>
                         );
-                      }),
-                      )}
+                      });
+                      })}
                     </div>
                     {selectedSlotOpen && initialSelection ? (
                       <EmployerAssignForm

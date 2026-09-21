@@ -10,9 +10,16 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   onSuccess?: () => void;
+  successMessage?: string;
 };
 
-export function ActionForm({ action, children, className, onSuccess }: Props) {
+export function ActionForm({
+  action,
+  children,
+  className,
+  onSuccess,
+  successMessage = "已儲存",
+}: Props) {
   const [state, formAction, pending] = useActionState(
     async (prev: FormState, formData: FormData): Promise<FormState> => {
       try {
@@ -62,7 +69,7 @@ export function ActionForm({ action, children, className, onSuccess }: Props) {
         </p>
       ) : null}
       {state && state.ok ? (
-        <p className="text-sm text-emerald-700">已儲存</p>
+        <p className="text-sm text-emerald-700">{successMessage}</p>
       ) : null}
     </form>
   );

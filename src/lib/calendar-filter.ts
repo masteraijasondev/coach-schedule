@@ -6,6 +6,7 @@ export const CALENDAR_STATUSES = [
   "assigned",
   "leave",
   "checked_in",
+  "released",
 ] as const;
 export type CalendarStatus = (typeof CALENDAR_STATUSES)[number];
 
@@ -19,6 +20,7 @@ export const CALENDAR_STATUS_LABELS: Record<CalendarStatus, string> = {
   assigned: "已派更，待簽到",
   leave: "放假或 Short Break",
   checked_in: "已簽到",
+  released: "暫無需要",
 };
 
 export type FilterStaff = {
@@ -143,7 +145,7 @@ export function lessonStatusVisible(
 }
 
 export function variantVisible(
-  variant: "slot" | "leave" | "pending" | "confirmed",
+  variant: "slot" | "leave" | "pending" | "confirmed" | "released",
   statuses: CalendarStatus[],
 ): boolean {
   if (variant === "slot") {
@@ -154,6 +156,9 @@ export function variantVisible(
   }
   if (variant === "leave") {
     return statuses.includes("leave");
+  }
+  if (variant === "released") {
+    return statuses.includes("released");
   }
   return statuses.includes("checked_in");
 }

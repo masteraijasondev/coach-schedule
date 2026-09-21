@@ -82,6 +82,10 @@ export function calendarAssignmentLabel(status: string): string {
   return status;
 }
 
+export function calendarSlotLabel(released?: boolean | null): string {
+  return released ? "暫無需要" : "待公司派更";
+}
+
 export function formatHeadcount(
   actual: number | null | undefined,
   expected: number | null | undefined,

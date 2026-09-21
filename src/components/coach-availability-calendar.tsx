@@ -33,7 +33,7 @@ export async function CoachAvailabilityCalendar({
   ] = await Promise.all([
     supabase
       .from("staff_availabilities")
-      .select("id, coach_id, available_date, start_minute, end_minute")
+      .select("id, coach_id, available_date, start_minute, end_minute, released")
       .eq("coach_id", coachId)
       .gte("available_date", week)
       .lte("available_date", weekEnd)

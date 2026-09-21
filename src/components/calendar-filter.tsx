@@ -20,6 +20,7 @@ const STATUS_DOT: Record<CalendarStatus, string> = {
   assigned: "bg-emerald-400",
   leave: "bg-rose-400",
   checked_in: "bg-sky-500",
+  released: "bg-stone-400",
 };
 
 function chipClass(

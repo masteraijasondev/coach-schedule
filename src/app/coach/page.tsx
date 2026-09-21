@@ -52,7 +52,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .order("starts_at", { ascending: true }),
       supabase
         .from("staff_availabilities")
-        .select("id, coach_id, available_date, start_minute, end_minute")
+      .select("id, coach_id, available_date, start_minute, end_minute, released")
         .eq("coach_id", coach.id)
         .gte("available_date", gridRange.start)
         .lte("available_date", gridRange.end)

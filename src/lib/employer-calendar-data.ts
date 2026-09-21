@@ -74,7 +74,7 @@ export async function loadEmployerCalendarData(range: {
       .order("name"),
     supabase
       .from("staff_availabilities")
-      .select("id, coach_id, available_date, start_minute, end_minute")
+      .select("id, coach_id, available_date, start_minute, end_minute, released")
       .gte("available_date", range.gridStart)
       .lte("available_date", range.gridEnd)
       .order("start_minute"),

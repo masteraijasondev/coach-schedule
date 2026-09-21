@@ -32,14 +32,23 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
+  const isPublicAuthPath =
+    pathname === "/login" ||
+    pathname === "/forgot-password" ||
+    pathname.startsWith("/auth/");
 
-  if (!user && pathname !== "/login") {
+  if (!user && !isPublicAuthPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && (pathname === "/login" || pathname === "/")) {
+  if (
+    user &&
+    (pathname === "/login" ||
+      pathname === "/forgot-password" ||
+      pathname === "/")
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, must_change_password")
@@ -57,7 +66,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname !== "/change-password" && pathname !== "/login") {
+  if (
+    user &&
+    pathname !== "/change-password" &&
+    pathname !== "/reset-password" &&
+    pathname !== "/login"
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role, must_change_password")

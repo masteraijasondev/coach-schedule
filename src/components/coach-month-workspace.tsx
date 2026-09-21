@@ -33,6 +33,7 @@ export type CoachMonthSlot = {
   available_date: string;
   start_minute: number;
   end_minute: number;
+  released?: boolean;
 };
 
 export type CoachMonthLeave = {
@@ -96,7 +97,7 @@ export function CoachMonthWorkspace({
       label: string;
       coachName: string;
       timeLabel?: string;
-      variant?: "slot" | "leave" | "pending" | "confirmed";
+      variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
     }[]
   >();
   for (const leave of leaves) {
@@ -117,6 +118,17 @@ export function CoachMonthWorkspace({
       continue;
     }
     const list = availabilityByDay.get(availability.available_date) ?? [];
+    if (availability.released) {
+      list.push({
+        id: availability.id,
+        label: `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+        coachName,
+        timeLabel: `${formatAvailabilityTime(availability.start_minute)}–${formatAvailabilityTime(availability.end_minute)}`,
+        variant: "released",
+      });
+      availabilityByDay.set(availability.available_date, list);
+      continue;
+    }
     for (const segment of availabilitySegments(
       availability.available_date,
       availability.start_minute,
