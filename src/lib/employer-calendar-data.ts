@@ -125,7 +125,11 @@ export async function loadEmployerCalendarData(range: {
       .select("id, full_name")
       .eq("role", "coach")
       .order("full_name");
-    coachRows = fallback.data;
+    coachRows = (fallback.data ?? []).map((coach) => ({
+      id: coach.id,
+      full_name: coach.full_name,
+      staff_kind: null,
+    }));
   }
 
   const lessons = attachStudentNames(
