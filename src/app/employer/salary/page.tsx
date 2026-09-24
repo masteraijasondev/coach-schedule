@@ -8,6 +8,7 @@ import {
   shiftMonth,
 } from "@/lib/calendar";
 import { formatMoney } from "@/lib/format";
+import { formatPayRatioPercent } from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -24,7 +25,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
   const [{ data: coaches }, { data: lessons }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, staff_kind, hourly_rate_hkd, pay_ratio")
       .eq("role", "coach")
       .order("full_name"),
     supabase
@@ -68,29 +69,52 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 僅計算已簽到課堂；尚未填寫金額者不計入總額。
+          結算期：{payrollPeriodLabel(period)}。Admin 按時薪乘工時；Coach 按學生學費乘分成比例。
         </p>
-        <ul className="divide-y divide-stone-100">
-          {(coaches ?? []).map((coach) => {
-            const total = totals.get(coach.id) ?? 0;
-            return (
-              <li key={coach.id} className="flex justify-between gap-3 py-3">
-                <div>
-                  <Link
-                    href={`/employer/salary/${coach.id}?month=${period}`}
-                    className="font-medium underline"
-                  >
-                    {coach.full_name}
-                  </Link>
-                </div>
-                <p className="text-sm font-medium">{formatMoney(total)}</p>
-              </li>
-            );
-          })}
-          {(coaches ?? []).length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">尚未新增教練</li>
-          ) : null}
-        </ul>
+        {(["operations", "coach"] as const).map((kind) => {
+          const people = (coaches ?? []).filter((person) =>
+            kind === "operations"
+              ? person.staff_kind === "operations"
+              : person.staff_kind !== "operations",
+          );
+          return (
+            <section key={kind} className="mb-6">
+              <h3 className="mb-1 text-sm font-semibold text-stone-800">
+                {kind === "operations" ? "Admin · Hourly Rate" : "Coach · Ratio"}
+              </h3>
+              <ul className="divide-y divide-stone-100">
+                {people.map((person) => {
+                  const total = totals.get(person.id) ?? 0;
+                  const rateLabel =
+                    kind === "operations"
+                      ? person.hourly_rate_hkd == null
+                        ? "未設定時薪"
+                        : `${formatMoney(Number(person.hourly_rate_hkd))}/小時`
+                      : person.pay_ratio == null
+                        ? "未設定分成"
+                        : `${formatPayRatioPercent(Number(person.pay_ratio))}%`;
+                  return (
+                    <li key={person.id} className="flex justify-between gap-3 py-3">
+                      <div>
+                        <Link
+                          href={`/employer/salary/${person.id}?month=${period}`}
+                          className="font-medium underline"
+                        >
+                          {person.full_name}
+                        </Link>
+                        <p className="text-xs text-stone-500">{rateLabel}</p>
+                      </div>
+                      <p className="text-sm font-medium">{formatMoney(total)}</p>
+                    </li>
+                  );
+                })}
+                {people.length === 0 ? (
+                  <li className="py-3 text-sm text-stone-500">沒有帳號</li>
+                ) : null}
+              </ul>
+            </section>
+          );
+        })}
       </Panel>
     </div>
   );

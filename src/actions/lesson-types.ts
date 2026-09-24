@@ -46,6 +46,83 @@ export async function createLessonTypeAction(
   }
 }
 
+export async function saveStaffWorkTypesAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireEmployer();
+    const coachId = String(formData.get("coach_id") ?? "").trim();
+    const typeIds = [
+      ...new Set(
+        formData
+          .getAll("lesson_type_id")
+          .map((value) => String(value).trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (!coachId) {
+      return { ok: false, error: "找不到同事" };
+    }
+
+    const supabase = await createClient();
+    const { data: coach, error: coachError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", coachId)
+      .eq("role", "coach")
+      .maybeSingle();
+    if (coachError || !coach) {
+      console.error("[saveStaffWorkTypesAction] coach", { error: coachError });
+      return { ok: false, error: "找不到同事" };
+    }
+
+    if (typeIds.length > 0) {
+      const { data: types, error: typeError } = await supabase
+        .from("lesson_types")
+        .select("id")
+        .in("id", typeIds)
+        .eq("active", true);
+      if (typeError) {
+        console.error("[saveStaffWorkTypesAction] types", { error: typeError });
+        return { ok: false, error: "讀取工作類型失敗" };
+      }
+      if ((types ?? []).length !== typeIds.length) {
+        return { ok: false, error: "只可分配啟用中的工作類型" };
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from("staff_work_types")
+      .delete()
+      .eq("coach_id", coachId);
+    if (deleteError) {
+      console.error("[saveStaffWorkTypesAction] delete", { error: deleteError });
+      return { ok: false, error: "更新工作類型失敗" };
+    }
+
+    if (typeIds.length > 0) {
+      const { error: insertError } = await supabase.from("staff_work_types").insert(
+        typeIds.map((lessonTypeId) => ({
+          coach_id: coachId,
+          lesson_type_id: lessonTypeId,
+        })),
+      );
+      if (insertError) {
+        console.error("[saveStaffWorkTypesAction] insert", { error: insertError });
+        return { ok: false, error: "更新工作類型失敗" };
+      }
+    }
+
+    revalidatePath("/employer/coaches");
+    revalidatePath("/coach");
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[saveStaffWorkTypesAction] unexpected", { error });
+    return { ok: false, error: "更新工作類型時發生錯誤" };
+  }
+}
+
 export async function toggleLessonTypeActiveAction(
   id: string,
   active: boolean,

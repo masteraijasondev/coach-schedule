@@ -36,6 +36,9 @@ export function CoachCalendarShell({
   lessons,
   availabilities,
   leaves,
+  workTypes,
+  staffKind,
+  students,
   remoteWeekCalendar,
 }: {
   initialView: CalendarView;
@@ -49,6 +52,9 @@ export function CoachCalendarShell({
   lessons: CoachMonthLesson[];
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
+  workTypes: { id: string; name: string }[];
+  staffKind: "coach" | "operations";
+  students: { id: string; name: string }[];
   remoteWeekCalendar: ReactNode;
 }) {
   const [view, setView] = useCalendarView(initialView);
@@ -119,6 +125,9 @@ export function CoachCalendarShell({
           lessons={lessons}
           availabilities={availabilities}
           leaves={leaves}
+          workTypes={workTypes}
+          staffKind={staffKind}
+          students={students}
         />
       </div>
 
@@ -133,6 +142,9 @@ export function CoachCalendarShell({
               availabilities={weekSlots}
               leaves={weekLeaves}
               lessons={weekLessons}
+              workTypes={workTypes}
+              staffKind={staffKind}
+              students={students}
               onWeekNavigate={selectWeek}
             />
           </section>

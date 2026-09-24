@@ -1,6 +1,6 @@
 "use client";
 
-import { CoachDayPanel } from "@/components/coach-day-panel";
+import { CoachDayPanel, type StaffWorkTypeOption } from "@/components/coach-day-panel";
 import { MonthCalendar } from "@/components/month-calendar";
 import { Panel } from "@/components/ui";
 import {
@@ -25,6 +25,8 @@ export type CoachMonthLesson = {
   starts_at: string;
   ends_at: string;
   status: LessonStatus;
+  lesson_type_id?: string;
+  student_id?: string;
 };
 
 export type CoachMonthSlot = {
@@ -52,6 +54,9 @@ export function CoachMonthWorkspace({
   lessons,
   availabilities,
   leaves,
+  workTypes,
+  staffKind,
+  students,
 }: {
   month: string;
   day: string;
@@ -60,6 +65,9 @@ export function CoachMonthWorkspace({
   lessons: CoachMonthLesson[];
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
+  workTypes: StaffWorkTypeOption[];
+  staffKind: "coach" | "operations";
+  students: { id: string; name: string }[];
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
     day: initialDay,
@@ -202,6 +210,9 @@ export function CoachMonthWorkspace({
           lessons={lessons}
           availabilities={availabilities}
           leaves={leaves}
+          workTypes={workTypes}
+          staffKind={staffKind}
+          students={students}
         />
       </div>
     </div>

@@ -30,7 +30,7 @@ function Chevron({ up = false }: { up?: boolean }) {
 }
 
 const CHIP_TONE = {
-  slot: "bg-slate-100 text-stone-700",
+  slot: "bg-amber-100 text-amber-950",
   pending: "bg-emerald-50 text-emerald-950",
   confirmed: "bg-sky-50 text-sky-950",
   leave: "bg-rose-50 text-rose-900",

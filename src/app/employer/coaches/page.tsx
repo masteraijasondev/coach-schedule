@@ -4,46 +4,33 @@ import {
   resetCoachPasswordAction,
   updateCoachNameAction,
 } from "@/actions/coaches";
+import { saveStaffWorkTypesAction } from "@/actions/lesson-types";
 import { ActionForm } from "@/components/action-form";
-import { EmployerPtRateForm } from "@/components/employer-pt-rate-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
-import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import { requireEmployer } from "@/lib/auth";
-import { formatMoney } from "@/lib/format";
-import {
-  coachPayFromFeeRatio,
-  derivedPayRatio,
-  formatPayRatioPercent,
-} from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function CoachesPage() {
   await requireEmployer();
   const supabase = await createClient();
-  const tuitionWarm = lookupAirtableTuitions([]);
-  const [{ data: coaches }, { data: students }, { data: studentRates }] =
+  const [{ data: coaches }, { data: lessonTypes }, { data: workTypes }] =
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, email, full_name, staff_kind, must_change_password")
+        .select("id, email, full_name, staff_kind, hourly_rate_hkd, pay_ratio, must_change_password")
         .eq("role", "coach")
         .order("full_name"),
       supabase
-        .from("students")
+        .from("lesson_types")
         .select("id, name")
         .eq("active", true)
         .order("name"),
-      supabase
-        .from("coach_student_rates")
-        .select("coach_id, student_id, amount_hkd, student_fee_hkd, pay_ratio"),
+      supabase.from("staff_work_types").select("coach_id, lesson_type_id"),
     ]);
-  await tuitionWarm;
 
-  const studentName = new Map((students ?? []).map((s) => [s.id, s.name]));
-  const coachName = new Map((coaches ?? []).map((c) => [c.id, c.full_name]));
-  const { fees: listedTuitions, error: listedError } = await lookupAirtableTuitions(
-    [...studentName.values()],
+  const assignedTypes = new Set(
+    (workTypes ?? []).map((row) => `${row.coach_id}:${row.lesson_type_id}`),
   );
 
   return (
@@ -59,8 +46,8 @@ export default async function CoachesPage() {
               required
               defaultValue="coach"
               options={[
-                { value: "coach", label: "教練" },
-                { value: "operations", label: "營運人員" },
+                { value: "coach", label: "Coach" },
+                { value: "operations", label: "Admin" },
               ]}
             />
             <Field label="電郵" name="email" type="email" required />
@@ -106,9 +93,37 @@ export default async function CoachesPage() {
                           : "coach"
                       }
                       options={[
-                        { value: "coach", label: "教練" },
-                        { value: "operations", label: "營運人員" },
+                        { value: "coach", label: "Coach" },
+                        { value: "operations", label: "Admin" },
                       ]}
+                    />
+                  </div>
+                  <div className="w-36">
+                    <Field
+                      label="時薪"
+                      name="hourly_rate_hkd"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      defaultValue={
+                        coach.hourly_rate_hkd == null
+                          ? ""
+                          : String(coach.hourly_rate_hkd)
+                      }
+                    />
+                  </div>
+                  <div className="w-36">
+                    <Field
+                      label="分成 %"
+                      name="pay_ratio_percent"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      defaultValue={
+                        coach.pay_ratio == null
+                          ? ""
+                          : String(Math.round(Number(coach.pay_ratio) * 10000) / 100)
+                      }
                     />
                   </div>
                   <SubmitButton>更新</SubmitButton>
@@ -175,6 +190,39 @@ export default async function CoachesPage() {
                     </ActionForm>
                   </div>
                 </details>
+                <ActionForm
+                  action={saveStaffWorkTypesAction}
+                  className="space-y-2 rounded-md border border-stone-200 p-3"
+                >
+                  <input type="hidden" name="coach_id" value={coach.id} />
+                  <p className="text-sm font-medium text-stone-800">工作類型</p>
+                  <p className="text-xs text-stone-500">
+                    同事做完工作後，只可從這裡勾選的類型報實際工作。
+                  </p>
+                  {(lessonTypes ?? []).length === 0 ? (
+                    <p className="text-sm text-stone-500">尚未有啟用中的工作類型</p>
+                  ) : (
+                    <ul className="grid gap-1">
+                      {(lessonTypes ?? []).map((type) => (
+                        <li key={type.id}>
+                          <label className="flex items-center gap-2 text-sm text-stone-700">
+                            <input
+                              type="checkbox"
+                              name="lesson_type_id"
+                              value={type.id}
+                              defaultChecked={assignedTypes.has(
+                                `${coach.id}:${type.id}`,
+                              )}
+                              className="size-4 rounded border-stone-300"
+                            />
+                            {type.name}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <SubmitButton>儲存工作類型</SubmitButton>
+                </ActionForm>
               </li>
             ))}
             {(coaches ?? []).length === 0 ? (
@@ -183,78 +231,6 @@ export default async function CoachesPage() {
           </ul>
         </Panel>
       </div>
-
-      <Panel title="教練 PT 費率（分成比例）">
-        {listedError ? (
-          <p className="mb-3 text-sm text-amber-700">{listedError}</p>
-        ) : (
-          <p className="mb-3 text-sm text-stone-500">
-            學生學費取自 Airtable 本身學費；教練薪資為學費乘以分成比例。此處僅可編輯分成比例。
-          </p>
-        )}
-        <EmployerPtRateForm
-          coaches={(coaches ?? []).map((coach) => ({
-            id: coach.id,
-            full_name: coach.full_name,
-          }))}
-          students={(students ?? []).map((student) => ({
-            id: student.id,
-            name: student.name,
-            listedFeeHkd: listedTuitions.get(student.name) ?? null,
-          }))}
-        />
-
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-stone-200 text-left text-stone-600">
-                <th className="py-2 pr-3 font-medium">教練</th>
-                <th className="py-2 pr-3 font-medium">學生</th>
-                <th className="py-2 pr-3 font-medium">本身學費</th>
-                <th className="py-2 pr-3 font-medium">分成比例</th>
-                <th className="py-2 font-medium">教練薪資</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {(studentRates ?? []).map((rate) => {
-                const name = studentName.get(rate.student_id) ?? "學生";
-                const listed = listedTuitions.get(name);
-                const ratio = derivedPayRatio(
-                  Number(rate.amount_hkd),
-                  rate.student_fee_hkd == null
-                    ? null
-                    : Number(rate.student_fee_hkd),
-                  rate.pay_ratio == null ? null : Number(rate.pay_ratio),
-                );
-                const coachPay =
-                  listed != null && ratio != null
-                    ? coachPayFromFeeRatio(listed, ratio)
-                    : Number(rate.amount_hkd);
-                return (
-                <tr key={`${rate.coach_id}-${rate.student_id}`}>
-                  <td className="py-3 pr-3">
-                    {coachName.get(rate.coach_id) ?? "教練"}
-                  </td>
-                  <td className="py-3 pr-3">{name}</td>
-                  <td className="py-3 pr-3">
-                    {listed != null ? formatMoney(listed) : "—"}
-                  </td>
-                  <td className="py-3 pr-3">
-                    {ratio != null ? `${formatPayRatioPercent(ratio)}%` : "—"}
-                  </td>
-                  <td className="py-3">
-                    {formatMoney(coachPay)}
-                  </td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {(studentRates ?? []).length === 0 ? (
-            <p className="py-3 text-sm text-stone-500">尚未設定 PT 費率</p>
-          ) : null}
-        </div>
-      </Panel>
     </div>
   );
 }

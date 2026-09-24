@@ -4,7 +4,24 @@ import { requireEmployer } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
+import { payRatioFromPercent } from "@/lib/pt-rate";
 import { revalidatePath } from "next/cache";
+
+function parseHourlyRate(formData: FormData): number | { error: string } {
+  const amount = Number(formData.get("hourly_rate_hkd"));
+  if (!Number.isFinite(amount) || amount < 0) {
+    return { error: "請輸入有效的時薪" };
+  }
+  return Math.round(amount * 100) / 100;
+}
+
+function parsePayRatio(formData: FormData): number | { error: string } {
+  const percent = Number(formData.get("pay_ratio_percent"));
+  if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
+    return { error: "分成比例必須在 0 至 100 之間" };
+  }
+  return payRatioFromPercent(percent);
+}
 
 export async function createCoachAction(
   _prev: ActionResult | null,
@@ -84,10 +101,31 @@ export async function updateCoachNameAction(
       return { ok: false, error: "找不到教練帳號" };
     }
 
+    const hourly = parseHourlyRate(formData);
+    const ratio = parsePayRatio(formData);
+    let hourlyRate: number | null = null;
+    let payRatio: number | null = null;
+    if (staffKind === "operations") {
+      if (typeof hourly !== "number") {
+        return { ok: false, error: hourly.error };
+      }
+      hourlyRate = hourly;
+    } else {
+      if (typeof ratio !== "number") {
+        return { ok: false, error: ratio.error };
+      }
+      payRatio = ratio;
+    }
+
     const supabase = await createClient();
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, staff_kind: staffKind })
+      .update({
+        full_name: fullName,
+        staff_kind: staffKind,
+        hourly_rate_hkd: hourlyRate,
+        pay_ratio: payRatio,
+      })
       .eq("id", coachId)
       .eq("role", "coach");
 

@@ -64,6 +64,13 @@ export type CoachWeekLesson = {
   starts_at: string;
   ends_at: string;
   status?: string;
+  lesson_type_id?: string;
+  student_id?: string;
+};
+
+export type StaffWorkTypeOption = {
+  id: string;
+  name: string;
 };
 
 function availabilityStartsAt(date: string, startMinute: number): Date {
@@ -128,6 +135,9 @@ export function CoachWeekCalendar({
   availabilities,
   leaves,
   lessons,
+  workTypes,
+  staffKind,
+  students,
   loadError = false,
   onWeekNavigate,
 }: {
@@ -138,6 +148,9 @@ export function CoachWeekCalendar({
   availabilities: CoachWeekSlot[];
   leaves: CoachWeekLeave[];
   lessons: CoachWeekLesson[];
+  workTypes: StaffWorkTypeOption[];
+  staffKind: "coach" | "operations";
+  students: { id: string; name: string }[];
   loadError?: boolean;
   onWeekNavigate?: (
     week: string,
@@ -448,6 +461,10 @@ export function CoachWeekCalendar({
                                 date={lessonWindow.date}
                                 windowStart={lessonWindow.startMinute}
                                 windowEnd={lessonWindow.endMinute}
+                                workTypes={workTypes}
+                                staffKind={staffKind}
+                                students={students}
+                                initialStudentId={segment.lesson.student_id}
                               />
                             </div>
                           </details>
@@ -458,16 +475,42 @@ export function CoachWeekCalendar({
                     );
                   }
 
-                  if (confirmed) {
+                  if (confirmed && segment.lesson) {
+                    const lessonWindow = lessonMinutesInHongKong(
+                      segment.lesson.starts_at,
+                      segment.lesson.ends_at,
+                    );
                     return (
-                      <div
+                      <details
                         key={key}
-                        className={`${shell} border-sky-400 bg-sky-100 text-sky-950`}
+                        className={`${shell} overflow-visible border-sky-400 bg-sky-100 text-sky-950`}
                         style={{ top, height }}
                       >
-                        <p className="font-medium tabular-nums">{timeLabel}</p>
-                        <p>{calendarAssignmentLabel("completed")}</p>
-                      </div>
+                        <summary className="cursor-pointer list-none">
+                          <p className="font-medium tabular-nums">{timeLabel}</p>
+                          <p>{calendarAssignmentLabel("completed")} 修改</p>
+                        </summary>
+                        <div className="min-w-[9rem] border-t border-sky-100 bg-white p-2 text-stone-900">
+                          <LessonCheckInForm
+                            lessonId={segment.lesson.id}
+                            date={lessonWindow.date}
+                            windowStart={availability.start_minute}
+                            windowEnd={availability.end_minute}
+                            initialPeriods={[
+                              {
+                                startMinute: lessonWindow.startMinute,
+                                endMinute: lessonWindow.endMinute,
+                              },
+                            ]}
+                            initialLessonTypeId={segment.lesson.lesson_type_id}
+                            workTypes={workTypes}
+                            staffKind={staffKind}
+                            students={students}
+                            initialStudentId={segment.lesson.student_id}
+                            submitLabel="儲存修改"
+                          />
+                        </div>
+                      </details>
                     );
                   }
 

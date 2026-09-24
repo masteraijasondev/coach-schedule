@@ -2,6 +2,19 @@ import { formatInTimeZone } from "date-fns-tz";
 import { TIMEZONE, CURRENCY_LABEL } from "@/lib/constants";
 import type { LessonStatus, PayMode, RequestStatus } from "@/lib/types";
 
+export function nestedStudentId(related: {
+  lesson_students: { student_id: string } | { student_id: string }[] | null;
+}): string | undefined {
+  const link = related.lesson_students;
+  if (!link) {
+    return undefined;
+  }
+  if (Array.isArray(link)) {
+    return link[0]?.student_id;
+  }
+  return link.student_id;
+}
+
 export function nestedStudentName(related: {
   students: { name: string } | { name: string }[] | null;
 }): string | null {

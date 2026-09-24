@@ -5,6 +5,7 @@ import {
   parseAvailabilityWeekParam,
   type CalendarView,
 } from "@/lib/calendar";
+import { nestedStudentId } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export async function CoachAvailabilityCalendar({
@@ -30,6 +31,9 @@ export async function CoachAvailabilityCalendar({
     { data: availabilities, error },
     { data: leaves, error: leavesError },
     { data: lessons },
+    { data: workTypeRows },
+    { data: staffProfile },
+    { data: studentRows },
   ] = await Promise.all([
     supabase
       .from("staff_availabilities")
@@ -47,12 +51,35 @@ export async function CoachAvailabilityCalendar({
       .lte("leave_date", weekEnd),
     supabase
       .from("lessons")
-      .select("id, starts_at, ends_at, status")
+      .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id)")
       .eq("coach_id", coachId)
       .in("status", ["assigned", "completed"])
       .gte("starts_at", weekStartIso)
       .lt("starts_at", weekEndIso),
+    supabase
+      .from("staff_work_types")
+      .select("lesson_type_id, lesson_types(id, name, active)")
+      .eq("coach_id", coachId),
+    supabase
+      .from("profiles")
+      .select("staff_kind")
+      .eq("id", coachId)
+      .maybeSingle(),
+    supabase.from("students").select("id, name").eq("active", true).order("name"),
   ]);
+
+  const workTypes = (workTypeRows ?? [])
+    .map((row) => {
+      const type = Array.isArray(row.lesson_types)
+        ? row.lesson_types[0]
+        : row.lesson_types;
+      if (!type || !type.active) {
+        return null;
+      }
+      return { id: type.id, name: type.name };
+    })
+    .filter((type): type is { id: string; name: string } => type != null)
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
 
   if (error || leavesError) {
     console.error("[CoachAvailabilityCalendar] load availability", {
@@ -71,7 +98,17 @@ export async function CoachAvailabilityCalendar({
       view={view}
       availabilities={availabilities ?? []}
       leaves={leaves ?? []}
-      lessons={lessons ?? []}
+      lessons={(lessons ?? []).map((lesson) => ({
+        id: lesson.id,
+        starts_at: lesson.starts_at,
+        ends_at: lesson.ends_at,
+        status: lesson.status,
+        lesson_type_id: lesson.lesson_type_id,
+        student_id: nestedStudentId(lesson),
+      }))}
+      workTypes={workTypes}
+      staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
+      students={studentRows ?? []}
       loadError={Boolean(error || leavesError)}
     />
   );

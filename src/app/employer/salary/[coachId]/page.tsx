@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import {
@@ -9,15 +8,18 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
-import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
-import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
-import { relatedStudentName } from "@/lib/employer-calendar-data";
+import { formatDateTime, formatMoney, nestedStudentName } from "@/lib/format";
+import { formatPayRatioPercent } from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   params: Promise<{ coachId: string }>;
   searchParams: Promise<{ month?: string }>;
 };
+
+function hoursBetween(startsAt: string, endsAt: string): number {
+  return (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 3_600_000;
+}
 
 export default async function EmployerCoachSalaryPage({
   params,
@@ -30,19 +32,16 @@ export default async function EmployerCoachSalaryPage({
   const { start, end } = payrollPeriodBoundsIso(period);
 
   const supabase = await createClient();
-  const tuitionWarm = lookupAirtableTuitions([]);
   const [{ data: coach }, { data: lessons }] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, staff_kind, hourly_rate_hkd, pay_ratio")
       .eq("id", coachId)
       .eq("role", "coach")
       .maybeSingle(),
     supabase
       .from("lessons")
-      .select(
-        "id, lesson_type_id, starts_at, earned_amount_hkd, student_fee_hkd, headcount, expected_headcount",
-      )
+      .select("id, starts_at, ends_at, earned_amount_hkd, student_fee_hkd")
       .eq("coach_id", coachId)
       .eq("status", "completed")
       .gte("starts_at", start)
@@ -54,47 +53,34 @@ export default async function EmployerCoachSalaryPage({
     notFound();
   }
 
-  const lessonIds = (lessons ?? []).map((l) => l.id);
-  const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
-  const [{ data: types }, { data: lessonStudents }] = await Promise.all([
-    typeIds.length
-      ? supabase
-          .from("lesson_types")
-          .select("id, name, pay_mode")
-          .in("id", typeIds)
-      : Promise.resolve({ data: [] }),
-    lessonIds.length
-      ? supabase
-          .from("lesson_students")
-          .select("lesson_id, student_id, students(name)")
-          .in("lesson_id", lessonIds)
-      : Promise.resolve({ data: [] }),
-  ]);
-  await tuitionWarm;
+  const isAdmin = coach.staff_kind === "operations";
+  const lessonIds = (lessons ?? []).map((lesson) => lesson.id);
+  const { data: lessonStudents } = lessonIds.length
+    ? await supabase
+        .from("lesson_students")
+        .select("lesson_id, students(name)")
+        .in("lesson_id", lessonIds)
+    : { data: [] };
 
-  const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
-  const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const studentByLesson = new Map<string, string>();
-  const studentName = new Map<string, string>();
   for (const row of lessonStudents ?? []) {
-    studentByLesson.set(row.lesson_id, row.student_id);
-    const name = relatedStudentName(row.students);
+    const name = nestedStudentName(row);
     if (name) {
-      studentName.set(row.student_id, name);
+      studentByLesson.set(row.lesson_id, name);
     }
   }
-  const { fees: listedTuitions } = await lookupAirtableTuitions([
-    ...studentName.values(),
-  ]);
 
   const total = (lessons ?? []).reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
     0,
   );
-
-  const pendingCount = (lessons ?? []).filter(
-    (lesson) => lesson.earned_amount_hkd == null,
-  ).length;
+  const rateLabel = isAdmin
+    ? coach.hourly_rate_hkd == null
+      ? "未設定時薪"
+      : `${formatMoney(Number(coach.hourly_rate_hkd))}/小時`
+    : coach.pay_ratio == null
+      ? "未設定分成"
+      : `${formatPayRatioPercent(Number(coach.pay_ratio))}%`;
 
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
@@ -117,90 +103,49 @@ export default async function EmployerCoachSalaryPage({
             下期
           </Link>
         </div>
-        <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 已填寫金額的課堂計入總額；尚未填寫的課堂可於下方調整金額。
+        <p className="mb-1 text-sm font-medium text-stone-800">
+          {isAdmin ? "Admin · Hourly Rate" : "Coach · Ratio"}
         </p>
-        {pendingCount > 0 ? (
-          <p className="mb-3 text-sm text-amber-700">
-            尚有 {pendingCount} 堂薪資尚未填寫，未計入上方總額。
-          </p>
-        ) : null}
+        <p className="mb-3 text-sm text-stone-500">
+          結算期：{payrollPeriodLabel(period)} · {rateLabel}
+          {isAdmin
+            ? "。每段已簽到工時乘時薪。"
+            : "。簽到時揀學生，學費取自 Airtable，再乘分成比例。"}
+        </p>
         <p className="mb-3 text-sm">
           <Link
             href={`/employer/salary?month=${period}`}
             className="text-stone-600 underline"
           >
-            ← 全部教練
+            ← 全部薪資
           </Link>
         </p>
         <ul className="divide-y divide-stone-100">
           {(lessons ?? []).map((lesson) => {
-            const linkedStudentId = studentByLesson.get(lesson.id);
-            const studentLabel = linkedStudentId
-              ? (studentName.get(linkedStudentId) ?? "—")
-              : null;
-            const listedTuition = studentLabel
-              ? listedTuitions.get(studentLabel)
-              : undefined;
-            const payMode = payModeByType.get(lesson.lesson_type_id);
-            const sizeLabel = formatLessonSizeLabel(
-              payMode,
-              lesson.headcount,
-              lesson.expected_headcount,
-            );
+            const hours = hoursBetween(lesson.starts_at, lesson.ends_at);
+            const studentName = studentByLesson.get(lesson.id);
             return (
-              <li key={lesson.id} className="space-y-3 py-3">
-                <div className="flex justify-between gap-3">
-                  <div>
-                    <p className="font-medium">
-                      {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
+              <li key={lesson.id} className="flex justify-between gap-3 py-3">
+                <div>
+                  <p className="text-sm tabular-nums text-stone-700">
+                    {formatDateTime(lesson.starts_at)}
+                  </p>
+                  {isAdmin ? (
+                    <p className="text-sm text-stone-500">
+                      {hours.toFixed(1)} 小時
                     </p>
-                    <p className="text-sm tabular-nums text-stone-500">
-                      {formatDateTime(lesson.starts_at)}
+                  ) : (
+                    <p className="text-sm text-stone-500">
+                      學生：{studentName ?? "—"}
+                      {lesson.student_fee_hkd == null
+                        ? ""
+                        : ` · 學費 ${formatMoney(Number(lesson.student_fee_hkd))}`}
                     </p>
-                    {linkedStudentId ? (
-                      <p className="text-sm text-stone-500">
-                        學生：{studentLabel}
-                      </p>
-                    ) : null}
-                    {sizeLabel ? (
-                      <p className="text-sm text-stone-500">{sizeLabel}</p>
-                    ) : null}
-                  </div>
-                  <div className="text-right text-sm">
-                    {payMode === "per_student" ? (
-                      <p className="text-stone-500">
-                        學費 {formatMoneyOrPending(lesson.student_fee_hkd)}
-                        {listedTuition != null
-                          ? ` · 本身學費 ${formatMoney(listedTuition)}`
-                          : ""}
-                      </p>
-                    ) : null}
-                    <p
-                      className={
-                        lesson.earned_amount_hkd == null
-                          ? "font-medium text-amber-700"
-                          : "font-medium"
-                      }
-                    >
-                      {formatMoneyOrPending(lesson.earned_amount_hkd)}
-                    </p>
-                  </div>
+                  )}
                 </div>
-                <EmployerLessonFeeForm
-                  lessonId={lesson.id}
-                  studentFeeHkd={
-                    lesson.student_fee_hkd == null
-                      ? null
-                      : Number(lesson.student_fee_hkd)
-                  }
-                  earnedAmountHkd={
-                    lesson.earned_amount_hkd == null
-                      ? null
-                      : Number(lesson.earned_amount_hkd)
-                  }
-                  listedTuitionHkd={listedTuition ?? null}
-                />
+                <p className="text-sm font-medium">
+                  {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
+                </p>
               </li>
             );
           })}

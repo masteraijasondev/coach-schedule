@@ -43,6 +43,13 @@ export type CoachDayLesson = {
   starts_at: string;
   ends_at: string;
   status: LessonStatus;
+  lesson_type_id?: string;
+  student_id?: string;
+};
+
+export type StaffWorkTypeOption = {
+  id: string;
+  name: string;
 };
 
 export type CoachDaySlot = {
@@ -106,12 +113,18 @@ export function CoachDayPanel({
   lessons,
   availabilities,
   leaves,
+  workTypes,
+  staffKind,
+  students,
 }: {
   day: string;
   today: string;
   lessons: CoachDayLesson[];
   availabilities: CoachDaySlot[];
   leaves: CoachDayLeave[];
+  workTypes: StaffWorkTypeOption[];
+  staffKind: "coach" | "operations";
+  students: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const now = new Date();
@@ -262,6 +275,10 @@ export function CoachDayPanel({
                         date={lessonWindow.date}
                         windowStart={lessonWindow.startMinute}
                         windowEnd={lessonWindow.endMinute}
+                        workTypes={workTypes}
+                        staffKind={staffKind}
+                        students={students}
+                        initialStudentId={segment.lesson.student_id}
                       />
                     ) : (
                       <p className="text-sm text-emerald-800">
@@ -277,13 +294,34 @@ export function CoachDayPanel({
                     key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
                     label={`${timeLabel} ${calendarAssignmentLabel("completed")}`}
                     tone="confirmed"
-                  />
+                  >
+                    {segment.lesson && lessonWindow ? (
+                      <LessonCheckInForm
+                        lessonId={segment.lesson.id}
+                        date={lessonWindow.date}
+                        windowStart={slot.start_minute}
+                        windowEnd={slot.end_minute}
+                        initialPeriods={[
+                          {
+                            startMinute: lessonWindow.startMinute,
+                            endMinute: lessonWindow.endMinute,
+                          },
+                        ]}
+                        initialLessonTypeId={segment.lesson.lesson_type_id}
+                        workTypes={workTypes}
+                        staffKind={staffKind}
+                        students={students}
+                        initialStudentId={segment.lesson.student_id}
+                        submitLabel="儲存修改"
+                      />
+                    ) : null}
+                  </StaffShiftChip>
                 );
               }
               return (
                 <StaffShiftChip
                   key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                  label={`${timeLabel} 可返工`}
+                  label={`${timeLabel} ${calendarSlotLabel()}`}
                   tone="slot"
                 >
                   {editable ? (

@@ -33,11 +33,25 @@ export function LessonCheckInForm({
   date,
   windowStart,
   windowEnd,
+  initialPeriods = [],
+  submitLabel = "確認簽到",
+  workTypes,
+  initialLessonTypeId,
+  staffKind = "coach",
+  students = [],
+  initialStudentId,
 }: {
   lessonId: string;
   date: string;
   windowStart: number;
   windowEnd: number;
+  initialPeriods?: CheckInPeriod[];
+  submitLabel?: string;
+  workTypes: { id: string; name: string }[];
+  initialLessonTypeId?: string;
+  staffKind?: "coach" | "operations";
+  students?: { id: string; name: string }[];
+  initialStudentId?: string;
 }) {
   const router = useRouter();
   const now = new Date();
@@ -56,7 +70,13 @@ export function LessonCheckInForm({
   const [draftEnd, setDraftEnd] = useState(
     defaultEnd(initialStart, pastEnd ?? windowEnd),
   );
-  const [periods, setPeriods] = useState<CheckInPeriod[]>([]);
+  const [periods, setPeriods] = useState<CheckInPeriod[]>(initialPeriods);
+  const [lessonTypeId, setLessonTypeId] = useState(
+    workTypes.some((type) => type.id === initialLessonTypeId)
+      ? initialLessonTypeId ?? ""
+      : workTypes[0]?.id ?? "",
+  );
+  const [studentId, setStudentId] = useState(initialStudentId ?? "");
   const [addError, setAddError] = useState<string | null>(null);
   const payload = useMemo(() => JSON.stringify(periods), [periods]);
 
@@ -96,6 +116,43 @@ export function LessonCheckInForm({
       <p className="text-[10px] leading-snug text-amber-800">
         只可加入已經結束的時段再確認；未加入及尚未結束的時段不計入薪資。
       </p>
+      {workTypes.length === 0 ? (
+        <p className="text-sm text-amber-800">尚未獲分配工作類型，請聯絡公司。</p>
+      ) : (
+        <label className="block space-y-1 text-sm">
+          <span className="text-stone-700">實際工作</span>
+          <select
+            required
+            value={lessonTypeId}
+            onChange={(event) => setLessonTypeId(event.target.value)}
+            className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
+          >
+            {workTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {staffKind === "coach" ? (
+        <label className="block space-y-1 text-sm">
+          <span className="text-stone-700">教了哪位學生</span>
+          <select
+            required
+            value={studentId}
+            onChange={(event) => setStudentId(event.target.value)}
+            className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
+          >
+            <option value="">請選擇</option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <AvailabilityTimeFields
         defaultStartMinute={initialStart}
         defaultEndMinute={defaultEnd(initialStart, pastEnd)}
@@ -161,7 +218,17 @@ export function LessonCheckInForm({
       >
         <input type="hidden" name="lesson_id" value={lessonId} />
         <input type="hidden" name="periods" value={payload} />
-        <SubmitButton disabled={periods.length === 0}>確認簽到</SubmitButton>
+        <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
+        <input type="hidden" name="student_id" value={studentId} />
+        <SubmitButton
+          disabled={
+            periods.length === 0 ||
+            workTypes.length === 0 ||
+            (staffKind === "coach" && studentId === "")
+          }
+        >
+          {submitLabel}
+        </SubmitButton>
       </ActionForm>
     </div>
   );
