@@ -12,12 +12,23 @@ const endOptions = Array.from(
   (_, index) => (index + 1) * TIME_STEP_MINUTES,
 );
 
-const SELECT_CLASS = {
+const SELECT_CHEVRON = {
   default:
-    "w-full min-w-[6.5rem] appearance-none rounded-md border border-stone-300 bg-white bg-[length:0.75rem] bg-[right_0.6rem_center] bg-no-repeat py-2 pl-2.5 pr-8 text-base tabular-nums text-stone-900 outline-none focus:border-stone-500 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2378716c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+    "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2378716c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
   leave:
-    "w-full min-w-[6.5rem] appearance-none rounded-md border border-rose-200 bg-white bg-[length:0.75rem] bg-[right_0.6rem_center] bg-no-repeat py-2 pl-2.5 pr-8 text-base tabular-nums text-rose-950 outline-none focus:border-rose-400 bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%239f1239' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+    "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%239f1239' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
 } as const;
+
+function selectClass(tone: keyof typeof SELECT_CHEVRON, compact: boolean) {
+  return [
+    "w-full appearance-none rounded-md border bg-white bg-[length:0.75rem] bg-[right_0.35rem_center] bg-no-repeat outline-none tabular-nums",
+    compact ? "min-w-0 py-1 pl-1 pr-5 text-xs" : "min-w-[6.5rem] py-2 pl-2.5 pr-8 text-base",
+    tone === "leave"
+      ? "border-rose-200 text-rose-950 focus:border-rose-400"
+      : "border-stone-300 text-stone-900 focus:border-stone-500",
+    SELECT_CHEVRON[tone],
+  ].join(" ");
+}
 
 function TimeSelect({
   label,
@@ -26,26 +37,28 @@ function TimeSelect({
   current,
   onChange,
   tone = "default",
+  compact = false,
 }: {
   label: string;
   name: string;
   options: number[];
   current: number;
   onChange?: (minutes: number) => void;
-  tone?: keyof typeof SELECT_CLASS;
+  tone?: keyof typeof SELECT_CHEVRON;
+  compact?: boolean;
 }) {
-  const selectClass = SELECT_CLASS[tone];
+  const fieldClass = selectClass(tone, compact);
   const labelClass = tone === "leave" ? "text-rose-800" : "text-stone-600";
 
   return (
-    <label className="space-y-1 text-sm">
+    <label className={`block min-w-0 space-y-1 ${compact ? "text-xs" : "text-sm"}`}>
       <span className={labelClass}>{label}</span>
       {onChange ? (
         <select
           name={name}
           value={current}
           onChange={(event) => onChange(Number(event.target.value))}
-          className={selectClass}
+          className={fieldClass}
           required
         >
           {options.map((minutes) => (
@@ -58,7 +71,7 @@ function TimeSelect({
         <select
           name={name}
           defaultValue={current}
-          className={selectClass}
+          className={fieldClass}
           required
         >
           {options.map((minutes) => (
@@ -84,6 +97,7 @@ export function AvailabilityTimeFields({
   onStartChange,
   onEndChange,
   tone = "default",
+  compact = false,
 }: {
   defaultStartMinute: number;
   defaultEndMinute: number;
@@ -95,7 +109,8 @@ export function AvailabilityTimeFields({
   endValue?: number;
   onStartChange?: (minutes: number) => void;
   onEndChange?: (minutes: number) => void;
-  tone?: keyof typeof SELECT_CLASS;
+  tone?: keyof typeof SELECT_CHEVRON;
+  compact?: boolean;
 }) {
   const starts = startOptions.filter(
     (minutes) =>
@@ -111,7 +126,7 @@ export function AvailabilityTimeFields({
   );
 
   return (
-    <div className="grid min-w-[8.5rem] grid-cols-1 gap-2">
+    <div className={`grid grid-cols-1 gap-2 ${compact ? "min-w-0" : "min-w-[8.5rem]"}`}>
       <TimeSelect
         label="開始"
         name={startName}
@@ -119,6 +134,7 @@ export function AvailabilityTimeFields({
         current={startValue ?? defaultStartMinute}
         onChange={onStartChange}
         tone={tone}
+        compact={compact}
       />
       <TimeSelect
         label="結束"
@@ -127,6 +143,7 @@ export function AvailabilityTimeFields({
         current={endValue ?? defaultEndMinute}
         onChange={onEndChange}
         tone={tone}
+        compact={compact}
       />
     </div>
   );

@@ -1,24 +1,27 @@
 "use client";
 
 import { restoreReleasedAvailabilityAction } from "@/actions/availability";
-import { cancelLessonAction } from "@/actions/lessons";
+import {
+  cancelLessonAction,
+  employerEditCheckInAction,
+  markAssignmentSickLeaveAction,
+} from "@/actions/lessons";
+import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
+import { StaffShiftChip } from "@/components/staff-shift-composer";
 import { Panel } from "@/components/ui";
 import {
   availabilityWeekStart,
   availabilitySegments,
   isFullDayLeave,
   lessonDayKey,
-  overlappingLesson,
-  payrollPeriodForDate,
+  lessonMinutesInHongKong,
 } from "@/lib/calendar";
 import {
-  isModifiedClick,
   pushCalendarHref,
-  replaceCalendarHref,
   scrollToCalendarDay,
   useCalendarSelection,
 } from "@/lib/calendar-history";
@@ -34,14 +37,10 @@ import {
   calendarSlotLabel,
   formatAvailabilityTime,
   formatDateTime,
-  formatLessonSizeLabel,
-  formatMoneyOrPending,
   leaveWindowLabel,
-  lessonStatusLabel,
 } from "@/lib/format";
 import type { LessonStatus, PayMode } from "@/lib/types";
-import Link from "next/link";
-import type { MouseEvent } from "react";
+import type { ReactNode } from "react";
 
 export type EmployerMonthLesson = {
   id: string;
@@ -55,6 +54,7 @@ export type EmployerMonthLesson = {
   headcount: number | null;
   expected_headcount: number | null;
   student_names: string[];
+  student_id?: string;
 };
 
 export type EmployerMonthType = {
@@ -85,6 +85,7 @@ export type EmployerMonthLeave = {
   leave_date: string;
   start_minute?: number | null;
   end_minute?: number | null;
+  kind?: string | null;
 };
 
 export function EmployerMonthWorkspace({
@@ -100,6 +101,8 @@ export function EmployerMonthWorkspace({
   coaches,
   availabilities,
   leaves,
+  workTypes,
+  students,
   filter,
 }: {
   month: string;
@@ -114,6 +117,8 @@ export function EmployerMonthWorkspace({
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
+  workTypes: { coachId: string; id: string; name: string }[];
+  students: { id: string; name: string }[];
   filter: CalendarFilter;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
@@ -190,7 +195,7 @@ export function EmployerMonthWorkspace({
     const list = availabilityByDay.get(leave.leave_date) ?? [];
     list.push({
       id: leave.id,
-      label: `${coachName} ${leaveWindowLabel(leave)}`,
+      label: `${coachName} ${leave.kind === "sick" ? "病假" : leaveWindowLabel(leave)}`,
       coachName,
       timeLabel: isFullDayLeave(leave)
         ? undefined
@@ -308,16 +313,11 @@ export function EmployerMonthWorkspace({
       coachName: coachMap.get(leave.coach_id) ?? "—",
       start_minute: leave.start_minute,
       end_minute: leave.end_minute,
+      kind: leave.kind,
     }));
 
   const selectedCoach =
     coaches.find((coach) => coach.id === selectedCoachId) ?? null;
-  const initialSelection =
-    selectedCoach && slotStart != null && slotEnd != null
-      ? { date: day, startMinute: slotStart, slotEndMinute: slotEnd }
-      : null;
-  const salaryHref = (coachId: string) =>
-    `/employer/salary/${coachId}?month=${payrollPeriodForDate(day)}`;
 
   function dayHref(target: string, coachId?: string) {
     return `${calendarHref({
@@ -339,34 +339,252 @@ export function EmployerMonthWorkspace({
     scrollToCalendarDay();
   }
 
-  function selectSlot(
-    event: MouseEvent<HTMLAnchorElement>,
-    coachId: string,
-    start: number,
-    end: number,
-  ) {
-    if (isModifiedClick(event)) {
-      return;
+  const coveredLessonIds = new Set<string>();
+  type DayChip = {
+    key: string;
+    start: number;
+    label: string;
+    tone: "slot" | "pending" | "confirmed" | "leave" | "released";
+    defaultOpen?: boolean;
+    body?: ReactNode;
+  };
+  const chipsByCoach = new Map<
+    string,
+    { coachName: string; items: DayChip[] }
+  >();
+
+  function coachChips(coachId: string, coachName: string) {
+    const existing = chipsByCoach.get(coachId);
+    if (existing) {
+      return existing;
     }
-    event.preventDefault();
-    setSelection({
-      day,
-      coachId,
-      slotStart: start,
-      slotEnd: end,
-    });
-    replaceCalendarHref(
-      `${calendarHref({
-        month,
-        day,
-        coach: coachId,
-        week: availabilityWeekStart(day),
-        slotStart: start,
-        slotEnd: end,
-      })}#day`,
-    );
-    scrollToCalendarDay();
+    const created = { coachName, items: [] as DayChip[] };
+    chipsByCoach.set(coachId, created);
+    return created;
   }
+
+  function lessonBody(
+    lesson: EmployerMonthLesson,
+    windowStart: number,
+    windowEnd: number,
+  ) {
+    if (lesson.status === "assigned") {
+      return (
+        <div className="flex flex-col gap-2">
+          <ServerActionButton
+            action={cancelLessonAction.bind(null, lesson.id)}
+            confirmMessage="確定改回待公司派更？這段已派更會取消。"
+            className="min-h-11 rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 disabled:opacity-60"
+          >
+            改回待公司派更
+          </ServerActionButton>
+          <ServerActionButton
+            action={markAssignmentSickLeaveAction.bind(null, lesson.id)}
+            confirmMessage="確定將這段派更轉為病假？"
+            className="min-h-11 rounded-md border border-rose-200 px-3 py-1.5 text-sm text-rose-800 disabled:opacity-60"
+          >
+            轉為病假
+          </ServerActionButton>
+        </div>
+      );
+    }
+    const coach = coaches.find((item) => item.id === lesson.coach_id);
+    const coachWorkTypes = workTypes.filter((type) => type.coachId === lesson.coach_id);
+    const lessonWindow = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    return (
+      <LessonCheckInForm
+        lessonId={lesson.id}
+        date={lessonWindow.date}
+        windowStart={windowStart}
+        windowEnd={windowEnd}
+        initialPeriods={[
+          {
+            startMinute: lessonWindow.startMinute,
+            endMinute: lessonWindow.endMinute,
+          },
+        ]}
+        initialLessonTypeId={lesson.lesson_type_id}
+        workTypes={coachWorkTypes}
+        staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
+        students={students}
+        initialStudentId={lesson.student_id}
+        action={employerEditCheckInAction}
+        submitLabel="儲存修改"
+      />
+    );
+  }
+
+  for (const leave of dayLeaves) {
+    const fullDay = isFullDayLeave(leave);
+    const start = fullDay ? 0 : (leave.start_minute ?? 0);
+    const end = fullDay ? 0 : (leave.end_minute ?? 0);
+    coachChips(leave.coachId, leave.coachName).items.push({
+      key: leave.id,
+      start,
+      tone: "leave",
+      label: fullDay
+        ? leave.kind === "sick"
+          ? "全日病假"
+          : "全日放假"
+        : `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)} ${leave.kind === "sick" ? "病假" : "放假"}`,
+    });
+  }
+
+  for (const group of dayAvailabilities) {
+    const coachDayLessons = dayLessonsForSplit.filter(
+      (lesson) => lesson.coach_id === group.coachId,
+    );
+    for (const slot of group.slots) {
+      if (slot.released) {
+        if (!variantVisible("released", filter.statuses)) {
+          continue;
+        }
+        coachChips(group.coachId, group.coachName).items.push({
+          key: slot.id,
+          start: slot.start,
+          tone: "released",
+          label: `${formatAvailabilityTime(slot.start)}–${formatAvailabilityTime(slot.end)} ${calendarSlotLabel(true)}`,
+          body: (
+            <ServerActionButton
+              action={restoreReleasedAvailabilityAction.bind(null, slot.id)}
+              className="min-h-11 rounded-md border border-stone-400 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+            >
+              恢復待派更
+            </ServerActionButton>
+          ),
+        });
+        continue;
+      }
+      const sickBlocks = dayLeaves
+        .filter(
+          (leave) =>
+            leave.coachId === group.coachId &&
+            leave.kind === "sick" &&
+            !isFullDayLeave(leave),
+        )
+        .map((leave) => ({
+          start: leave.start_minute ?? 0,
+          end: leave.end_minute ?? 0,
+        }));
+      let openRanges = [{ start: slot.start, end: slot.end }];
+      for (const block of sickBlocks) {
+        openRanges = openRanges.flatMap((range) => {
+          if (block.end <= range.start || block.start >= range.end) {
+            return [range];
+          }
+          const next: { start: number; end: number }[] = [];
+          if (block.start > range.start) {
+            next.push({ start: range.start, end: block.start });
+          }
+          if (block.end < range.end) {
+            next.push({ start: block.end, end: range.end });
+          }
+          return next;
+        });
+      }
+      for (const range of openRanges) {
+      for (const segment of availabilitySegments(
+        day,
+        range.start,
+        range.end,
+        coachDayLessons,
+      )) {
+        const overlap = segment.lesson;
+        const variant = overlap
+          ? overlap.status === "assigned"
+            ? "pending"
+            : "confirmed"
+          : "slot";
+        if (!variantVisible(variant, filter.statuses)) {
+          continue;
+        }
+        const timeLabel = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+        if (overlap) {
+          coveredLessonIds.add(overlap.id);
+          coachChips(group.coachId, group.coachName).items.push({
+            key: `${slot.id}-${segment.startMinute}-${segment.endMinute}`,
+            start: segment.startMinute,
+            tone: variant,
+            label: `${timeLabel} ${
+              overlap.status === "assigned"
+                ? calendarAssignmentLabel("assigned")
+                : calendarAssignmentLabel("completed")
+            }${typeMap.get(overlap.lesson_type_id) ? ` · ${typeMap.get(overlap.lesson_type_id)}` : ""}`,
+            body: lessonBody(overlap, slot.start, slot.end),
+          });
+          continue;
+        }
+        const selected =
+          selectedCoach?.id === group.coachId &&
+          slotStart === segment.startMinute &&
+          slotEnd === segment.endMinute;
+        coachChips(group.coachId, group.coachName).items.push({
+          key: `${slot.id}-${segment.startMinute}-${segment.endMinute}`,
+          start: segment.startMinute,
+          tone: "slot",
+          defaultOpen: selected,
+          label: `${timeLabel} ${calendarSlotLabel()}`,
+          body: (
+            <EmployerAssignForm
+              coachId={group.coachId}
+              coachName={group.coachName}
+              date={day}
+              startMinute={segment.startMinute}
+              slotEndMinute={segment.endMinute}
+              clearHref={calendarHref({
+                month,
+                day,
+                coach: group.coachId,
+                week: availabilityWeekStart(day),
+              })}
+            />
+          ),
+        });
+      }
+      }
+    }
+  }
+
+  for (const lesson of dayLessons) {
+    if (coveredLessonIds.has(lesson.id) || !lesson.coach_id) {
+      continue;
+    }
+    const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const pending = lesson.status === "assigned";
+    const coachName = coachMap.get(lesson.coach_id) ?? "—";
+    coachChips(lesson.coach_id, coachName).items.push({
+      key: lesson.id,
+      start: window.startMinute,
+      tone: pending ? "pending" : "confirmed",
+      label: `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${
+        pending
+          ? calendarAssignmentLabel("assigned")
+          : calendarAssignmentLabel("completed")
+      }`,
+      body: lessonBody(lesson, window.startMinute, window.endMinute),
+    });
+  }
+
+  const dayChips = [...chipsByCoach.entries()]
+    .map(([coachId, group]) => {
+      const items = [...group.items].sort(
+        (a, b) => a.start - b.start || a.label.localeCompare(b.label, "zh-Hant"),
+      );
+      const leaveOnly = items.length > 0 && items.every((item) => item.tone === "leave");
+      return {
+        key: coachId,
+        start: items[0]?.start ?? 0,
+        coachName: group.coachName,
+        tone: leaveOnly ? ("leave" as const) : ("staff" as const),
+        defaultOpen: items.some((item) => item.defaultOpen),
+        label: leaveOnly ? `${group.coachName} 放假` : group.coachName,
+        items,
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.start - b.start || a.coachName.localeCompare(b.coachName, "zh-Hant"),
+    );
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
@@ -405,247 +623,47 @@ export function EmployerMonthWorkspace({
         className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto"
       >
         <Panel title={day}>
-          <ul className="divide-y divide-stone-100">
-            {dayLessons.map((lesson) => {
-              const studentNames = lesson.student_names;
-              const sizeLabel = formatLessonSizeLabel(
-                payModeByType.get(lesson.lesson_type_id),
-                lesson.headcount,
-                lesson.expected_headcount,
-              );
-              const pending = lesson.status === "assigned";
-              return (
-                <li key={lesson.id} className="space-y-2 py-3">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-medium">
-                        {typeMap.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
-                        {lessonStatusLabel(lesson.status)}
-                      </p>
-                      <p className="text-sm tabular-nums text-stone-500">
-                        {formatDateTime(lesson.starts_at)} –{" "}
-                        {formatDateTime(lesson.ends_at).slice(11)}
-                      </p>
-                      <p className="text-sm text-stone-500">
-                        員工：
-                        {lesson.coach_id
-                          ? (coachMap.get(lesson.coach_id) ?? "—")
-                          : "—"}
-                      </p>
-                      {studentNames.length > 0 ? (
-                        <p className="text-sm text-stone-500">
-                          學生：{studentNames.join("、")}
-                        </p>
-                      ) : null}
-                      {sizeLabel ? (
-                        <p className="text-sm text-stone-500">{sizeLabel}</p>
-                      ) : null}
-                      <p
-                        className={
-                          pending
-                            ? "text-sm text-amber-700"
-                            : "text-sm text-emerald-700"
-                        }
+          <p className="mb-3 text-sm text-stone-500">
+            當日時段按時間排列。打開 chip 即可派更或修改。
+          </p>
+          <div className="flex flex-col gap-2">
+            {dayChips.map((chip) =>
+              chip.items.length === 1 && !chip.items[0]?.body ? (
+                <StaffShiftChip
+                  key={chip.key}
+                  label={
+                    chip.items[0].label === "全日放假" ||
+                    chip.items[0].label === "全日病假"
+                      ? `${chip.coachName} ${chip.items[0].label}`
+                      : `${chip.items[0].label} ${chip.coachName}`
+                  }
+                  tone={chip.items[0].tone}
+                />
+              ) : (
+                <StaffShiftChip
+                  key={chip.key}
+                  label={chip.label}
+                  tone={chip.tone}
+                  defaultOpen={chip.defaultOpen}
+                >
+                  <div className="flex flex-col gap-2">
+                    {chip.items.map((item) => (
+                      <StaffShiftChip
+                        key={item.key}
+                        label={item.label}
+                        tone={item.tone}
+                        defaultOpen={item.defaultOpen}
                       >
-                        {pending
-                          ? "已派更，待簽到後方計入薪資"
-                          : `教練薪資：${formatMoneyOrPending(lesson.earned_amount_hkd)}`}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {lesson.coach_id && !pending ? (
-                        <Link
-                          href={salaryHref(lesson.coach_id)}
-                          className="inline-flex min-h-11 items-center rounded-md border border-stone-300 px-3 py-1.5 text-sm"
-                        >
-                          調整金額
-                        </Link>
-                      ) : null}
-                      {lesson.status !== "cancelled" ? (
-                        <ServerActionButton
-                          action={cancelLessonAction.bind(null, lesson.id)}
-                          confirmMessage="確定取消此課堂？將不再計入薪資。"
-                          className="min-h-11 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 disabled:opacity-60"
-                        >
-                          取消
-                        </ServerActionButton>
-                      ) : null}
-                    </div>
+                        {item.body}
+                      </StaffShiftChip>
+                    ))}
                   </div>
-                </li>
-              );
-            })}
-            {dayLessons.length === 0 ? (
-              <li className="py-3 text-sm text-stone-500">當日尚未有課堂</li>
+                </StaffShiftChip>
+              ),
+            )}
+            {dayChips.length === 0 ? (
+              <p className="text-sm text-stone-500">當日尚未有時段</p>
             ) : null}
-          </ul>
-
-          <div className="mt-4 border-t border-stone-100 pt-4">
-            <p className="mb-3 text-sm text-stone-500">
-              當日可返工／放假時段；點選可返工即可派更。
-            </p>
-            <ul className="divide-y divide-stone-100">
-              {dayLeaves.map((leave) => (
-                <li key={leave.id} className="py-3">
-                  <p className="font-medium">{leave.coachName}</p>
-                  <p className="mt-1 text-sm text-rose-800">
-                    {isFullDayLeave(leave) ? "全日放假" : leaveWindowLabel(leave)}
-                  </p>
-                </li>
-              ))}
-              {dayAvailabilities.map((group) => {
-                const coachDayLessons = dayLessonsForSplit.filter(
-                  (lesson) => lesson.coach_id === group.coachId,
-                );
-                const selectedSlotOpen =
-                  initialSelection != null &&
-                  selectedCoach?.id === group.coachId &&
-                  group.slots.some(
-                    (slot) =>
-                      !slot.released &&
-                      slot.start <= initialSelection.startMinute &&
-                      slot.end >= initialSelection.slotEndMinute &&
-                      !overlappingLesson(
-                        day,
-                        initialSelection.startMinute,
-                        initialSelection.slotEndMinute,
-                        coachDayLessons,
-                      ),
-                  );
-                return (
-                  <li key={group.coachId} className="space-y-3 py-3">
-                    <p className="font-medium">{group.coachName}</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.slots.flatMap((slot) => {
-                        if (slot.released) {
-                          if (!variantVisible("released", filter.statuses)) {
-                            return [];
-                          }
-                          return [
-                            <span
-                              key={slot.id}
-                              className="inline-flex flex-wrap items-center gap-2 rounded-md bg-stone-200 px-2 py-2 text-sm text-stone-700"
-                            >
-                              <span className="tabular-nums">
-                                {formatAvailabilityTime(slot.start)}–
-                                {formatAvailabilityTime(slot.end)}{" "}
-                                {calendarSlotLabel(true)}
-                              </span>
-                              <ServerActionButton
-                                action={restoreReleasedAvailabilityAction.bind(
-                                  null,
-                                  slot.id,
-                                )}
-                                className="min-h-11 rounded-md border border-stone-400 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
-                              >
-                                恢復待派更
-                              </ServerActionButton>
-                            </span>,
-                          ];
-                        }
-                        return availabilitySegments(
-                          day,
-                          slot.start,
-                          slot.end,
-                          coachDayLessons,
-                        ).map((segment) => {
-                        const overlap = segment.lesson;
-                        const variant = overlap
-                          ? overlap.status === "assigned"
-                            ? "pending"
-                            : "confirmed"
-                          : "slot";
-                        if (!variantVisible(variant, filter.statuses)) {
-                          return null;
-                        }
-                        const selected =
-                          selectedCoach?.id === group.coachId &&
-                          slotStart === segment.startMinute &&
-                          slotEnd === segment.endMinute;
-                        if (overlap) {
-                          const pending = overlap.status === "assigned";
-                          const studentNames = overlap.student_names;
-                          return (
-                            <span
-                              key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                              className={`rounded-md px-2 py-2 text-sm ${
-                                pending
-                                  ? "bg-emerald-100 text-emerald-950"
-                                  : "bg-sky-100 text-sky-950"
-                              }`}
-                            >
-                              <span className="tabular-nums">
-                                {formatAvailabilityTime(segment.startMinute)}–
-                                {formatAvailabilityTime(segment.endMinute)}
-                              </span>{" "}
-                              {pending
-                                ? calendarAssignmentLabel("assigned")
-                                : calendarAssignmentLabel("completed")}
-                              {typeMap.get(overlap.lesson_type_id)
-                                ? ` ·${typeMap.get(overlap.lesson_type_id)}`
-                                : ""}
-                              {studentNames.length > 0
-                                ? ` ·${studentNames.join("、")}`
-                                : ""}
-                            </span>
-                          );
-                        }
-                        return (
-                          <a
-                            key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                            href={`${calendarHref({
-                              month,
-                              day,
-                              coach: group.coachId,
-                              week: availabilityWeekStart(day),
-                              slotStart: segment.startMinute,
-                              slotEnd: segment.endMinute,
-                            })}#day`}
-                            onClick={(event) =>
-                              selectSlot(
-                                event,
-                                group.coachId,
-                                segment.startMinute,
-                                segment.endMinute,
-                              )
-                            }
-                            className={`min-h-11 rounded-md border border-dashed px-2 py-2 text-sm tabular-nums ${
-                              selected
-                                ? "border-stone-900 bg-stone-900 text-white"
-                                : "border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100"
-                            }`}
-                          >
-                            {formatAvailabilityTime(segment.startMinute)}–
-                            {formatAvailabilityTime(segment.endMinute)} 待公司派更
-                          </a>
-                        );
-                      });
-                      })}
-                    </div>
-                    {selectedSlotOpen && initialSelection ? (
-                      <EmployerAssignForm
-                        coachId={group.coachId}
-                        coachName={group.coachName}
-                        date={initialSelection.date}
-                        startMinute={initialSelection.startMinute}
-                        slotEndMinute={initialSelection.slotEndMinute}
-                        clearHref={calendarHref({
-                          month,
-                          day,
-                          coach: group.coachId,
-                          week: availabilityWeekStart(day),
-                        })}
-                      />
-                    ) : null}
-                  </li>
-                );
-              })}
-              {dayLeaves.length === 0 && dayAvailabilities.length === 0 ? (
-                <li className="py-3 text-sm text-stone-500">
-                  當日尚未有人申報可返工或放假
-                </li>
-              ) : null}
-            </ul>
           </div>
         </Panel>
       </section>

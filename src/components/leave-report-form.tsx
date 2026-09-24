@@ -17,15 +17,17 @@ export function LeaveReportForm({
   date,
   suggestedStart,
   canTakeFullDay,
+  compact = false,
   onSuccess,
 }: {
   date: string;
   suggestedStart: number;
   canTakeFullDay: boolean;
+  compact?: boolean;
   onSuccess?: () => void;
 }) {
   return (
-    <div className="rounded-xl bg-rose-50 p-3">
+    <div className={`rounded-xl bg-rose-50 ${compact ? "p-1.5" : "p-3"}`}>
       <p className="mb-2 text-center text-sm font-medium text-rose-900">
         報放假
       </p>
@@ -38,6 +40,7 @@ export function LeaveReportForm({
           <input type="hidden" name="leave_date" value={date} />
           <AvailabilityTimeFields
             tone="leave"
+            compact={compact}
             defaultStartMinute={suggestedStart}
             defaultEndMinute={Math.min(
               suggestedStart + DEFAULT_DURATION_MINUTES,

@@ -1,3 +1,5 @@
+import { airtableSessionKind } from "@/lib/session-kind";
+
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || "app6XDt9DxsHqgAoW";
 const STUDENT_TABLE = "tblRNs4uSivWUHWho";
 const APPOINTMENT_TABLE = "tblvxtHDyR0rK1qY3";
@@ -325,6 +327,136 @@ export async function lookupAirtableTuitions(
     }
   }
   return { fees, error: index.error };
+}
+
+function appointmentTypeFormula(kind: "pt" | "miit" | "group"): string {
+  if (kind === "pt") {
+    return "FIND('Personal Training', {Type})";
+  }
+  if (kind === "miit") {
+    return "FIND('MIIT', {Type})";
+  }
+  return "OR(FIND('Group Class', {Type}), FIND('Group', {Type}))";
+}
+
+function hongKongMinutes(iso: string): { date: string; minute: number } | null {
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  const date = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(parsed);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Hong_Kong",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(parsed);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return { date, minute: hour * 60 + minute };
+}
+
+export async function lookupAirtableExpectedStudents(input: {
+  date: string;
+  startMinute: number;
+  endMinute: number;
+  workTypeName: string;
+}): Promise<{ names: string[]; error: string | null }> {
+  const kind = airtableSessionKind(input.workTypeName);
+  if (!kind) {
+    return { names: [], error: null };
+  }
+  if (!airtableToken()) {
+    return { names: [], error: "尚未設定 Airtable" };
+  }
+  try {
+    const [students, appointments] = await Promise.all([
+      listAirtableRecords(STUDENT_TABLE, {
+        "fields[]": ["Full_Name", "Student_Name"],
+      }),
+      listAirtableRecords(APPOINTMENT_TABLE, {
+        filterByFormula: `AND(NOT({Canceled}), ${appointmentTypeFormula(kind)}, IS_AFTER({Start Time}, DATEADD(DATETIME_PARSE('${input.date}'), -1, 'days')), IS_BEFORE({Start Time}, DATEADD(DATETIME_PARSE('${input.date}'), 2, 'days')))`,
+        "fields[]": ["Student", "Start Time", "Type"],
+        "sort[0][field]": "Start Time",
+        "sort[0][direction]": "desc",
+      }),
+    ]);
+    const nameById = new Map<string, string>();
+    for (const student of students) {
+      const display =
+        fieldString(student.fields, "Full_Name") ||
+        fieldString(student.fields, "Student_Name");
+      if (display) {
+        nameById.set(student.id, display);
+      }
+    }
+    const names = new Set<string>();
+    for (const appointment of appointments) {
+      const start = fieldString(appointment.fields, "Start Time");
+      const when = hongKongMinutes(start);
+      if (!when || when.date !== input.date) {
+        continue;
+      }
+      const appointmentEnd = when.minute + 60;
+      if (when.minute >= input.endMinute || appointmentEnd <= input.startMinute) {
+        continue;
+      }
+      const studentIds = appointment.fields.Student;
+      if (!Array.isArray(studentIds)) {
+        continue;
+      }
+      for (const studentId of studentIds) {
+        if (typeof studentId !== "string") {
+          continue;
+        }
+        const name = nameById.get(studentId);
+        if (name) {
+          names.add(name);
+        }
+      }
+    }
+    return { names: [...names].sort((a, b) => a.localeCompare(b, "zh-Hant")), error: null };
+  } catch (error) {
+    console.error("[lookupAirtableExpectedStudents]", { error });
+    return { names: [], error: "無法讀取 Airtable 預約學生" };
+  }
+}
+
+export async function createAirtableStudent(
+  name: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const token = airtableToken();
+  if (!token) {
+    return { ok: false, error: "尚未設定 Airtable" };
+  }
+  try {
+    const response = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${STUDENT_TABLE}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          records: [{ fields: { Full_Name: name, Student_Name: name } }],
+        }),
+      },
+    );
+    const payload = (await response.json()) as { error?: { message?: string } };
+    if (!response.ok) {
+      return { ok: false, error: payload.error?.message ?? "寫入 Airtable 失敗" };
+    }
+    return { ok: true };
+  } catch (error) {
+    console.error("[createAirtableStudent]", { error });
+    return { ok: false, error: "寫入 Airtable 失敗" };
+  }
 }
 
 export async function lookupAirtableTuition(

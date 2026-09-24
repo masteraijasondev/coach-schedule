@@ -57,7 +57,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
 
   const { start, end } = monthBoundsIso(month);
   const gridRange = monthGridDateRange(month);
-  const { lessons, types, coaches: staff, availabilities, leaves } =
+  const { lessons, types, coaches: staff, availabilities, leaves, workTypes, students } =
     await loadEmployerCalendarData({
       lessonStart: start,
       lessonEnd: end,
@@ -104,6 +104,8 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       coaches={staff}
       availabilities={availabilities}
       leaves={leaves}
+      workTypes={workTypes}
+      students={students}
       initialFilter={initialFilter}
       remoteWeekPanel={
         selectedCoach && !weekInGrid ? (

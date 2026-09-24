@@ -6,7 +6,7 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { LeaveReportForm } from "@/components/leave-report-form";
 import { SubmitButton } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 const DEFAULT_DURATION_MINUTES = 60;
 const MINUTES_PER_DAY = 1440;
@@ -35,17 +35,28 @@ const CHIP_TONE = {
   confirmed: "bg-sky-50 text-sky-950",
   leave: "bg-rose-50 text-rose-900",
   released: "bg-stone-100 text-stone-500",
+  staff: "border border-stone-200 bg-white text-stone-900",
 } as const;
 
 export function StaffShiftChip({
   label,
   tone,
   children,
+  defaultOpen = false,
 }: {
   label: string;
   tone: keyof typeof CHIP_TONE;
   children?: ReactNode;
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      setOpen(true);
+    }
+  }, [defaultOpen]);
+
   if (!children) {
     return (
       <div
@@ -57,8 +68,17 @@ export function StaffShiftChip({
   }
 
   return (
-    <details className={`rounded-2xl open:[&_summary_svg]:rotate-180 ${CHIP_TONE[tone]}`}>
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium tabular-nums [&::-webkit-details-marker]:hidden">
+    <details
+      open={open}
+      className={`rounded-2xl open:[&>summary>svg]:rotate-180 ${CHIP_TONE[tone]}`}
+    >
+      <summary
+        className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium tabular-nums [&::-webkit-details-marker]:hidden"
+        onClick={(event) => {
+          event.preventDefault();
+          setOpen((current) => !current);
+        }}
+      >
         <span>{label}</span>
         <Chevron />
       </summary>
@@ -87,9 +107,9 @@ export function StaffShiftComposer({
   }
 
   return (
-    <div className="relative z-[2] flex flex-col gap-2">
+    <div className="relative z-[2] flex min-w-0 flex-col gap-2">
       {open ? (
-        <div className="rounded-2xl bg-slate-50 p-3">
+        <div className={`rounded-2xl bg-slate-50 ${compact ? "p-1.5" : "p-3"}`}>
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -98,7 +118,7 @@ export function StaffShiftComposer({
             報更 / 報假
             <Chevron up />
           </button>
-          <div className="rounded-xl bg-slate-100 p-3">
+          <div className={`rounded-xl bg-slate-100 ${compact ? "p-1.5" : "p-3"}`}>
             <p className="mb-2 text-center text-sm font-medium text-stone-700">
               報更
             </p>
@@ -109,6 +129,7 @@ export function StaffShiftComposer({
             >
               <input type="hidden" name="available_date" value={date} />
               <AvailabilityTimeFields
+                compact={compact}
                 defaultStartMinute={suggestedStart}
                 defaultEndMinute={Math.min(
                   suggestedStart + DEFAULT_DURATION_MINUTES,
@@ -123,6 +144,7 @@ export function StaffShiftComposer({
               date={date}
               suggestedStart={suggestedStart}
               canTakeFullDay={canTakeFullDay}
+              compact={compact}
               onSuccess={closeAndRefresh}
             />
           </div>

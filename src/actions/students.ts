@@ -1,6 +1,11 @@
 "use server";
 
-import { requireEmployer } from "@/lib/auth";
+import {
+  createAirtableStudent,
+  lookupAirtableExpectedStudents,
+} from "@/lib/airtable-tuition";
+import { requireEmployer, requireProfile } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";
@@ -31,6 +36,63 @@ export async function createStudentAction(
   } catch (error) {
     console.error("[createStudentAction] unexpected", { error });
     return { ok: false, error: "新增學生時發生錯誤" };
+  }
+}
+
+export async function createCheckInStudentAction(
+  name: string,
+): Promise<ActionResult<{ id: string; name: string; airtableSaved: boolean }>> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role !== "coach" && profile.role !== "employer") {
+      return { ok: false, error: "沒有權限新增學生" };
+    }
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return { ok: false, error: "請輸入學生姓名" };
+    }
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("students")
+      .insert({ name: trimmed })
+      .select("id, name")
+      .single();
+    if (error || !data) {
+      console.error("[createCheckInStudentAction]", { error });
+      return { ok: false, error: "新增學生失敗" };
+    }
+    const airtable = await createAirtableStudent(trimmed);
+    revalidatePath("/employer/students");
+    revalidatePath("/coach");
+    return {
+      ok: true,
+      data: { id: data.id, name: data.name, airtableSaved: airtable.ok },
+    };
+  } catch (error) {
+    console.error("[createCheckInStudentAction] unexpected", { error });
+    return { ok: false, error: "新增學生時發生錯誤" };
+  }
+}
+
+export async function lookupSessionStudentsAction(input: {
+  date: string;
+  startMinute: number;
+  endMinute: number;
+  workTypeName: string;
+}): Promise<ActionResult<string[]>> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role !== "coach" && profile.role !== "employer") {
+      return { ok: false, error: "沒有權限讀取學生" };
+    }
+    const result = await lookupAirtableExpectedStudents(input);
+    if (result.error && result.names.length === 0) {
+      return { ok: false, error: result.error };
+    }
+    return { ok: true, data: result.names };
+  } catch (error) {
+    console.error("[lookupSessionStudentsAction]", { error });
+    return { ok: false, error: "無法讀取 Airtable 預約學生" };
   }
 }
 

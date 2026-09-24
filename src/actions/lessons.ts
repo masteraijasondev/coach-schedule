@@ -232,6 +232,13 @@ async function linkLessonStudent(
   lessonId: string,
   studentId: string | undefined,
 ): Promise<ActionResult> {
+  return linkLessonStudents(lessonId, studentId ? [studentId] : []);
+}
+
+async function linkLessonStudents(
+  lessonId: string,
+  studentIds: string[],
+): Promise<ActionResult> {
   const supabase = await createClient();
   const { error: deleteError } = await supabase
     .from("lesson_students")
@@ -239,18 +246,20 @@ async function linkLessonStudent(
     .eq("lesson_id", lessonId);
 
   if (deleteError) {
-    console.error("[linkLessonStudent] delete", { error: deleteError });
+    console.error("[linkLessonStudents] delete", { error: deleteError });
     return { ok: false, error: "連結學生失敗" };
   }
 
-  if (!studentId) {
+  if (studentIds.length === 0) {
     return { ok: true, data: undefined };
   }
 
-  const { error } = await supabase.from("lesson_students").insert({
-    lesson_id: lessonId,
-    student_id: studentId,
-  });
+  const { error } = await supabase.from("lesson_students").insert(
+    studentIds.map((studentId) => ({
+      lesson_id: lessonId,
+      student_id: studentId,
+    })),
+  );
 
   if (error) {
     console.error("[linkLessonStudent]", { error });
@@ -418,6 +427,26 @@ function minutesToClock(minutes: number): string {
   return `${hour}:${minute}`;
 }
 
+function selectedStudentIds(formData: FormData): string[] {
+  const raw = String(formData.get("student_ids") ?? "").trim();
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        return [
+          ...new Set(
+            parsed.map((value) => String(value).trim()).filter(Boolean),
+          ),
+        ];
+      }
+    } catch (error) {
+      console.error("[selectedStudentIds]", { error });
+    }
+  }
+  const studentId = String(formData.get("student_id") ?? "").trim();
+  return studentId ? [studentId] : [];
+}
+
 function confirmLessonErrorMessage(message: string): string {
   if (message.includes("still in the future")) {
     return "只可簽到已經結束的時段";
@@ -449,12 +478,12 @@ function confirmLessonErrorMessage(message: string): string {
   return "確認簽到失敗";
 }
 
-export async function confirmLessonPeriodsAction(
-  _prev: ActionResult | null,
+async function confirmLessonPeriodsForStaff(
+  staffId: string,
   formData: FormData,
+  actor: "staff" | "employer",
 ): Promise<ActionResult> {
   try {
-    const coach = await requireCoach();
     const lessonId = String(formData.get("lesson_id") ?? "");
     const parsed = parseCheckInPeriods(String(formData.get("periods") ?? ""));
     const lessonTypeId = String(formData.get("lesson_type_id") ?? "").trim();
@@ -475,7 +504,7 @@ export async function confirmLessonPeriodsAction(
         "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount",
       )
       .eq("id", lessonId)
-      .eq("coach_id", coach.id)
+      .eq("coach_id", staffId)
       .maybeSingle();
 
     if (lessonError) {
@@ -491,7 +520,7 @@ export async function confirmLessonPeriodsAction(
         supabase
           .from("staff_work_types")
           .select("lesson_type_id")
-          .eq("coach_id", coach.id)
+          .eq("coach_id", staffId)
           .eq("lesson_type_id", lessonTypeId)
           .maybeSingle(),
         supabase
@@ -509,7 +538,13 @@ export async function confirmLessonPeriodsAction(
       return { ok: false, error: "讀取工作類型失敗" };
     }
     if (!allowedType || !activeType) {
-      return { ok: false, error: "此工作類型未分配給你" };
+      return {
+        ok: false,
+        error:
+          actor === "employer"
+            ? "此工作類型未分配給這位同事"
+            : "此工作類型未分配給你",
+      };
     }
 
     const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
@@ -519,7 +554,7 @@ export async function confirmLessonPeriodsAction(
       const { data: covers, error: coverError } = await supabase
         .from("staff_availabilities")
         .select("start_minute, end_minute")
-        .eq("coach_id", coach.id)
+        .eq("coach_id", staffId)
         .eq("available_date", window.date)
         .eq("released", false)
         .lte("start_minute", window.startMinute)
@@ -562,7 +597,7 @@ export async function confirmLessonPeriodsAction(
     const { data: staffProfile, error: staffError } = await supabase
       .from("profiles")
       .select("staff_kind, hourly_rate_hkd, pay_ratio")
-      .eq("id", coach.id)
+      .eq("id", staffId)
       .maybeSingle();
     if (staffError || !staffProfile) {
       console.error("[confirmLessonPeriodsAction] profile", { error: staffError });
@@ -570,7 +605,7 @@ export async function confirmLessonPeriodsAction(
     }
 
     const isAdmin = staffProfile.staff_kind === "operations";
-    const studentId = String(formData.get("student_id") ?? "").trim();
+    const studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
     let tuition: number | null = null;
     if (isAdmin) {
@@ -580,32 +615,37 @@ export async function confirmLessonPeriodsAction(
       }
       sessionAmount = hourly;
     } else {
-      if (!studentId) {
+      if (studentIds.length === 0) {
         return { ok: false, error: "請選擇教了哪位學生" };
       }
       const ratio = Number(staffProfile.pay_ratio);
       if (!Number.isFinite(ratio) || ratio < 0) {
         return { ok: false, error: "尚未設定 Coach 分成比例" };
       }
-      const { data: student, error: studentError } = await supabase
+      const { data: studentRows, error: studentError } = await supabase
         .from("students")
-        .select("name")
-        .eq("id", studentId)
-        .maybeSingle();
-      if (studentError || !student) {
+        .select("id, name")
+        .in("id", studentIds);
+      if (studentError || (studentRows ?? []).length !== studentIds.length) {
         return { ok: false, error: "找不到學生" };
       }
-      try {
-        tuition = await lookupAirtableTuition(student.name);
-      } catch (lookupError) {
-        console.error("[confirmLessonPeriodsAction] tuition", { error: lookupError });
-        return { ok: false, error: "讀取學生學費失敗" };
+      let pay = 0;
+      let fee = 0;
+      for (const student of studentRows ?? []) {
+        try {
+          const listed = await lookupAirtableTuition(student.name);
+          if (listed != null) {
+            fee += listed;
+            pay += coachPayFromFeeRatio(listed, ratio);
+          }
+        } catch (lookupError) {
+          console.error("[confirmLessonPeriodsAction] tuition", { error: lookupError });
+          return { ok: false, error: "讀取學生學費失敗" };
+        }
       }
-      if (tuition == null) {
-        return { ok: false, error: "Airtable 沒有這位學生的學費" };
-      }
-      sessionAmount = coachPayFromFeeRatio(tuition, ratio);
-      const linked = await linkLessonStudent(lessonId, studentId);
+      tuition = fee > 0 ? fee : null;
+      sessionAmount = pay;
+      const linked = await linkLessonStudents(lessonId, studentIds);
       if (!linked.ok) {
         return linked;
       }
@@ -665,7 +705,7 @@ export async function confirmLessonPeriodsAction(
         .from("lessons")
         .update({ student_fee_hkd: tuition })
         .eq("id", lessonId)
-        .eq("coach_id", coach.id);
+        .eq("coach_id", staffId);
       if (feeError) {
         console.error("[confirmLessonPeriodsAction] student fee", { error: feeError, lessonId });
       }
@@ -676,6 +716,80 @@ export async function confirmLessonPeriodsAction(
   } catch (error) {
     console.error("[confirmLessonPeriodsAction] unexpected", { error });
     return { ok: false, error: "確認簽到時發生錯誤" };
+  }
+}
+
+export async function confirmLessonPeriodsAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const coach = await requireCoach();
+  return confirmLessonPeriodsForStaff(coach.id, formData, "staff");
+}
+
+export async function employerEditCheckInAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireEmployer();
+  const lessonId = String(formData.get("lesson_id") ?? "");
+  const supabase = await createClient();
+  const { data: lesson, error } = await supabase
+    .from("lessons")
+    .select("coach_id")
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (error || !lesson?.coach_id) {
+    console.error("[employerEditCheckInAction] lesson", { error, lessonId });
+    return { ok: false, error: "找不到課堂" };
+  }
+  return confirmLessonPeriodsForStaff(lesson.coach_id, formData, "employer");
+}
+
+export async function markAssignmentSickLeaveAction(
+  lessonId: string,
+): Promise<ActionResult> {
+  try {
+    await requireEmployer();
+    const supabase = await createClient();
+    const { data: lesson, error: lessonError } = await supabase
+      .from("lessons")
+      .select("id, coach_id, starts_at, ends_at, status")
+      .eq("id", lessonId)
+      .maybeSingle();
+    if (lessonError || !lesson?.coach_id || lesson.status !== "assigned") {
+      console.error("[markAssignmentSickLeaveAction] load", { error: lessonError, lessonId });
+      return { ok: false, error: "只可將待簽到的派更轉為病假" };
+    }
+
+    const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const admin = createAdminClient();
+    const { error: leaveError } = await admin.from("staff_leaves").insert({
+      coach_id: lesson.coach_id,
+      leave_date: window.date,
+      start_minute: window.startMinute,
+      end_minute: window.endMinute,
+      kind: "sick",
+    });
+    if (leaveError) {
+      console.error("[markAssignmentSickLeaveAction] leave", { error: leaveError, lessonId });
+      return { ok: false, error: "轉為病假失敗" };
+    }
+
+    const { error } = await supabase
+      .from("lessons")
+      .update({ status: "cancelled" })
+      .eq("id", lessonId);
+    if (error) {
+      console.error("[markAssignmentSickLeaveAction] cancel", { error, lessonId });
+      return { ok: false, error: "已記下病假，但未能取消原派更" };
+    }
+
+    revalidateSchedules();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[markAssignmentSickLeaveAction] unexpected", { error });
+    return { ok: false, error: "轉為病假時發生錯誤" };
   }
 }
 

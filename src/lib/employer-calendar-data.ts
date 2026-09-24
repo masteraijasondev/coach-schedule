@@ -69,6 +69,8 @@ export async function loadEmployerCalendarData(range: {
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
+  workTypes: { coachId: string; id: string; name: string }[];
+  students: { id: string; name: string }[];
 }> {
   const supabase = await createClient();
   const [
@@ -78,6 +80,8 @@ export async function loadEmployerCalendarData(range: {
     leavesResult,
     coachesResult,
     namesResult,
+    workTypesResult,
+    studentsResult,
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -99,7 +103,7 @@ export async function loadEmployerCalendarData(range: {
       .order("start_minute"),
     supabase
       .from("staff_leaves")
-      .select("id, coach_id, leave_date, start_minute, end_minute")
+      .select("id, coach_id, leave_date, start_minute, end_minute, kind")
       .gte("leave_date", range.gridStart)
       .lte("leave_date", range.gridEnd),
     supabase
@@ -111,6 +115,10 @@ export async function loadEmployerCalendarData(range: {
       p_start: range.lessonStart,
       p_end: range.lessonEnd,
     }),
+    supabase
+      .from("staff_work_types")
+      .select("coach_id, lesson_type_id, lesson_types(id, name, active)"),
+    supabase.from("students").select("id, name").eq("active", true).order("name"),
   ]);
 
   if (lessonsResult.error) {
@@ -151,10 +159,43 @@ export async function loadEmployerCalendarData(range: {
     }));
   }
 
+  const lessonRows = (lessonsResult.data ?? []) as LessonRow[];
+  const lessonIds = lessonRows.map((lesson) => lesson.id);
+  const { data: lessonStudents, error: lessonStudentsError } = lessonIds.length
+    ? await supabase
+        .from("lesson_students")
+        .select("lesson_id, student_id")
+        .in("lesson_id", lessonIds)
+    : { data: [], error: null };
+  if (lessonStudentsError) {
+    console.error("[loadEmployerCalendarData] lesson students", {
+      error: lessonStudentsError,
+    });
+  }
+  const studentIdByLesson = new Map<string, string>();
+  for (const row of lessonStudents ?? []) {
+    if (!studentIdByLesson.has(row.lesson_id)) {
+      studentIdByLesson.set(row.lesson_id, row.student_id);
+    }
+  }
   const lessons = attachStudentNames(
-    (lessonsResult.data ?? []) as LessonRow[],
+    lessonRows,
     namesResult.data as { lesson_id: string; student_name: string }[] | null,
-  );
+  ).map((lesson) => ({
+    ...lesson,
+    student_id: studentIdByLesson.get(lesson.id),
+  }));
+  const workTypes = (workTypesResult.data ?? [])
+    .map((row) => {
+      const type = Array.isArray(row.lesson_types)
+        ? row.lesson_types[0]
+        : row.lesson_types;
+      if (!type?.active) {
+        return null;
+      }
+      return { coachId: row.coach_id, id: type.id, name: type.name };
+    })
+    .filter((type): type is { coachId: string; id: string; name: string } => type != null);
   const types = (typesResult.data ?? []).map((type) => ({
     id: type.id,
     name: type.name,
@@ -175,5 +216,7 @@ export async function loadEmployerCalendarData(range: {
     coaches,
     availabilities: availabilitiesResult.data ?? [],
     leaves: leavesResult.data ?? [],
+    workTypes,
+    students: studentsResult.data ?? [],
   };
 }

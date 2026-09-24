@@ -140,6 +140,41 @@ export default async function CoachesPage() {
                     </span>
                   )}
                 </div>
+                <ActionForm
+                  action={saveStaffWorkTypesAction}
+                  className="space-y-2 rounded-md border border-stone-200 p-3"
+                >
+                  <input type="hidden" name="coach_id" value={coach.id} />
+                  <p className="text-sm font-medium text-stone-800">可做的工作類型</p>
+                  <p className="text-xs text-stone-500">
+                    派呢位同事可以做嘅工作，例如 Admin、PT、MIIT。簽到時只可以報這裡勾選的類型。
+                  </p>
+                  {(lessonTypes ?? []).length === 0 ? (
+                    <p className="text-sm text-stone-500">
+                      尚未有啟用中的工作類型。請先到「課堂類型」新增。
+                    </p>
+                  ) : (
+                    <ul className="grid gap-1 sm:grid-cols-2">
+                      {(lessonTypes ?? []).map((type) => (
+                        <li key={type.id}>
+                          <label className="flex items-center gap-2 text-sm text-stone-700">
+                            <input
+                              type="checkbox"
+                              name="lesson_type_id"
+                              value={type.id}
+                              defaultChecked={assignedTypes.has(
+                                `${coach.id}:${type.id}`,
+                              )}
+                              className="size-4 rounded border-stone-300"
+                            />
+                            {type.name}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <SubmitButton>儲存工作類型</SubmitButton>
+                </ActionForm>
                 <details className="text-sm">
                   <summary className="cursor-pointer text-stone-600">
                     重設密碼或刪除帳號
@@ -190,39 +225,6 @@ export default async function CoachesPage() {
                     </ActionForm>
                   </div>
                 </details>
-                <ActionForm
-                  action={saveStaffWorkTypesAction}
-                  className="space-y-2 rounded-md border border-stone-200 p-3"
-                >
-                  <input type="hidden" name="coach_id" value={coach.id} />
-                  <p className="text-sm font-medium text-stone-800">工作類型</p>
-                  <p className="text-xs text-stone-500">
-                    同事做完工作後，只可從這裡勾選的類型報實際工作。
-                  </p>
-                  {(lessonTypes ?? []).length === 0 ? (
-                    <p className="text-sm text-stone-500">尚未有啟用中的工作類型</p>
-                  ) : (
-                    <ul className="grid gap-1">
-                      {(lessonTypes ?? []).map((type) => (
-                        <li key={type.id}>
-                          <label className="flex items-center gap-2 text-sm text-stone-700">
-                            <input
-                              type="checkbox"
-                              name="lesson_type_id"
-                              value={type.id}
-                              defaultChecked={assignedTypes.has(
-                                `${coach.id}:${type.id}`,
-                              )}
-                              className="size-4 rounded border-stone-300"
-                            />
-                            {type.name}
-                          </label>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <SubmitButton>儲存工作類型</SubmitButton>
-                </ActionForm>
               </li>
             ))}
             {(coaches ?? []).length === 0 ? (
