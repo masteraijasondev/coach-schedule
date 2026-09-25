@@ -315,7 +315,7 @@ export function CoachWeekCalendar({
                       gridEnd,
                     );
                     const shell =
-                      "absolute right-0.5 left-0.5 z-[1] overflow-auto rounded-sm border px-1 py-0.5 text-left text-xs";
+                      "absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs leading-tight";
                     const started =
                       availabilityStartsAt(date, start) <= now;
                     if (started || !leave.id) {
@@ -408,7 +408,7 @@ export function CoachWeekCalendar({
                     locked,
                   );
                   const shell =
-                    "absolute right-0.5 left-0.5 z-[1] overflow-auto rounded-sm border px-1 py-0.5 text-left text-xs";
+                    "absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs leading-tight";
                   return availabilitySegments(
                     date,
                     availability.start_minute,
@@ -442,7 +442,7 @@ export function CoachWeekCalendar({
                         <p className="font-medium tabular-nums">{timeLabel}</p>
                         <p>{calendarAssignmentLabel("assigned")}</p>
                         <details className="mt-1 rounded-sm border border-dashed border-emerald-300 bg-white text-stone-900">
-                          <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
+                          <summary className="cursor-pointer list-none px-1 py-0.5 text-center font-medium">
                             簽到
                           </summary>
                           <div className="min-w-0 border-t border-emerald-100 p-2">

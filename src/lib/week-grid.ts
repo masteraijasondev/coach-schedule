@@ -1,6 +1,6 @@
 export const WEEK_GRID_START_MINUTE = 7 * 60;
 export const WEEK_GRID_END_MINUTE = 22 * 60;
-export const WEEK_HOUR_HEIGHT = 48;
+export const WEEK_HOUR_HEIGHT = 144;
 
 export function weekGridRange(
   slots: { start_minute: number; end_minute: number }[],
