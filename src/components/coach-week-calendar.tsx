@@ -315,7 +315,7 @@ export function CoachWeekCalendar({
                       gridEnd,
                     );
                     const shell =
-                      "absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs";
+                      "absolute right-0.5 left-0.5 z-[1] overflow-auto rounded-sm border px-1 py-0.5 text-left text-xs";
                     const started =
                       availabilityStartsAt(date, start) <= now;
                     if (started || !leave.id) {
@@ -339,7 +339,7 @@ export function CoachWeekCalendar({
                         <summary className="cursor-pointer list-none font-medium tabular-nums">
                           {timeLabel} Short Break
                         </summary>
-                        <div className="min-w-[9rem] space-y-2 border-t border-rose-200 bg-white p-2 text-stone-900">
+                        <div className="min-w-0 space-y-2 border-t border-rose-200 bg-white p-2 text-stone-900">
                           <ActionForm
                             action={saveShortBreakAction}
                             className="space-y-2"
@@ -436,7 +436,7 @@ export function CoachWeekCalendar({
                     return (
                       <div
                         key={key}
-                        className={`${shell} overflow-visible border-dashed border-emerald-400 bg-emerald-100 text-emerald-950`}
+                        className={`${shell} border-dashed border-emerald-400 bg-emerald-100 text-emerald-950`}
                         style={{ top, height }}
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
@@ -445,7 +445,7 @@ export function CoachWeekCalendar({
                           <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
                             簽到
                           </summary>
-                          <div className="min-w-[9rem] border-t border-emerald-100 p-2">
+                          <div className="min-w-0 border-t border-emerald-100 p-2">
                             <LessonCheckInForm
                               lessonId={segment.lesson.id}
                               date={lessonWindow.date}
@@ -470,14 +470,14 @@ export function CoachWeekCalendar({
                     return (
                       <details
                         key={key}
-                        className={`${shell} overflow-visible border-sky-400 bg-sky-100 text-sky-950`}
+                        className={`${shell} border-sky-400 bg-sky-100 text-sky-950`}
                         style={{ top, height }}
                       >
                         <summary className="cursor-pointer list-none">
                           <p className="font-medium tabular-nums">{timeLabel}</p>
                           <p>{calendarAssignmentLabel("completed")} 修改</p>
                         </summary>
-                        <div className="min-w-[9rem] border-t border-sky-100 bg-white p-2 text-stone-900">
+                        <div className="min-w-0 border-t border-sky-100 bg-white p-2 text-stone-900">
                           <LessonCheckInForm
                             lessonId={segment.lesson.id}
                             date={lessonWindow.date}
@@ -521,13 +521,13 @@ export function CoachWeekCalendar({
                   return (
                     <details
                       key={key}
-                      className={`${shell} overflow-visible border-amber-300 bg-amber-100 text-amber-950`}
+                      className={`${shell} border-amber-300 bg-amber-100 text-amber-950`}
                       style={{ top, height }}
                     >
                       <summary className="cursor-pointer list-none font-medium tabular-nums">
                         {timeLabel} 修改
                       </summary>
-                      <div className="min-w-[9rem] space-y-2 border-t border-sky-200 bg-white p-2 text-stone-900">
+                      <div className="min-w-0 space-y-2 border-t border-sky-200 bg-white p-2 text-stone-900">
                         <ActionForm
                           action={saveAvailabilityAction}
                           className="space-y-2"

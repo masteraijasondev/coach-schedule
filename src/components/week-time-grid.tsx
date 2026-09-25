@@ -112,7 +112,7 @@ export function WeekTimeGrid({
             ))}
             {date === today && showNow ? (
               <div
-                className="absolute right-0 left-0 z-10 border-t-2 border-rose-500"
+                className="pointer-events-none absolute right-0 left-0 z-0 border-t-2 border-rose-500"
                 style={{ top: nowTop }}
               />
             ) : null}
