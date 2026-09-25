@@ -624,7 +624,7 @@ export function EmployerMonthWorkspace({
       >
         <Panel title={day}>
           <p className="mb-3 text-sm text-stone-500">
-            當日時段按時間排列。打開 chip 即可派更或修改。
+            當日時段按時間排列。選擇員工後即可派更或修改。
           </p>
           <div className="flex flex-col gap-2">
             {dayChips.map((chip) =>
