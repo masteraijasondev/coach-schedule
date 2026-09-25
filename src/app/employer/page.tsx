@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EmployerAssignPanel } from "@/components/employer-assign-panel";
+import { EmployerWorkTypePanel } from "@/components/employer-work-type-panel";
 import { EmployerCalendarShell } from "@/components/employer-calendar-shell";
 import { requireEmployer } from "@/lib/auth";
 import {
@@ -88,6 +89,12 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       : null;
 
   return (
+    <div className="space-y-6">
+    <EmployerWorkTypePanel
+      coaches={staff.map((person) => ({ id: person.id, full_name: person.full_name }))}
+      types={types.map((type) => ({ id: type.id, name: type.name }))}
+      assigned={workTypes.map((type) => ({ coachId: type.coachId, id: type.id }))}
+    />
     <EmployerCalendarShell
       initialView={view}
       month={month}
@@ -159,5 +166,6 @@ export default async function EmployerHomePage({ searchParams }: Props) {
         ) : null
       }
     />
+    </div>
   );
 }

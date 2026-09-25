@@ -13,6 +13,7 @@ import {
   type FilterStaff,
   type StaffKind,
 } from "@/lib/calendar-filter";
+import { buttonTone } from "@/components/button-styles";
 import type { ReactNode } from "react";
 
 const STATUS_DOT: Record<CalendarStatus, string> = {
@@ -30,15 +31,15 @@ function chipClass(
   shape: "pill" | "group" = "pill",
 ) {
   return [
-    "inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-3 text-sm transition-colors disabled:cursor-not-allowed sm:min-h-9",
-    shape === "group" ? "rounded-md font-medium" : "rounded-full",
+    "inline-flex min-h-10 cursor-pointer items-center gap-1.5 border px-3.5 text-sm font-semibold shadow-sm transition active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:shadow-none disabled:active:translate-y-0",
+    shape === "group" ? "rounded-lg" : "rounded-full",
     disabled
       ? "border-stone-200 bg-stone-50 text-stone-400"
       : active
         ? mixed
-          ? "border-stone-400 bg-stone-100 text-stone-800"
-          : "border-stone-900 bg-stone-900 text-white"
-        : "border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50",
+          ? "border-stone-400 bg-stone-100 text-stone-800 focus-visible:outline-stone-400"
+          : "border-stone-900 bg-stone-900 text-white focus-visible:outline-stone-900"
+        : "border-stone-300 bg-white text-stone-800 hover:bg-stone-50 focus-visible:outline-stone-400",
   ].join(" ");
 }
 
@@ -157,7 +158,7 @@ export function CalendarFilterBar({
           type="button"
           onClick={reset}
           disabled={isDefault}
-          className="shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-100 disabled:invisible"
+          className={`${buttonTone.secondary} shrink-0 disabled:invisible`}
         >
           重設
         </button>

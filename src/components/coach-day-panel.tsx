@@ -25,7 +25,6 @@ import {
   overlappingLesson,
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
-import { pastCheckInEndMinute } from "@/lib/check-in";
 import {
   calendarAssignmentLabel,
   calendarSlotLabel,
@@ -128,9 +127,6 @@ export function CoachDayPanel({
 }) {
   const router = useRouter();
   const now = new Date();
-  const nowMinute =
-    Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
-    Number(formatInTimeZone(now, TIMEZONE, "m"));
   const shiftLessons = lessons.filter(
     (lesson) => lesson.status === "assigned" || lesson.status === "completed",
   );
@@ -253,15 +249,6 @@ export function CoachDayPanel({
                     segment.lesson.ends_at,
                   )
                 : null;
-              const canConfirm =
-                lessonWindow != null &&
-                pastCheckInEndMinute(
-                  lessonWindow.date,
-                  lessonWindow.startMinute,
-                  lessonWindow.endMinute,
-                  today,
-                  nowMinute,
-                ) != null;
               if (pending) {
                 return (
                   <StaffShiftChip
@@ -269,7 +256,7 @@ export function CoachDayPanel({
                     label={`${timeLabel} ${calendarAssignmentLabel("assigned")}`}
                     tone="pending"
                   >
-                    {canConfirm && segment.lesson && lessonWindow ? (
+                    {segment.lesson && lessonWindow ? (
                       <LessonCheckInForm
                         lessonId={segment.lesson.id}
                         date={lessonWindow.date}

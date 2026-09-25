@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonTone } from "@/components/button-styles";
 import { Field, SelectField } from "@/components/ui";
 import type { PayMode } from "@/lib/types";
 import { useMemo, useState } from "react";
@@ -124,7 +125,7 @@ export function LessonRegisterFields({
                   <button
                     type="button"
                     onClick={onRetryStudents}
-                    className="cursor-pointer text-sm text-stone-600 underline"
+                    className={buttonTone.secondary}
                   >
                     重試
                   </button>

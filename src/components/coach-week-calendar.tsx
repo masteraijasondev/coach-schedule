@@ -27,7 +27,6 @@ import {
   shiftAvailabilityWeek,
   type CalendarView,
 } from "@/lib/calendar";
-import { pastCheckInEndMinute } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import {
   calendarAssignmentLabel,
@@ -434,14 +433,6 @@ export function CoachWeekCalendar({
                       segment.lesson.starts_at,
                       segment.lesson.ends_at,
                     );
-                    const canConfirm =
-                      pastCheckInEndMinute(
-                        lessonWindow.date,
-                        lessonWindow.startMinute,
-                        lessonWindow.endMinute,
-                        today,
-                        nowMinute,
-                      ) != null;
                     return (
                       <div
                         key={key}
@@ -450,27 +441,23 @@ export function CoachWeekCalendar({
                       >
                         <p className="font-medium tabular-nums">{timeLabel}</p>
                         <p>{calendarAssignmentLabel("assigned")}</p>
-                        {canConfirm ? (
-                          <details className="mt-1 rounded-sm border border-dashed border-emerald-300 bg-white text-stone-900">
-                            <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
-                              簽到
-                            </summary>
-                            <div className="min-w-[9rem] border-t border-emerald-100 p-2">
-                              <LessonCheckInForm
-                                lessonId={segment.lesson.id}
-                                date={lessonWindow.date}
-                                windowStart={lessonWindow.startMinute}
-                                windowEnd={lessonWindow.endMinute}
-                                workTypes={workTypes}
-                                staffKind={staffKind}
-                                students={students}
-                                initialStudentId={segment.lesson.student_id}
-                              />
-                            </div>
-                          </details>
-                        ) : (
-                          <p className="text-emerald-800">只可簽到已經結束的時段</p>
-                        )}
+                        <details className="mt-1 rounded-sm border border-dashed border-emerald-300 bg-white text-stone-900">
+                          <summary className="cursor-pointer list-none px-1 py-1 text-center font-medium">
+                            簽到
+                          </summary>
+                          <div className="min-w-[9rem] border-t border-emerald-100 p-2">
+                            <LessonCheckInForm
+                              lessonId={segment.lesson.id}
+                              date={lessonWindow.date}
+                              windowStart={lessonWindow.startMinute}
+                              windowEnd={lessonWindow.endMinute}
+                              workTypes={workTypes}
+                              staffKind={staffKind}
+                              students={students}
+                              initialStudentId={segment.lesson.student_id}
+                            />
+                          </div>
+                        </details>
                       </div>
                     );
                   }

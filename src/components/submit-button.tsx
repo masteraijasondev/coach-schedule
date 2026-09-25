@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonTone } from "@/components/button-styles";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useFormStatus } from "react-dom";
 
@@ -20,19 +21,19 @@ export function SubmitButton({
   const isDisabled = pending || disabled;
   const tone =
     variant === "danger"
-      ? "bg-red-700 hover:bg-red-800 text-white"
+      ? buttonTone.danger
       : variant === "leave"
-        ? "bg-rose-700 hover:bg-rose-800 text-white"
+        ? buttonTone.leave
         : variant === "secondary"
-          ? "bg-stone-200 text-stone-800 hover:bg-stone-300"
-          : "bg-stone-900 text-white hover:bg-stone-800";
+          ? buttonTone.secondary
+          : buttonTone.primary;
 
   return (
     <button
       type="submit"
       disabled={isDisabled}
       aria-busy={pending}
-      className={`inline-flex min-h-10 min-w-28 cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-70 ${tone} ${className ?? ""}`}
+      className={`${tone} min-w-28 ${className ?? ""}`}
     >
       {pending ? (
         <>

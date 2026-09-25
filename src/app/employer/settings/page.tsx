@@ -3,7 +3,7 @@ import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 
 const LINKS = [
-  { href: "/employer/coaches", label: "教練", hint: "帳號、工作類型；Admin 時薪或 Coach 分成" },
+  { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、Admin / PT / MIIT；時薪或分成" },
   { href: "/employer/students", label: "學生", hint: "學生名單" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
   { href: "/employer/rates", label: "薪資規則", hint: "各類型計薪方式" },

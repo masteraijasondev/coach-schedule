@@ -1,4 +1,5 @@
 import { createStudentAction, toggleStudentActiveAction } from "@/actions/students";
+import { buttonTone } from "@/components/button-styles";
 import { ActionForm } from "@/components/action-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SubmitButton } from "@/components/ui";
@@ -64,7 +65,7 @@ export default async function StudentsPage() {
               >
                 <button
                   type="submit"
-                  className="cursor-pointer text-sm text-stone-600 underline"
+                  className={buttonTone.secondary}
                 >
                   {student.active ? "停用" : "啟用"}
                 </button>

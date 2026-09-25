@@ -114,6 +114,7 @@ export async function saveStaffWorkTypesAction(
       }
     }
 
+    revalidatePath("/employer");
     revalidatePath("/employer/coaches");
     revalidatePath("/coach");
     return { ok: true, data: undefined };

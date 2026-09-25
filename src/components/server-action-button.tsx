@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonTone } from "@/components/button-styles";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -50,7 +51,7 @@ export function ServerActionButton({
             <button
               type="button"
               disabled={pending}
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-md bg-stone-900 px-3 text-sm text-white disabled:opacity-60"
+              className={buttonTone.primary}
               onClick={runAction}
             >
               確定
@@ -58,7 +59,7 @@ export function ServerActionButton({
             <button
               type="button"
               disabled={pending}
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-md border border-stone-300 px-3 text-sm disabled:opacity-60"
+              className={buttonTone.secondary}
               onClick={() => setAsking(false)}
             >
               返回
@@ -70,7 +71,7 @@ export function ServerActionButton({
           type="button"
           disabled={pending}
           aria-busy={pending}
-          className={`inline-flex cursor-pointer items-center justify-center gap-2 disabled:cursor-not-allowed ${className ?? ""}`}
+          className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold shadow-sm transition active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:active:translate-y-0 ${className ?? ""}`}
           onClick={() => {
             if (confirmMessage) {
               setAsking(true);

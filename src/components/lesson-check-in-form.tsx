@@ -9,7 +9,7 @@ import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { SubmitButton } from "@/components/ui";
-import { hongKongToday } from "@/lib/calendar";
+import { useServerNow } from "@/components/use-server-now";
 import {
   pastCheckInEndMinute,
   periodsOverlap,
@@ -33,7 +33,31 @@ function defaultEnd(windowStart: number, windowEnd: number): number {
   return Math.min(windowStart + DEFAULT_DURATION_MINUTES, windowEnd);
 }
 
-export function LessonCheckInForm({
+export function LessonCheckInForm(
+  props: Omit<Parameters<typeof LessonCheckInFields>[0], "nowMs">,
+) {
+  const { nowMs, error, retry } = useServerNow();
+  if (error) {
+    return (
+      <div className="space-y-2">
+        <p className="text-sm text-amber-800">{error}</p>
+        <button
+          type="button"
+          className="min-h-10 rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm"
+          onClick={retry}
+        >
+          再試一次
+        </button>
+      </div>
+    );
+  }
+  if (nowMs == null) {
+    return <p className="text-sm text-stone-500">正在核對公司時間…</p>;
+  }
+  return <LessonCheckInFields {...props} nowMs={nowMs} />;
+}
+
+function LessonCheckInFields({
   lessonId,
   date,
   windowStart,
@@ -46,6 +70,7 @@ export function LessonCheckInForm({
   students = [],
   initialStudentId,
   action = confirmLessonPeriodsAction,
+  nowMs,
 }: {
   lessonId: string;
   date: string;
@@ -59,17 +84,18 @@ export function LessonCheckInForm({
   students?: { id: string; name: string }[];
   initialStudentId?: string;
   action?: typeof confirmLessonPeriodsAction;
+  nowMs: number;
 }) {
   const router = useRouter();
-  const now = new Date();
+  const today = formatInTimeZone(nowMs, TIMEZONE, "yyyy-MM-dd");
   const nowMinute =
-    Number(formatInTimeZone(now, TIMEZONE, "H")) * 60 +
-    Number(formatInTimeZone(now, TIMEZONE, "m"));
+    Number(formatInTimeZone(nowMs, TIMEZONE, "H")) * 60 +
+    Number(formatInTimeZone(nowMs, TIMEZONE, "m"));
   const pastEnd = pastCheckInEndMinute(
     date,
     windowStart,
     windowEnd,
-    hongKongToday(),
+    today,
     nowMinute,
   );
   const initialStart = snapStart(windowStart, pastEnd ?? windowEnd);
@@ -83,7 +109,6 @@ export function LessonCheckInForm({
       ? initialLessonTypeId ?? ""
       : workTypes[0]?.id ?? "",
   );
-  const [studentId, setStudentId] = useState(initialStudentId ?? "");
   const [selectedIds, setSelectedIds] = useState<string[]>(
     initialStudentId ? [initialStudentId] : [],
   );
@@ -108,9 +133,8 @@ export function LessonCheckInForm({
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
   const sessionKind = airtableSessionKind(workTypeName);
-  const studentIdsPayload = JSON.stringify(
-    sessionKind ? selectedIds : studentId ? [studentId] : [],
-  );
+  const asksStudent = staffKind === "coach" && sessionKind != null;
+  const studentIdsPayload = JSON.stringify(asksStudent ? selectedIds : []);
 
   useEffect(() => {
     if (!sessionKind) {
@@ -225,7 +249,7 @@ export function LessonCheckInForm({
           </select>
         </label>
       )}
-      {staffKind === "coach" && sessionKind ? (
+      {asksStudent ? (
         <div className="space-y-2 text-sm">
           <p className="text-stone-700">預計上課（Airtable）</p>
           {expectedError ? (
@@ -321,23 +345,6 @@ export function LessonCheckInForm({
             <p className="text-xs text-stone-600">{studentMessage}</p>
           ) : null}
         </div>
-      ) : staffKind === "coach" ? (
-        <label className="block space-y-1 text-sm">
-          <span className="text-stone-700">教了哪位學生</span>
-          <select
-            required
-            value={studentId}
-            onChange={(event) => setStudentId(event.target.value)}
-            className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
-          >
-            <option value="">請選擇</option>
-            {students.map((student) => (
-              <option key={student.id} value={student.id}>
-                {student.name}
-              </option>
-            ))}
-          </select>
-        </label>
       ) : null}
       <AvailabilityTimeFields
         defaultStartMinute={initialStart}
@@ -405,14 +412,13 @@ export function LessonCheckInForm({
         <input type="hidden" name="lesson_id" value={lessonId} />
         <input type="hidden" name="periods" value={payload} />
         <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
-        <input type="hidden" name="student_id" value={sessionKind ? selectedIds[0] ?? "" : studentId} />
+        <input type="hidden" name="student_id" value={asksStudent ? selectedIds[0] ?? "" : ""} />
         <input type="hidden" name="student_ids" value={studentIdsPayload} />
         <SubmitButton
           disabled={
             periods.length === 0 ||
             workTypes.length === 0 ||
-            (staffKind === "coach" &&
-              (sessionKind ? selectedIds.length === 0 : studentId === ""))
+            (asksStudent && selectedIds.length === 0)
           }
         >
           {submitLabel}

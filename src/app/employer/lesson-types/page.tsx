@@ -3,6 +3,7 @@ import {
   toggleLessonTypeActiveAction,
 } from "@/actions/lesson-types";
 import { ActionForm } from "@/components/action-form";
+import { buttonTone } from "@/components/button-styles";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
@@ -75,7 +76,7 @@ export default async function LessonTypesPage() {
               >
                 <button
                   type="submit"
-                  className="cursor-pointer text-sm text-stone-600 underline"
+                  className={buttonTone.secondary}
                 >
                   {type.active ? "停用" : "啟用"}
                 </button>

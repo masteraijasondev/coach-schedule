@@ -10,6 +10,7 @@ import {
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { lookupAirtableTuition } from "@/lib/airtable-tuition";
+import { airtableSessionKind } from "@/lib/session-kind";
 import { calculateLessonPay } from "@/lib/pay";
 import { coachPayFromFeeRatio } from "@/lib/pt-rate";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -525,7 +526,7 @@ async function confirmLessonPeriodsForStaff(
           .maybeSingle(),
         supabase
           .from("lesson_types")
-          .select("id")
+          .select("id, name")
           .eq("id", lessonTypeId)
           .eq("active", true)
           .maybeSingle(),
@@ -604,16 +605,18 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "讀取薪資設定失敗" };
     }
 
-    const isAdmin = staffProfile.staff_kind === "operations";
+    const isAdmin =
+      staffProfile.staff_kind === "operations" ||
+      airtableSessionKind(activeType?.name ?? "") == null;
     const studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
     let tuition: number | null = null;
     if (isAdmin) {
       const hourly = Number(staffProfile.hourly_rate_hkd);
-      if (!Number.isFinite(hourly) || hourly < 0) {
+      if (staffProfile.staff_kind === "operations" && (!Number.isFinite(hourly) || hourly < 0)) {
         return { ok: false, error: "尚未設定 Admin 時薪" };
       }
-      sessionAmount = hourly;
+      sessionAmount = Number.isFinite(hourly) && hourly >= 0 ? hourly : 0;
     } else {
       if (studentIds.length === 0) {
         return { ok: false, error: "請選擇教了哪位學生" };
