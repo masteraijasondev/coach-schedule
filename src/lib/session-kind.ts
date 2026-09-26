@@ -2,7 +2,7 @@ export function airtableSessionKind(
   workTypeName: string,
 ): "pt" | "miit" | "group" | null {
   const name = workTypeName.toLowerCase();
-  if (name.includes("group")) {
+  if (name.includes("group") || workTypeName.includes("小組")) {
     return "group";
   }
   if (name.includes("miit")) {

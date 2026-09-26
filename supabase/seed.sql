@@ -15,7 +15,6 @@
 
 insert into public.lesson_types (name, default_duration_minutes)
 values
-  ('私人課', 60),
   ('小組課', 60),
   ('體驗課', 30)
 on conflict (name) do nothing;

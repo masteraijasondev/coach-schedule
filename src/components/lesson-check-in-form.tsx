@@ -234,7 +234,11 @@ function LessonCheckInFields({
       {asksStudent ? (
         <div className="space-y-2 text-sm">
           <label className="block space-y-1">
-            <span className="text-stone-700">學生（輸入姓名搜尋 Airtable）</span>
+            <span className="text-stone-700">
+              {sessionKind === "group"
+                ? "學生（可揀多於一位，輸入姓名搜尋 Airtable）"
+                : "學生（輸入姓名搜尋 Airtable）"}
+            </span>
             <input
               value={studentQuery}
               onChange={(event) => setStudentQuery(event.target.value)}
