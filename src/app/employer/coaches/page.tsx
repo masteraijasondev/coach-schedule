@@ -9,12 +9,60 @@ import { ActionForm } from "@/components/action-form";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
+import { formatPayRatioPercent } from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
+
+type LessonTypeRow = {
+  id: string;
+  name: string;
+  pay_mode: string;
+};
+
+type CoachRateRow = {
+  coach_id: string;
+  lesson_type_id: string;
+  amount_hkd: number | string;
+};
+
+function amountInputValue(value: number | string | null | undefined): string {
+  if (value == null || value === "") {
+    return "";
+  }
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) {
+    return "";
+  }
+  const rounded = Math.round(amount * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+function legacyHourlyRate(
+  coachId: string,
+  rates: CoachRateRow[],
+  types: LessonTypeRow[],
+): number | null {
+  const typeById = new Map(types.map((type) => [type.id, type]));
+  const perHour = rates.filter((rate) => {
+    if (rate.coach_id !== coachId) {
+      return false;
+    }
+    return typeById.get(rate.lesson_type_id)?.pay_mode === "per_hour";
+  });
+  const adminRate = perHour.find(
+    (rate) => typeById.get(rate.lesson_type_id)?.name === "Admin",
+  );
+  const chosen = adminRate ?? (perHour.length === 1 ? perHour[0] : null);
+  if (!chosen) {
+    return null;
+  }
+  const amount = Number(chosen.amount_hkd);
+  return Number.isFinite(amount) ? amount : null;
+}
 
 export default async function CoachesPage() {
   await requireEmployer();
   const supabase = await createClient();
-  const [{ data: coaches }, { data: lessonTypes }, { data: workTypes }] =
+  const [{ data: coaches }, { data: lessonTypes }, { data: workTypes }, { data: coachRates }] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -23,10 +71,11 @@ export default async function CoachesPage() {
         .order("full_name"),
       supabase
         .from("lesson_types")
-        .select("id, name")
+        .select("id, name, pay_mode")
         .eq("active", true)
         .order("name"),
       supabase.from("staff_work_types").select("coach_id, lesson_type_id"),
+      supabase.from("coach_rates").select("coach_id, lesson_type_id, amount_hkd"),
     ]);
 
   const assignedTypes = new Set(
@@ -36,7 +85,7 @@ export default async function CoachesPage() {
   return (
     <div className="space-y-6">
       <EmployerSettingsBackLink />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
         <Panel title="新增教練帳號">
           <ActionForm action={createCoachAction} className="space-y-3">
             <Field label="姓名" name="full_name" required />
@@ -66,15 +115,44 @@ export default async function CoachesPage() {
         </Panel>
 
         <Panel title="教練列表">
-          <ul className="divide-y divide-stone-100">
-            {(coaches ?? []).map((coach) => (
-              <li key={coach.id} className="space-y-2 py-3">
+          <ul className="space-y-3">
+            {(coaches ?? []).map((coach) => {
+              const hourlyValue =
+                coach.hourly_rate_hkd == null
+                  ? amountInputValue(
+                      legacyHourlyRate(
+                        coach.id,
+                        coachRates ?? [],
+                        lessonTypes ?? [],
+                      ),
+                    )
+                  : amountInputValue(coach.hourly_rate_hkd);
+              const ratioValue =
+                coach.pay_ratio == null
+                  ? ""
+                  : formatPayRatioPercent(Number(coach.pay_ratio));
+              return (
+              <li key={coach.id} className="space-y-2 rounded-lg border border-stone-200 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-lg">員工姓名：{coach.full_name}</p>
+                  <p className="text-lg">員工電郵：{coach.email}</p>
+                  {coach.must_change_password ? (
+                    <span className="shrink-0 text-xs rounded-md px-2 py-1 bg-amber-100 text-amber-700">
+                      待更改密碼
+                    </span>
+                  ) : (
+                    <span className="shrink-0 text-xs rounded-md px-2 py-1 bg-green-100 text-green-700">
+                      已啟用
+                    </span>
+                  )}
+                </div>
                 <ActionForm
+                  key={`${coach.id}:${hourlyValue}:${ratioValue}`}
                   action={updateCoachNameAction}
                   className="flex flex-wrap items-end gap-2"
                 >
                   <input type="hidden" name="coach_id" value={coach.id} />
-                  <div className="min-w-0 flex-1">
+                  <div className="w-1/4">
                     <Field
                       label="姓名"
                       name="full_name"
@@ -105,11 +183,7 @@ export default async function CoachesPage() {
                       type="number"
                       min="0"
                       step="0.01"
-                      defaultValue={
-                        coach.hourly_rate_hkd == null
-                          ? ""
-                          : String(coach.hourly_rate_hkd)
-                      }
+                      defaultValue={hourlyValue}
                     />
                   </div>
                   <div className="w-36">
@@ -119,27 +193,12 @@ export default async function CoachesPage() {
                       type="number"
                       min="0"
                       step="0.01"
-                      defaultValue={
-                        coach.pay_ratio == null
-                          ? ""
-                          : String(Math.round(Number(coach.pay_ratio) * 10000) / 100)
-                      }
+                      defaultValue={ratioValue}
                     />
                   </div>
                   <SubmitButton>更新</SubmitButton>
                 </ActionForm>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-stone-500">{coach.email}</p>
-                  {coach.must_change_password ? (
-                    <span className="shrink-0 text-xs text-amber-700">
-                      待更改密碼
-                    </span>
-                  ) : (
-                    <span className="shrink-0 text-xs text-stone-400">
-                      已啟用
-                    </span>
-                  )}
-                </div>
+                
                 <ActionForm
                   action={saveStaffWorkTypesAction}
                   className="space-y-2 rounded-md border border-stone-200 p-3"
@@ -147,7 +206,7 @@ export default async function CoachesPage() {
                   <input type="hidden" name="coach_id" value={coach.id} />
                   <p className="text-sm font-medium text-stone-800">可做的工作類型</p>
                   <p className="text-xs text-stone-500">
-                    派呢位同事可以做嘅工作，例如 Admin、PT、MIIT。簽到時只可以報這裡勾選的類型。
+                    簽到時只可以報勾選的工作類型。
                   </p>
                   {(lessonTypes ?? []).length === 0 ? (
                     <p className="text-sm text-stone-500">
@@ -226,7 +285,8 @@ export default async function CoachesPage() {
                   </div>
                 </details>
               </li>
-            ))}
+              );
+            })}
             {(coaches ?? []).length === 0 ? (
               <li className="py-3 text-sm text-stone-500">尚未新增教練</li>
             ) : null}

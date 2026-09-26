@@ -38,7 +38,6 @@ export async function createLessonTypeAction(
     }
 
     revalidatePath("/employer/lesson-types");
-    revalidatePath("/employer/rates");
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createLessonTypeAction] unexpected", { error });

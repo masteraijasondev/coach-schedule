@@ -7,16 +7,24 @@ import type { ActionResult } from "@/lib/types";
 import { payRatioFromPercent } from "@/lib/pt-rate";
 import { revalidatePath } from "next/cache";
 
-function parseHourlyRate(formData: FormData): number | { error: string } {
-  const amount = Number(formData.get("hourly_rate_hkd"));
+function parseHourlyRate(formData: FormData): number | null | { error: string } {
+  const raw = String(formData.get("hourly_rate_hkd") ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+  const amount = Number(raw);
   if (!Number.isFinite(amount) || amount < 0) {
     return { error: "請輸入有效的時薪" };
   }
   return Math.round(amount * 100) / 100;
 }
 
-function parsePayRatio(formData: FormData): number | { error: string } {
-  const percent = Number(formData.get("pay_ratio_percent"));
+function parsePayRatio(formData: FormData): number | null | { error: string } {
+  const raw = String(formData.get("pay_ratio_percent") ?? "").trim();
+  if (!raw) {
+    return null;
+  }
+  const percent = Number(raw);
   if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
     return { error: "分成比例必須在 0 至 100 之間" };
   }
@@ -103,19 +111,14 @@ export async function updateCoachNameAction(
 
     const hourly = parseHourlyRate(formData);
     const ratio = parsePayRatio(formData);
-    let hourlyRate: number | null = null;
-    let payRatio: number | null = null;
-    if (staffKind === "operations") {
-      if (typeof hourly !== "number") {
-        return { ok: false, error: hourly.error };
-      }
-      hourlyRate = hourly;
-    } else {
-      if (typeof ratio !== "number") {
-        return { ok: false, error: ratio.error };
-      }
-      payRatio = ratio;
+    if (hourly && typeof hourly === "object") {
+      return { ok: false, error: hourly.error };
     }
+    if (ratio && typeof ratio === "object") {
+      return { ok: false, error: ratio.error };
+    }
+    const hourlyRate = hourly;
+    const payRatio = ratio;
 
     const supabase = await createClient();
     const { error } = await supabase
@@ -266,5 +269,4 @@ function revalidateCoachPages() {
   revalidatePath("/employer/coaches");
   revalidatePath("/employer");
   revalidatePath("/employer/salary");
-  revalidatePath("/employer/rates");
 }

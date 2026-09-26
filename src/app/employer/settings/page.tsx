@@ -1,11 +1,11 @@
-import Link from "next/link";
+import { buttonTone } from "@/components/button-styles";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
+import Link from "next/link";
 
 const LINKS = [
   { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、Admin / PT / MIIT；時薪或分成" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
-  { href: "/employer/rates", label: "薪資規則", hint: "各類型計薪方式" },
 ];
 
 export default async function EmployerSettingsPage() {
@@ -13,16 +13,12 @@ export default async function EmployerSettingsPage() {
 
   return (
     <Panel title="設定">
-      <p className="mb-4 text-sm text-stone-500">管理同事、課堂類型與薪資規則。學生名單來自 Airtable。</p>
-      <ul className="divide-y divide-stone-100">
+      <p className="mb-4 text-sm text-stone-500">管理同事與課堂類型。</p>
+      <ul className="flex flex-wrap gap-2">
         {LINKS.map((link) => (
           <li key={link.href}>
-            <Link
-              href={link.href}
-              className="flex min-h-11 items-center justify-between gap-3 py-3"
-            >
-              <span className="font-medium">{link.label}</span>
-              <span className="text-sm text-stone-500">{link.hint}</span>
+            <Link href={link.href} title={link.hint} className={buttonTone.secondary}>
+              {link.label}
             </Link>
           </li>
         ))}

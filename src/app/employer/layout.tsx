@@ -12,7 +12,6 @@ const items = [
       "/employer/settings",
       "/employer/coaches",
       "/employer/lesson-types",
-      "/employer/rates",
     ],
   },
 ];

@@ -9,7 +9,6 @@ import {
   shiftMonth,
 } from "@/lib/calendar";
 import { formatDateTime, formatMoney, nestedStudentName } from "@/lib/format";
-import { formatPayRatioPercent } from "@/lib/pt-rate";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -32,28 +31,31 @@ export default async function EmployerCoachSalaryPage({
   const { start, end } = payrollPeriodBoundsIso(period);
 
   const supabase = await createClient();
-  const [{ data: coach }, { data: lessons }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("id, full_name, staff_kind, hourly_rate_hkd, pay_ratio")
-      .eq("id", coachId)
-      .eq("role", "coach")
-      .maybeSingle(),
-    supabase
-      .from("lessons")
-      .select("id, starts_at, ends_at, earned_amount_hkd, student_fee_hkd")
-      .eq("coach_id", coachId)
-      .eq("status", "completed")
-      .gte("starts_at", start)
-      .lt("starts_at", end)
-      .order("starts_at", { ascending: true }),
-  ]);
+  const [{ data: coach }, { data: lessons }, { data: lessonTypes }] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("id", coachId)
+        .eq("role", "coach")
+        .maybeSingle(),
+      supabase
+        .from("lessons")
+        .select(
+          "id, lesson_type_id, starts_at, ends_at, earned_amount_hkd, student_fee_hkd",
+        )
+        .eq("coach_id", coachId)
+        .eq("status", "completed")
+        .gte("starts_at", start)
+        .lt("starts_at", end)
+        .order("starts_at", { ascending: true }),
+      supabase.from("lesson_types").select("id, name, pay_mode"),
+    ]);
 
   if (!coach) {
     notFound();
   }
 
-  const isAdmin = coach.staff_kind === "operations";
   const lessonIds = (lessons ?? []).map((lesson) => lesson.id);
   const { data: lessonStudents } = lessonIds.length
     ? await supabase
@@ -70,17 +72,26 @@ export default async function EmployerCoachSalaryPage({
     }
   }
 
-  const total = (lessons ?? []).reduce(
-    (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
-    0,
-  );
-  const rateLabel = isAdmin
-    ? coach.hourly_rate_hkd == null
-      ? "未設定時薪"
-      : `${formatMoney(Number(coach.hourly_rate_hkd))}/小時`
-    : coach.pay_ratio == null
-      ? "未設定分成"
-      : `${formatPayRatioPercent(Number(coach.pay_ratio))}%`;
+  const typeById = new Map((lessonTypes ?? []).map((type) => [type.id, type]));
+  const lessonsByType = new Map<string, NonNullable<typeof lessons>>();
+  for (const lesson of lessons ?? []) {
+    const group = lessonsByType.get(lesson.lesson_type_id) ?? [];
+    group.push(lesson);
+    lessonsByType.set(lesson.lesson_type_id, group);
+  }
+  const wageGroups = [...lessonsByType.entries()]
+    .map(([typeId, items]) => ({
+      typeId,
+      name: typeById.get(typeId)?.name ?? "工作",
+      payMode: typeById.get(typeId)?.pay_mode ?? null,
+      items,
+      total: items.reduce(
+        (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
+        0,
+      ),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
+  const total = wageGroups.reduce((sum, group) => sum + group.total, 0);
 
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
@@ -103,14 +114,8 @@ export default async function EmployerCoachSalaryPage({
             下期
           </Link>
         </div>
-        <p className="mb-1 text-sm font-medium text-stone-800">
-          {isAdmin ? "Admin · Hourly Rate" : "Coach · Ratio"}
-        </p>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · {rateLabel}
-          {isAdmin
-            ? "。每段已簽到工時乘時薪。"
-            : "。簽到時揀學生，學費取自 Airtable，再乘分成比例。"}
+          結算期：{payrollPeriodLabel(period)}。薪資按工作類型分開計算。
         </p>
         <p className="mb-3 text-sm">
           <Link
@@ -120,41 +125,54 @@ export default async function EmployerCoachSalaryPage({
             ← 全部薪資
           </Link>
         </p>
-        <ul className="divide-y divide-stone-100">
-          {(lessons ?? []).map((lesson) => {
-            const hours = hoursBetween(lesson.starts_at, lesson.ends_at);
-            const studentName = studentByLesson.get(lesson.id);
-            return (
-              <li key={lesson.id} className="flex justify-between gap-3 py-3">
-                <div>
-                  <p className="text-sm tabular-nums text-stone-700">
-                    {formatDateTime(lesson.starts_at)}
-                  </p>
-                  {isAdmin ? (
-                    <p className="text-sm text-stone-500">
-                      {hours.toFixed(1)} 小時
-                    </p>
-                  ) : (
-                    <p className="text-sm text-stone-500">
-                      學生：{studentName ?? "—"}
-                      {lesson.student_fee_hkd == null
-                        ? ""
-                        : ` · 學費 ${formatMoney(Number(lesson.student_fee_hkd))}`}
-                    </p>
-                  )}
-                </div>
-                <p className="text-sm font-medium">
-                  {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
-                </p>
-              </li>
-            );
-          })}
-          {(lessons ?? []).length === 0 ? (
-            <li className="py-3 text-sm text-stone-500">
-              此結算期尚無已簽到課堂
-            </li>
-          ) : null}
-        </ul>
+        {wageGroups.length === 0 ? (
+          <p className="py-3 text-sm text-stone-500">此結算期尚無已簽到工作</p>
+        ) : (
+          wageGroups.map((group) => (
+            <section key={group.typeId} className="mt-4">
+              <div className="flex items-baseline justify-between gap-3 border-b border-stone-200 pb-1">
+                <h3 className="text-sm font-semibold text-stone-800">
+                  {group.name}
+                </h3>
+                <p className="text-sm font-medium">{formatMoney(group.total)}</p>
+              </div>
+              <ul className="divide-y divide-stone-100">
+                {group.items.map((lesson) => {
+                  const studentName = studentByLesson.get(lesson.id);
+                  return (
+                    <li
+                      key={lesson.id}
+                      className="flex justify-between gap-3 py-3"
+                    >
+                      <div>
+                        <p className="text-sm tabular-nums text-stone-700">
+                          {formatDateTime(lesson.starts_at)}
+                        </p>
+                        {group.payMode === "per_hour" ? (
+                          <p className="text-sm text-stone-500">
+                            {hoursBetween(lesson.starts_at, lesson.ends_at).toFixed(1)}{" "}
+                            小時
+                          </p>
+                        ) : null}
+                        {group.payMode === "per_student" ? (
+                          <p className="text-sm text-stone-500">
+                            學生：{studentName ?? "—"}
+                            {lesson.student_fee_hkd == null
+                              ? ""
+                              : ` · 學費 ${formatMoney(Number(lesson.student_fee_hkd))}`}
+                          </p>
+                        ) : null}
+                      </div>
+                      <p className="text-sm font-medium">
+                        {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))
+        )}
       </Panel>
     </div>
   );

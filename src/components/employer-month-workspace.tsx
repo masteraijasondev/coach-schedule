@@ -668,7 +668,7 @@ export function EmployerMonthWorkspace({
               ),
             )}
             {dayChips.length === 0 ? (
-              <p className="text-sm text-stone-500">當日尚未有時段</p>
+              <p className="text-sm text-stone-500">今日暫未有時段安排</p>
             ) : null}
           </div>
         </Panel>

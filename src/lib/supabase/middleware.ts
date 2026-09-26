@@ -1,6 +1,28 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+function isStaleRefreshToken(error: { code?: string; message?: string } | null) {
+  if (!error) {
+    return false;
+  }
+  return (
+    error.code === "refresh_token_not_found" ||
+    error.code === "refresh_token_already_used" ||
+    error.message.includes("Refresh Token Not Found") ||
+    error.message.includes("Invalid Refresh Token")
+  );
+}
+
+function clearSupabaseAuthCookies(request: NextRequest, response: NextResponse) {
+  for (const cookie of request.cookies.getAll()) {
+    if (!cookie.name.startsWith("sb-") || !cookie.name.includes("-auth-token")) {
+    continue;
+    }
+    request.cookies.delete(cookie.name);
+    response.cookies.set(cookie.name, "", { path: "/", maxAge: 0 });
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -29,6 +51,7 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
@@ -36,6 +59,19 @@ export async function updateSession(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/forgot-password" ||
     pathname.startsWith("/auth/");
+
+  if (isStaleRefreshToken(authError)) {
+    if (isPublicAuthPath) {
+      const response = NextResponse.next({ request });
+      clearSupabaseAuthCookies(request, response);
+      return response;
+    }
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    const response = NextResponse.redirect(loginUrl);
+    clearSupabaseAuthCookies(request, response);
+    return response;
+  }
 
   if (!user && !isPublicAuthPath) {
     const url = request.nextUrl.clone();
