@@ -4,6 +4,7 @@ import {
   cancelLeaveAction,
   saveLeaveAction,
   saveShortBreakAction,
+  saveSickLeaveAction,
 } from "@/actions/availability";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
@@ -64,6 +65,40 @@ export function LeaveReportForm({
             當日已有派更，不可全日放假
           </p>
         )}
+      </div>
+      <p className="mb-2 mt-4 text-center text-sm font-medium text-rose-900">
+        請病假
+      </p>
+      <div className="flex flex-col gap-2">
+        <ActionForm
+          action={saveSickLeaveAction}
+          className="flex flex-col gap-2"
+          onSuccess={onSuccess}
+        >
+          <input type="hidden" name="leave_date" value={date} />
+          <AvailabilityTimeFields
+            tone="leave"
+            compact={compact}
+            defaultStartMinute={suggestedStart}
+            defaultEndMinute={Math.min(
+              suggestedStart + DEFAULT_DURATION_MINUTES,
+              MINUTES_PER_DAY,
+            )}
+          />
+          <SubmitButton variant="leave" className="w-full min-w-0">
+            請此時段病假
+          </SubmitButton>
+        </ActionForm>
+        <ActionForm action={saveSickLeaveAction} onSuccess={onSuccess}>
+          <input type="hidden" name="leave_date" value={date} />
+          <input type="hidden" name="full_day" value="1" />
+          <SubmitButton variant="leave" className="w-full min-w-0">
+            全日病假
+          </SubmitButton>
+        </ActionForm>
+        <p className="text-center text-xs text-stone-500">
+          未簽到的派更會一併取消。已簽到的時段不能改為病假。
+        </p>
       </div>
     </div>
   );

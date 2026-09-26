@@ -428,6 +428,56 @@ function minutesToClock(minutes: number): string {
   return `${hour}:${minute}`;
 }
 
+function selectedStudentNames(formData: FormData): string[] {
+  const raw = String(formData.get("student_names") ?? "").trim();
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return [
+      ...new Set(parsed.map((value) => String(value).trim()).filter(Boolean)),
+    ];
+  } catch (error) {
+    console.error("[selectedStudentNames]", { error });
+    return [];
+  }
+}
+
+async function ensureStudentIds(names: string[]): Promise<string[] | null> {
+  const admin = createAdminClient();
+  const ids: string[] = [];
+  for (const name of names) {
+    const { data: existing, error: lookupError } = await admin
+      .from("students")
+      .select("id")
+      .ilike("name", name)
+      .limit(1);
+    if (lookupError) {
+      console.error("[ensureStudentIds] lookup", { error: lookupError, name });
+      return null;
+    }
+    if (existing?.[0]?.id) {
+      ids.push(existing[0].id);
+      continue;
+    }
+    const { data, error } = await admin
+      .from("students")
+      .insert({ name })
+      .select("id")
+      .single();
+    if (error || !data) {
+      console.error("[ensureStudentIds] insert", { error, name });
+      return null;
+    }
+    ids.push(data.id);
+  }
+  return ids;
+}
+
 function selectedStudentIds(formData: FormData): string[] {
   const raw = String(formData.get("student_ids") ?? "").trim();
   if (raw) {
@@ -467,8 +517,11 @@ function confirmLessonErrorMessage(message: string): string {
   if (message.includes("not assigned to this staff")) {
     return "此工作類型未分配給你";
   }
-  if (message.includes("outside the assignment")) {
-    return "簽到時段必須完全落在派更範圍內";
+  if (
+    message.includes("outside the assignment") ||
+    message.includes("not part of this shift")
+  ) {
+    return "簽到時間需要覆蓋或緊貼原本派更";
   }
   if (message.includes("overlap")) {
     return "簽到時段不可重疊";
@@ -608,7 +661,8 @@ async function confirmLessonPeriodsForStaff(
     const isAdmin =
       staffProfile.staff_kind === "operations" ||
       airtableSessionKind(activeType?.name ?? "") == null;
-    const studentIds = selectedStudentIds(formData);
+    const studentNames = selectedStudentNames(formData);
+    let studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
     let tuition: number | null = null;
     if (isAdmin) {
@@ -618,23 +672,35 @@ async function confirmLessonPeriodsForStaff(
       }
       sessionAmount = Number.isFinite(hourly) && hourly >= 0 ? hourly : 0;
     } else {
-      if (studentIds.length === 0) {
+      const names = studentNames.length > 0 ? studentNames : [];
+      if (names.length === 0 && studentIds.length === 0) {
         return { ok: false, error: "請選擇教了哪位學生" };
       }
       const ratio = Number(staffProfile.pay_ratio);
       if (!Number.isFinite(ratio) || ratio < 0) {
         return { ok: false, error: "尚未設定 Coach 分成比例" };
       }
-      const { data: studentRows, error: studentError } = await supabase
-        .from("students")
-        .select("id, name")
-        .in("id", studentIds);
-      if (studentError || (studentRows ?? []).length !== studentIds.length) {
-        return { ok: false, error: "找不到學生" };
+      let namedRows: { id: string; name: string }[] = [];
+      if (names.length > 0) {
+        const ensured = await ensureStudentIds(names);
+        if (!ensured) {
+          return { ok: false, error: "找不到學生" };
+        }
+        studentIds = ensured;
+        namedRows = names.map((name, index) => ({ id: ensured[index], name }));
+      } else {
+        const { data: studentRows, error: studentError } = await supabase
+          .from("students")
+          .select("id, name")
+          .in("id", studentIds);
+        if (studentError || (studentRows ?? []).length !== studentIds.length) {
+          return { ok: false, error: "找不到學生" };
+        }
+        namedRows = studentRows ?? [];
       }
       let pay = 0;
       let fee = 0;
-      for (const student of studentRows ?? []) {
+      for (const student of namedRows) {
         try {
           const listed = await lookupAirtableTuition(student.name);
           if (listed != null) {

@@ -57,7 +57,6 @@ export function EmployerCalendarShell({
   availabilities,
   leaves,
   workTypes,
-  students,
   remoteWeekPanel,
   initialFilter,
 }: {
@@ -77,7 +76,6 @@ export function EmployerCalendarShell({
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
   workTypes: { coachId: string; id: string; name: string }[];
-  students: { id: string; name: string }[];
   remoteWeekPanel: ReactNode;
   initialFilter: CalendarFilter;
 }) {
@@ -235,7 +233,6 @@ export function EmployerCalendarShell({
           availabilities={availabilities}
           leaves={leaves}
           workTypes={workTypes}
-          students={students}
           filter={filter}
         />
       </div>

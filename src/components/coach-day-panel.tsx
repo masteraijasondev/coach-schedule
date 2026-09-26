@@ -65,6 +65,7 @@ export type CoachDayLeave = {
   leave_date: string;
   start_minute?: number | null;
   end_minute?: number | null;
+  kind?: string | null;
 };
 
 function availabilityStartsAt(date: string, startMinute: number): Date {
@@ -114,7 +115,6 @@ export function CoachDayPanel({
   leaves,
   workTypes,
   staffKind,
-  students,
 }: {
   day: string;
   today: string;
@@ -123,7 +123,6 @@ export function CoachDayPanel({
   leaves: CoachDayLeave[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
-  students: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const now = new Date();
@@ -162,7 +161,9 @@ export function CoachDayPanel({
       {fullDayLeave ? (
         <div className="mt-3 flex flex-col gap-2">
           <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
-            全日放假
+            {leaves.some((leave) => leave.leave_date === day && leave.kind === "sick" && isFullDayLeave(leave))
+              ? "全日病假"
+              : "全日放假"}
           </div>
           {suggestedStart != null ? (
             <CancelFullDayLeaveButton date={day} />
@@ -183,7 +184,9 @@ export function CoachDayPanel({
             return (
               <StaffShiftChip
                 key={leave.id}
-                label={`${timeLabel} Short Break`}
+                label={
+                  leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`
+                }
                 tone="leave"
               >
                 {editable ? (
@@ -264,8 +267,6 @@ export function CoachDayPanel({
                         windowEnd={lessonWindow.endMinute}
                         workTypes={workTypes}
                         staffKind={staffKind}
-                        students={students}
-                        initialStudentId={segment.lesson.student_id}
                       />
                     ) : (
                       <p className="text-sm text-emerald-800">
@@ -297,8 +298,6 @@ export function CoachDayPanel({
                         initialLessonTypeId={segment.lesson.lesson_type_id}
                         workTypes={workTypes}
                         staffKind={staffKind}
-                        students={students}
-                        initialStudentId={segment.lesson.student_id}
                         submitLabel="儲存修改"
                       />
                     ) : null}

@@ -459,6 +459,46 @@ export async function createAirtableStudent(
   }
 }
 
+export async function searchAirtableStudents(
+  query: string,
+): Promise<{ names: string[]; error: string | null }> {
+  const trimmed = query.trim();
+  if (trimmed.length < 1) {
+    return { names: [], error: null };
+  }
+  if (!airtableToken()) {
+    return { names: [], error: "尚未設定 Airtable" };
+  }
+  const safe = trimmed.replace(/'/g, "''");
+  try {
+    const records = await listAirtableRecords(STUDENT_TABLE, {
+      filterByFormula: `OR(FIND(LOWER('${safe}'), LOWER({Full_Name}&'')), FIND(LOWER('${safe}'), LOWER({Student_Name}&'')))`,
+      "fields[]": ["Full_Name", "Student_Name"],
+      maxRecords: "8",
+    });
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const record of records) {
+      const name =
+        fieldString(record.fields, "Full_Name") ||
+        fieldString(record.fields, "Student_Name");
+      const key = name.trim().toLowerCase();
+      if (!name || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      names.push(name);
+      if (names.length >= 8) {
+        break;
+      }
+    }
+    return { names, error: null };
+  } catch (error) {
+    console.error("[searchAirtableStudents]", { error });
+    return { names: [], error: "無法搜尋 Airtable 學生" };
+  }
+}
+
 export async function lookupAirtableTuition(
   name: string | null | undefined,
 ): Promise<number | null> {

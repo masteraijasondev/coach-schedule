@@ -33,7 +33,6 @@ export async function CoachAvailabilityCalendar({
     { data: lessons },
     { data: workTypeRows },
     { data: staffProfile },
-    { data: studentRows },
   ] = await Promise.all([
     supabase
       .from("staff_availabilities")
@@ -45,7 +44,7 @@ export async function CoachAvailabilityCalendar({
       .order("start_minute"),
     supabase
       .from("staff_leaves")
-      .select("id, coach_id, leave_date, start_minute, end_minute")
+      .select("id, coach_id, leave_date, start_minute, end_minute, kind")
       .eq("coach_id", coachId)
       .gte("leave_date", week)
       .lte("leave_date", weekEnd),
@@ -65,7 +64,6 @@ export async function CoachAvailabilityCalendar({
       .select("staff_kind")
       .eq("id", coachId)
       .maybeSingle(),
-    supabase.from("students").select("id, name").eq("active", true).order("name"),
   ]);
 
   const workTypes = (workTypeRows ?? [])
@@ -108,7 +106,6 @@ export async function CoachAvailabilityCalendar({
       }))}
       workTypes={workTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
-      students={studentRows ?? []}
       loadError={Boolean(error || leavesError)}
     />
   );

@@ -47,7 +47,6 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     { data: leaves },
     { data: workTypeRows },
     { data: staffProfile },
-    { data: studentRows },
   ] = await Promise.all([
       supabase
         .from("lessons")
@@ -66,7 +65,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .order("start_minute"),
       supabase
         .from("staff_leaves")
-        .select("id, coach_id, leave_date, start_minute, end_minute")
+        .select("id, coach_id, leave_date, start_minute, end_minute, kind")
         .eq("coach_id", coach.id)
         .gte("leave_date", gridRange.start)
         .lte("leave_date", gridRange.end),
@@ -79,7 +78,6 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .select("staff_kind")
         .eq("id", coach.id)
         .maybeSingle(),
-      supabase.from("students").select("id, name").eq("active", true).order("name"),
     ]);
 
   const workTypes = (workTypeRows ?? [])
@@ -117,7 +115,6 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       leaves={leaves ?? []}
       workTypes={workTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
-      students={studentRows ?? []}
       remoteWeekCalendar={
         !weekInGrid ? (
           <section id="availability" className="scroll-mt-4">

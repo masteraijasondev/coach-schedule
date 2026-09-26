@@ -54,6 +54,7 @@ export type CoachWeekSlot = {
 export type CoachWeekLeave = {
   id?: string;
   leave_date: string;
+  kind?: string | null;
   start_minute?: number | null;
   end_minute?: number | null;
 };
@@ -136,7 +137,6 @@ export function CoachWeekCalendar({
   lessons,
   workTypes,
   staffKind,
-  students,
   loadError = false,
   onWeekNavigate,
 }: {
@@ -149,7 +149,6 @@ export function CoachWeekCalendar({
   lessons: CoachWeekLesson[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
-  students: { id: string; name: string }[];
   loadError?: boolean;
   onWeekNavigate?: (
     week: string,
@@ -173,6 +172,11 @@ export function CoachWeekCalendar({
   }
   const leaveDates = new Set(
     leaves.filter(isFullDayLeave).map((leave) => leave.leave_date),
+  );
+  const sickFullDays = new Set(
+    leaves
+      .filter((leave) => isFullDayLeave(leave) && leave.kind === "sick")
+      .map((leave) => leave.leave_date),
   );
   const breaksByDate = new Map<string, CoachWeekLeave[]>();
   for (const leave of leaves) {
@@ -214,7 +218,7 @@ export function CoachWeekCalendar({
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
         <p className="text-sm text-stone-500">
-          選擇指定日期及時段申報可返工，或申報 Short Break／全日放假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。時間以
+          選擇指定日期及時段申報可返工，或申報 Short Break、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。時間以
           30 分鐘為單位。
         </p>
             <div className="flex items-center justify-between gap-2">
@@ -279,7 +283,7 @@ export function CoachWeekCalendar({
                   return (
                     <div className="space-y-1">
                       <p className="rounded-sm bg-rose-100 px-1 py-1 text-center text-xs font-medium text-rose-900">
-                        放假
+                        {sickFullDays.has(date) ? "全日病假" : "放假"}
                       </p>
                       {suggestedStart != null ? (
                         <CancelFullDayLeaveButton date={date} />
@@ -326,7 +330,7 @@ export function CoachWeekCalendar({
                           style={{ top, height }}
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
-                          <p>Short Break</p>
+                          <p>{leave.kind === "sick" ? "病假" : "Short Break"}</p>
                         </div>
                       );
                     }
@@ -337,7 +341,7 @@ export function CoachWeekCalendar({
                         style={{ top, height }}
                       >
                         <summary className="cursor-pointer list-none font-medium tabular-nums">
-                          {timeLabel} Short Break
+                          {leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`}
                         </summary>
                         <div className="min-w-0 space-y-2 border-t border-rose-200 bg-white p-2 text-stone-900">
                           <ActionForm
@@ -453,8 +457,6 @@ export function CoachWeekCalendar({
                               windowEnd={lessonWindow.endMinute}
                               workTypes={workTypes}
                               staffKind={staffKind}
-                              students={students}
-                              initialStudentId={segment.lesson.student_id}
                             />
                           </div>
                         </details>
@@ -492,8 +494,6 @@ export function CoachWeekCalendar({
                             initialLessonTypeId={segment.lesson.lesson_type_id}
                             workTypes={workTypes}
                             staffKind={staffKind}
-                            students={students}
-                            initialStudentId={segment.lesson.student_id}
                             submitLabel="儲存修改"
                           />
                         </div>

@@ -78,11 +78,14 @@ export function formatAvailabilityTime(minutes: number): string {
 export function leaveWindowLabel(leave: {
   start_minute?: number | null;
   end_minute?: number | null;
+  kind?: string | null;
 }): string {
+  const sick = leave.kind === "sick";
   if (leave.start_minute == null || leave.end_minute == null) {
-    return "放假";
+    return sick ? "全日病假" : "放假";
   }
-  return `${formatAvailabilityTime(leave.start_minute)}–${formatAvailabilityTime(leave.end_minute)} Short Break`;
+  const time = `${formatAvailabilityTime(leave.start_minute)}–${formatAvailabilityTime(leave.end_minute)}`;
+  return sick ? `${time} 病假` : `${time} Short Break`;
 }
 
 export function calendarAssignmentLabel(status: string): string {

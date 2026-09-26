@@ -1,4 +1,5 @@
 const TIME_STEP_MINUTES = 30;
+const MINUTES_PER_DAY = 1440;
 
 export type CheckInPeriod = {
   startMinute: number;
@@ -49,17 +50,14 @@ export function pastCheckInEndMinute(
   today: string,
   nowMinute: number,
 ): number | null {
-  let maxEnd = windowEnd;
   if (date > today) {
     return null;
   }
-  if (date === today) {
-    maxEnd = Math.min(
-      windowEnd,
-      Math.floor(nowMinute / TIME_STEP_MINUTES) * TIME_STEP_MINUTES,
-    );
-  }
-  if (maxEnd <= windowStart) {
+  const maxEnd =
+    date < today
+      ? MINUTES_PER_DAY
+      : Math.floor(nowMinute / TIME_STEP_MINUTES) * TIME_STEP_MINUTES;
+  if (maxEnd < windowStart) {
     return null;
   }
   return maxEnd;
@@ -80,14 +78,17 @@ export function assertCheckInPeriods(
   const sorted = [...periods].sort(
     (a, b) => a.startMinute - b.startMinute,
   );
-  let previousEnd = windowStart;
+  let previousEnd = -1;
   for (const period of sorted) {
     if (
-      period.startMinute < windowStart ||
-      period.endMinute > windowEnd ||
+      period.startMinute < 0 ||
+      period.endMinute > MINUTES_PER_DAY ||
       period.endMinute <= period.startMinute
     ) {
-      return "簽到時段必須完全落在派更範圍內";
+      return "簽到時段無效";
+    }
+    if (period.startMinute > windowEnd || period.endMinute < windowStart) {
+      return "簽到時間需要覆蓋或緊貼原本派更";
     }
     if (period.endMinute > pastEndMinute) {
       return "只可簽到已經結束的時段";

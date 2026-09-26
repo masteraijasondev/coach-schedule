@@ -1,10 +1,7 @@
 "use client";
 
 import { confirmLessonPeriodsAction } from "@/actions/lessons";
-import {
-  createCheckInStudentAction,
-  lookupSessionStudentsAction,
-} from "@/actions/students";
+import { searchAirtableStudentsAction } from "@/actions/students";
 import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
@@ -67,8 +64,6 @@ function LessonCheckInFields({
   workTypes,
   initialLessonTypeId,
   staffKind = "coach",
-  students = [],
-  initialStudentId,
   action = confirmLessonPeriodsAction,
   nowMs,
 }: {
@@ -81,8 +76,6 @@ function LessonCheckInFields({
   workTypes: { id: string; name: string }[];
   initialLessonTypeId?: string;
   staffKind?: "coach" | "operations";
-  students?: { id: string; name: string }[];
-  initialStudentId?: string;
   action?: typeof confirmLessonPeriodsAction;
   nowMs: number;
 }) {
@@ -109,88 +102,72 @@ function LessonCheckInFields({
       ? initialLessonTypeId ?? ""
       : workTypes[0]?.id ?? "",
   );
-  const [selectedIds, setSelectedIds] = useState<string[]>(
-    initialStudentId ? [initialStudentId] : [],
-  );
-  const [extraStudents, setExtraStudents] = useState<{ id: string; name: string }[]>([]);
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [studentQuery, setStudentQuery] = useState("");
-  const [expectedNames, setExpectedNames] = useState<string[]>([]);
-  const [expectedError, setExpectedError] = useState<string | null>(null);
-  const [newStudentName, setNewStudentName] = useState("");
-  const [studentMessage, setStudentMessage] = useState<string | null>(null);
+  const [searchNames, setSearchNames] = useState<string[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const payload = useMemo(() => JSON.stringify(periods), [periods]);
-  const directory = useMemo(() => {
-    const seen = new Set<string>();
-    return [...students, ...extraStudents].filter((student) => {
-      if (seen.has(student.id)) {
-        return false;
-      }
-      seen.add(student.id);
-      return true;
-    });
-  }, [students, extraStudents]);
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
   const sessionKind = airtableSessionKind(workTypeName);
   const asksStudent = staffKind === "coach" && sessionKind != null;
-  const studentIdsPayload = JSON.stringify(asksStudent ? selectedIds : []);
+  const studentNamesPayload = JSON.stringify(asksStudent ? selectedNames : []);
 
   useEffect(() => {
-    if (!sessionKind) {
+    if (!asksStudent) {
       return;
     }
+    const query = studentQuery.trim();
+    if (query.length < 1) {
+      setSearchNames([]);
+      setSearchError(null);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    setSearchNames([]);
     let cancelled = false;
-    lookupSessionStudentsAction({
-      date,
-      startMinute: windowStart,
-      endMinute: windowEnd,
-      workTypeName,
-    }).then((result) => {
-      if (cancelled) {
-        return;
-      }
-      if (!result.ok) {
-        setExpectedNames([]);
-        setExpectedError(result.error);
-        return;
-      }
-      setExpectedNames(result.data);
-      setExpectedError(null);
-    });
+    const timer = window.setTimeout(() => {
+      searchAirtableStudentsAction(query)
+        .then((result) => {
+          if (cancelled) {
+            return;
+          }
+          if (!result.ok) {
+            setSearchNames([]);
+            setSearchError(result.error);
+            return;
+          }
+          setSearchNames(result.data);
+          setSearchError(null);
+        })
+        .catch((error: unknown) => {
+          console.error("[LessonCheckInFields] student search", { error });
+          if (cancelled) {
+            return;
+          }
+          setSearchNames([]);
+          setSearchError("無法搜尋 Airtable 學生");
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setSearching(false);
+          }
+        });
+    }, 300);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, [sessionKind, date, windowStart, windowEnd, workTypeName]);
+  }, [asksStudent, studentQuery]);
 
-  function toggleStudent(id: string) {
-    setSelectedIds((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    );
-  }
-
-  async function addStudent(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setStudentMessage("請輸入學生姓名");
-      return;
-    }
-    const result = await createCheckInStudentAction(trimmed);
-    if (!result.ok) {
-      setStudentMessage(result.error);
-      return;
-    }
-    setExtraStudents((current) => [...current, result.data]);
-    setSelectedIds((current) =>
-      current.includes(result.data.id) ? current : [...current, result.data.id],
-    );
-    setNewStudentName("");
-    setStudentMessage(
-      result.data.airtableSaved
-        ? "已加入並寫入 Airtable"
-        : "已加入本地名單，但未能寫入 Airtable",
+  function toggleStudent(name: string) {
+    setSelectedNames((current) =>
+      current.some((item) => item.toLowerCase() === name.toLowerCase())
+        ? current.filter((item) => item.toLowerCase() !== name.toLowerCase())
+        : [...current, name],
     );
   }
 
@@ -207,8 +184,13 @@ function LessonCheckInFields({
       setAddError("結束時間必須晚於開始時間");
       return;
     }
-    if (next.startMinute < windowStart || next.endMinute > windowEnd) {
-      setAddError("簽到時段必須完全落在派更範圍內");
+    if (
+      next.startMinute < 0 ||
+      next.endMinute > 1440 ||
+      next.startMinute > windowEnd ||
+      next.endMinute < windowStart
+    ) {
+      setAddError("簽到時間需要覆蓋或緊貼原本派更");
       return;
     }
     if (next.endMinute > latestPastEnd) {
@@ -228,7 +210,7 @@ function LessonCheckInFields({
   return (
     <div className="space-y-2">
       <p className="text-[10px] leading-snug text-amber-800">
-        只可加入已經結束的時段再確認；未加入及尚未結束的時段不計入薪資。
+        實際上下班可以早過或遲過派更，以 30 分鐘為單位。只可加入已經結束的時間；未加入的時間不計入薪資。
       </p>
       {workTypes.length === 0 ? (
         <p className="text-sm text-amber-800">尚未獲分配工作類型，請聯絡公司。</p>
@@ -251,105 +233,49 @@ function LessonCheckInFields({
       )}
       {asksStudent ? (
         <div className="space-y-2 text-sm">
-          <p className="text-stone-700">預計上課（Airtable）</p>
-          {expectedError ? (
-            <p className="text-xs text-amber-800">{expectedError}</p>
-          ) : null}
-          {expectedNames.length === 0 ? (
-            <p className="text-xs text-stone-500">這個時段 Airtable 沒有對應學生</p>
-          ) : (
-            <div className="flex flex-wrap gap-1">
-              {expectedNames.map((name) => {
-                const match = directory.find(
-                  (student) => student.name.trim().toLowerCase() === name.trim().toLowerCase(),
-                );
-                return (
-                  <button
-                    key={name}
-                    type="button"
-                    className={`rounded-full px-2 py-1 text-xs ${
-                      match && selectedIds.includes(match.id)
-                        ? "bg-stone-900 text-white"
-                        : "bg-stone-100 text-stone-800"
-                    }`}
-                    onClick={() => {
-                      if (match) {
-                        toggleStudent(match.id);
-                        return;
-                      }
-                      void addStudent(name);
-                    }}
-                  >
-                    {name}
-                    {match ? "" : " · 加入"}
-                  </button>
-                );
-              })}
-            </div>
-          )}
           <label className="block space-y-1">
-            <span className="text-stone-700">搜尋並記錄出席學生</span>
+            <span className="text-stone-700">學生（輸入姓名搜尋 Airtable）</span>
             <input
               value={studentQuery}
               onChange={(event) => setStudentQuery(event.target.value)}
-              placeholder="學生姓名"
+              placeholder="輸入學生姓名"
               className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm"
             />
           </label>
-          <div className="max-h-36 space-y-1 overflow-auto">
-            {directory
-              .filter((student) =>
-                student.name.toLowerCase().includes(studentQuery.trim().toLowerCase()),
-              )
-              .slice(0, 8)
-              .map((student) => (
-                <button
-                  key={student.id}
-                  type="button"
-                  className={`block w-full rounded-md px-2 py-1 text-left text-xs ${
-                    selectedIds.includes(student.id)
-                      ? "bg-stone-900 text-white"
-                      : "bg-stone-50 text-stone-800"
-                  }`}
-                  onClick={() => toggleStudent(student.id)}
-                >
-                  {student.name}
-                </button>
-              ))}
-          </div>
-          {selectedIds.length > 0 ? (
-            <p className="text-xs text-stone-600">
-              已記錄：
-              {directory
-                .filter((student) => selectedIds.includes(student.id))
-                .map((student) => student.name)
-                .join("、")}
-            </p>
+          {searchError ? (
+            <p className="text-xs text-amber-800">{searchError}</p>
           ) : null}
-          <div className="flex gap-1">
-            <input
-              value={newStudentName}
-              onChange={(event) => setNewStudentName(event.target.value)}
-              placeholder="新學生姓名"
-              className="min-w-0 flex-1 rounded-md border border-stone-300 px-2 py-2 text-sm"
-            />
-            <button
-              type="button"
-              className="rounded-md border border-stone-300 px-2 py-2 text-xs"
-              onClick={() => void addStudent(newStudentName)}
-            >
-              加入 Airtable
-            </button>
+          {searching ? (
+            <p className="text-xs text-stone-500">搜尋中…</p>
+          ) : null}
+          {studentQuery.trim() && !searching && searchNames.length === 0 && !searchError ? (
+            <p className="text-xs text-stone-500">沒有符合的學生</p>
+          ) : null}
+          <div className="max-h-36 space-y-1 overflow-auto">
+            {searchNames.map((name) => (
+              <button
+                key={name}
+                type="button"
+                className={`block w-full rounded-md px-2 py-1 text-left text-xs ${
+                  selectedNames.some((item) => item.toLowerCase() === name.toLowerCase())
+                    ? "bg-stone-900 text-white"
+                    : "bg-stone-50 text-stone-800"
+                }`}
+                onClick={() => toggleStudent(name)}
+              >
+                {name}
+              </button>
+            ))}
           </div>
-          {studentMessage ? (
-            <p className="text-xs text-stone-600">{studentMessage}</p>
+          {selectedNames.length > 0 ? (
+            <p className="text-xs text-stone-600">已記錄：{selectedNames.join("、")}</p>
           ) : null}
         </div>
       ) : null}
       <AvailabilityTimeFields
         defaultStartMinute={initialStart}
         defaultEndMinute={defaultEnd(initialStart, pastEnd)}
-        minMinute={windowStart}
+        minMinute={0}
         maxMinute={pastEnd}
         startName="check_in_start"
         endName="check_in_end"
@@ -412,13 +338,12 @@ function LessonCheckInFields({
         <input type="hidden" name="lesson_id" value={lessonId} />
         <input type="hidden" name="periods" value={payload} />
         <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
-        <input type="hidden" name="student_id" value={asksStudent ? selectedIds[0] ?? "" : ""} />
-        <input type="hidden" name="student_ids" value={studentIdsPayload} />
+        <input type="hidden" name="student_names" value={studentNamesPayload} />
         <SubmitButton
           disabled={
             periods.length === 0 ||
             workTypes.length === 0 ||
-            (asksStudent && selectedIds.length === 0)
+            (asksStudent && selectedNames.length === 0)
           }
         >
           {submitLabel}

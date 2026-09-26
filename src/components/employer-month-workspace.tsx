@@ -102,7 +102,6 @@ export function EmployerMonthWorkspace({
   availabilities,
   leaves,
   workTypes,
-  students,
   filter,
 }: {
   month: string;
@@ -118,7 +117,6 @@ export function EmployerMonthWorkspace({
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
   workTypes: { coachId: string; id: string; name: string }[];
-  students: { id: string; name: string }[];
   filter: CalendarFilter;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
@@ -406,8 +404,6 @@ export function EmployerMonthWorkspace({
         initialLessonTypeId={lesson.lesson_type_id}
         workTypes={coachWorkTypes}
         staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
-        students={students}
-        initialStudentId={lesson.student_id}
         action={employerEditCheckInAction}
         submitLabel="儲存修改"
       />

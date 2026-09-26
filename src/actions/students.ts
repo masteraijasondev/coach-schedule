@@ -3,6 +3,7 @@
 import {
   createAirtableStudent,
   lookupAirtableExpectedStudents,
+  searchAirtableStudents,
 } from "@/lib/airtable-tuition";
 import { requireEmployer, requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -71,6 +72,25 @@ export async function createCheckInStudentAction(
   } catch (error) {
     console.error("[createCheckInStudentAction] unexpected", { error });
     return { ok: false, error: "新增學生時發生錯誤" };
+  }
+}
+
+export async function searchAirtableStudentsAction(
+  query: string,
+): Promise<ActionResult<string[]>> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role !== "coach" && profile.role !== "employer") {
+      return { ok: false, error: "沒有權限讀取學生" };
+    }
+    const result = await searchAirtableStudents(query);
+    if (result.error) {
+      return { ok: false, error: result.error };
+    }
+    return { ok: true, data: result.names };
+  } catch (error) {
+    console.error("[searchAirtableStudentsAction]", { error });
+    return { ok: false, error: "無法搜尋 Airtable 學生" };
   }
 }
 

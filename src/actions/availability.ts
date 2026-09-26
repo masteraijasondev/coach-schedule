@@ -27,6 +27,7 @@ function validateAvailabilityInput(
   date: string,
   startMinute: number | null,
   endMinute: number | null,
+  options?: { allowStarted?: boolean },
 ): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return "日期無效";
@@ -55,7 +56,7 @@ function validateAvailabilityInput(
     `${date}T${startHour}:${startMins}:00`,
     TIMEZONE,
   );
-  if (startsAt <= new Date()) {
+  if (!options?.allowStarted && startsAt <= new Date()) {
     return "只可新增或修改尚未開始的時段";
   }
 
@@ -86,6 +87,9 @@ function availabilityDatabaseError(message: string): string {
   }
   if (message.includes("Cannot release a window with assigned work")) {
     return "此時段已有派更，請只釋放剩餘可返工時間";
+  }
+  if (message.includes("Completed work cannot be changed to sick leave")) {
+    return "已簽到的時段不能改為病假";
   }
   if (message.includes("assigned work")) {
     return "此時段已有派更，不可申報放假";
@@ -134,6 +138,45 @@ export async function saveLeaveAction(
   } catch (error) {
     console.error("[saveLeaveAction] unexpected", { error });
     return { ok: false, error: "申報放假時發生錯誤" };
+  }
+}
+
+export async function saveSickLeaveAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireCoach();
+    const date = String(formData.get("leave_date") ?? "").trim();
+    const fullDay = String(formData.get("full_day") ?? "") === "1";
+    const startMinute = fullDay ? null : parseMinute(formData.get("start_minute"));
+    const endMinute = fullDay ? null : parseMinute(formData.get("end_minute"));
+    const validationError = fullDay
+      ? validateLeaveDate(date)
+      : validateAvailabilityInput(date, startMinute, endMinute, {
+          allowStarted: true,
+        });
+    if (validationError) {
+      return { ok: false, error: validationError.replace("放假", "病假") };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("save_staff_sick_leave", {
+      p_leave_date: date,
+      p_start_minute: startMinute,
+      p_end_minute: endMinute,
+    });
+
+    if (error) {
+      console.error("[saveSickLeaveAction]", { error, date });
+      return { ok: false, error: availabilityDatabaseError(error.message) };
+    }
+
+    revalidateAvailabilityPages();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[saveSickLeaveAction] unexpected", { error });
+    return { ok: false, error: "請病假時發生錯誤" };
   }
 }
 

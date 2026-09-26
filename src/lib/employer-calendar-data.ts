@@ -70,7 +70,6 @@ export async function loadEmployerCalendarData(range: {
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
   workTypes: { coachId: string; id: string; name: string }[];
-  students: { id: string; name: string }[];
 }> {
   const supabase = await createClient();
   const [
@@ -81,7 +80,6 @@ export async function loadEmployerCalendarData(range: {
     coachesResult,
     namesResult,
     workTypesResult,
-    studentsResult,
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -118,7 +116,6 @@ export async function loadEmployerCalendarData(range: {
     supabase
       .from("staff_work_types")
       .select("coach_id, lesson_type_id, lesson_types(id, name, active)"),
-    supabase.from("students").select("id, name").eq("active", true).order("name"),
   ]);
 
   if (lessonsResult.error) {
@@ -217,6 +214,5 @@ export async function loadEmployerCalendarData(range: {
     availabilities: availabilitiesResult.data ?? [],
     leaves: leavesResult.data ?? [],
     workTypes,
-    students: studentsResult.data ?? [],
   };
 }

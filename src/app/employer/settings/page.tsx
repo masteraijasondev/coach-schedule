@@ -4,7 +4,6 @@ import { requireEmployer } from "@/lib/auth";
 
 const LINKS = [
   { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、Admin / PT / MIIT；時薪或分成" },
-  { href: "/employer/students", label: "學生", hint: "學生名單" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
   { href: "/employer/rates", label: "薪資規則", hint: "各類型計薪方式" },
 ];
@@ -14,7 +13,7 @@ export default async function EmployerSettingsPage() {
 
   return (
     <Panel title="設定">
-      <p className="mb-4 text-sm text-stone-500">管理教練、學生、課堂類型與薪資規則。</p>
+      <p className="mb-4 text-sm text-stone-500">管理同事、課堂類型與薪資規則。學生名單來自 Airtable。</p>
       <ul className="divide-y divide-stone-100">
         {LINKS.map((link) => (
           <li key={link.href}>

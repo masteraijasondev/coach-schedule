@@ -42,6 +42,7 @@ export type CoachMonthLeave = {
   id: string;
   coach_id: string;
   leave_date: string;
+  kind?: string | null;
   start_minute?: number | null;
   end_minute?: number | null;
 };
@@ -56,7 +57,6 @@ export function CoachMonthWorkspace({
   leaves,
   workTypes,
   staffKind,
-  students,
 }: {
   month: string;
   day: string;
@@ -67,7 +67,6 @@ export function CoachMonthWorkspace({
   leaves: CoachMonthLeave[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
-  students: { id: string; name: string }[];
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
     day: initialDay,
@@ -212,7 +211,6 @@ export function CoachMonthWorkspace({
           leaves={leaves}
           workTypes={workTypes}
           staffKind={staffKind}
-          students={students}
         />
       </div>
     </div>

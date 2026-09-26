@@ -11,7 +11,6 @@ const items = [
     activeWhen: [
       "/employer/settings",
       "/employer/coaches",
-      "/employer/students",
       "/employer/lesson-types",
       "/employer/rates",
     ],
