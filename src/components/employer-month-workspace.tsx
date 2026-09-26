@@ -5,6 +5,7 @@ import {
   cancelLessonAction,
   employerEditCheckInAction,
   markAssignmentSickLeaveAction,
+  undoCheckInAction,
 } from "@/actions/lessons";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
@@ -371,10 +372,10 @@ export function EmployerMonthWorkspace({
         <div className="flex flex-col gap-2">
           <ServerActionButton
             action={cancelLessonAction.bind(null, lesson.id)}
-            confirmMessage="確定改回待公司派更？這段已派更會取消。"
+            confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
             className="min-h-11 rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 disabled:opacity-60"
           >
-            改回待公司派更
+            撤銷派更
           </ServerActionButton>
           <ServerActionButton
             action={markAssignmentSickLeaveAction.bind(null, lesson.id)}
@@ -390,6 +391,7 @@ export function EmployerMonthWorkspace({
     const coachWorkTypes = workTypes.filter((type) => type.coachId === lesson.coach_id);
     const lessonWindow = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
     return (
+      <div className="flex flex-col gap-2">
       <LessonCheckInForm
         lessonId={lesson.id}
         date={lessonWindow.date}
@@ -407,6 +409,14 @@ export function EmployerMonthWorkspace({
         action={employerEditCheckInAction}
         submitLabel="儲存修改"
       />
+      <ServerActionButton
+        action={undoCheckInAction.bind(null, lesson.id)}
+        confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+        className="min-h-11 rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 disabled:opacity-60"
+      >
+        撤銷簽到
+      </ServerActionButton>
+      </div>
     );
   }
 

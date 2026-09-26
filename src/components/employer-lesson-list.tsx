@@ -1,4 +1,4 @@
-import { cancelLessonAction } from "@/actions/lessons";
+import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
 import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
@@ -183,13 +183,22 @@ export async function EmployerLessonList({
                       {formatMoneyOrPending(lesson.earned_amount_hkd)}
                     </p>
                   </div>
-                  {lesson.status !== "cancelled" ? (
+                  {lesson.status === "assigned" ? (
                     <ServerActionButton
                       action={cancelLessonAction.bind(null, lesson.id)}
-                      confirmMessage="確定取消此派更？將不再計入薪資。"
+                      confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
                       className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
                     >
-                      取消
+                      撤銷派更
+                    </ServerActionButton>
+                  ) : null}
+                  {lesson.status === "completed" ? (
+                    <ServerActionButton
+                      action={undoCheckInAction.bind(null, lesson.id)}
+                      confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                      className="rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 hover:bg-sky-50 disabled:opacity-60"
+                    >
+                      撤銷簽到
                     </ServerActionButton>
                   ) : null}
                 </div>

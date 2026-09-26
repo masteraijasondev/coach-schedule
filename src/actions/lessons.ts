@@ -1,7 +1,7 @@
 "use server";
 
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { requireCoach, requireEmployer } from "@/lib/auth";
+import { requireCoach, requireEmployer, requireProfile } from "@/lib/auth";
 import { addDaysToYmd, lessonMinutesInHongKong, hongKongToday } from "@/lib/calendar";
 import {
   assertCheckInPeriods,
@@ -958,6 +958,39 @@ export async function updateLessonFeesAction(
   } catch (error) {
     console.error("[updateLessonFeesAction] unexpected", { error });
     return { ok: false, error: "更新金額時發生錯誤" };
+  }
+}
+
+export async function undoCheckInAction(lessonId: string): Promise<ActionResult> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role !== "coach" && profile.role !== "employer") {
+      return { ok: false, error: "沒有權限撤銷簽到" };
+    }
+    if (!lessonId) {
+      return { ok: false, error: "找不到簽到紀錄" };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("undo_staff_check_in", {
+      p_id: lessonId,
+    });
+    if (error) {
+      console.error("[undoCheckInAction]", { error, lessonId });
+      if (error.message.includes("not found")) {
+        return { ok: false, error: "找不到簽到紀錄" };
+      }
+      if (error.message.includes("completed check-in")) {
+        return { ok: false, error: "只有已簽到的時段可以撤銷" };
+      }
+      return { ok: false, error: "撤銷簽到失敗" };
+    }
+
+    revalidateSchedules();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[undoCheckInAction] unexpected", { error });
+    return { ok: false, error: "撤銷簽到時發生錯誤" };
   }
 }
 

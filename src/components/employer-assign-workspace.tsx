@@ -1,6 +1,7 @@
 "use client";
 
 import { restoreReleasedAvailabilityAction } from "@/actions/availability";
+import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -338,7 +339,7 @@ export function EmployerAssignWorkspace({
                 <div
                   key={key}
                   title={`${label} ${pending ? calendarAssignmentLabel("assigned") : calendarAssignmentLabel("completed")}`}
-                  className={`absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
+                  className={`absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                   style={{ top, height }}
                 >
                   <span className="tabular-nums">{label}</span>
@@ -347,6 +348,23 @@ export function EmployerAssignWorkspace({
                       ? calendarAssignmentLabel("assigned")
                       : calendarAssignmentLabel("completed")}
                   </span>
+                  {segment.lesson ? (
+                    <ServerActionButton
+                      action={
+                        pending
+                          ? cancelLessonAction.bind(null, segment.lesson.id)
+                          : undoCheckInAction.bind(null, segment.lesson.id)
+                      }
+                      confirmMessage={
+                        pending
+                          ? "確定撤銷呢次派更？時段會回到待公司派更。"
+                          : "確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                      }
+                      className="mt-1 min-h-8 w-full rounded-sm border border-current/30 bg-white/80 px-1 py-0.5 text-[10px] text-stone-900 disabled:opacity-60"
+                    >
+                      {pending ? "撤銷派更" : "撤銷簽到"}
+                    </ServerActionButton>
+                  ) : null}
                 </div>
               );
             }

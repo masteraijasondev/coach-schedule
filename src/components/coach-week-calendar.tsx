@@ -6,6 +6,7 @@ import {
   saveAvailabilityAction,
   saveShortBreakAction,
 } from "@/actions/availability";
+import { undoCheckInAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -285,8 +286,11 @@ export function CoachWeekCalendar({
                       <p className="rounded-sm bg-rose-100 px-1 py-1 text-center text-xs font-medium text-rose-900">
                         {sickFullDays.has(date) ? "全日病假" : "放假"}
                       </p>
-                      {suggestedStart != null ? (
-                        <CancelFullDayLeaveButton date={date} />
+                      {date >= today ? (
+                        <CancelFullDayLeaveButton
+                          date={date}
+                          sick={sickFullDays.has(date)}
+                        />
                       ) : null}
                     </div>
                   );
@@ -322,7 +326,7 @@ export function CoachWeekCalendar({
                       "absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs leading-tight";
                     const started =
                       availabilityStartsAt(date, start) <= now;
-                    if (started || !leave.id) {
+                    if (!leave.id || date < today) {
                       return (
                         <div
                           key={leave.id ?? `${date}-${start}`}
@@ -331,6 +335,29 @@ export function CoachWeekCalendar({
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
                           <p>{leave.kind === "sick" ? "病假" : "Short Break"}</p>
+                        </div>
+                      );
+                    }
+                    if (started || leave.kind === "sick") {
+                      return (
+                        <div
+                          key={leave.id}
+                          className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                          style={{ top, height }}
+                        >
+                          <p className="font-medium tabular-nums">{timeLabel}</p>
+                          <p>{leave.kind === "sick" ? "病假" : "Short Break"}</p>
+                          <ServerActionButton
+                            action={cancelLeaveByIdAction.bind(null, leave.id)}
+                            confirmMessage={
+                              leave.kind === "sick"
+                                ? "確定撤銷此時段病假？可返工時間同未簽到派更會恢復。"
+                                : "確定撤銷此時段放假？可返工時間會恢復。"
+                            }
+                            className="mt-1 min-h-8 w-full rounded-sm border border-rose-300 bg-white px-1 py-0.5 text-[10px] text-rose-900 disabled:opacity-60"
+                          >
+                            {leave.kind === "sick" ? "撤銷病假" : "撤銷"}
+                          </ServerActionButton>
                         </div>
                       );
                     }
@@ -366,10 +393,10 @@ export function CoachWeekCalendar({
                           </ActionForm>
                           <ServerActionButton
                             action={cancelLeaveByIdAction.bind(null, leave.id)}
-                            confirmMessage="確定取消此時段 Short Break？"
+                            confirmMessage="確定撤銷此時段放假？可返工時間會恢復。"
                             className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
                           >
-                            刪除
+                            撤銷
                           </ServerActionButton>
                         </div>
                       </details>
@@ -496,6 +523,13 @@ export function CoachWeekCalendar({
                             staffKind={staffKind}
                             submitLabel="儲存修改"
                           />
+                          <ServerActionButton
+                            action={undoCheckInAction.bind(null, segment.lesson.id)}
+                            confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                            className="mt-2 min-h-11 w-full rounded-md border border-sky-200 px-2 py-1 text-xs text-sky-900 disabled:opacity-60"
+                          >
+                            撤銷簽到
+                          </ServerActionButton>
                         </div>
                       </details>
                     );

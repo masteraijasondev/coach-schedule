@@ -104,14 +104,24 @@ export function LeaveReportForm({
   );
 }
 
-export function CancelFullDayLeaveButton({ date }: { date: string }) {
+export function CancelFullDayLeaveButton({
+  date,
+  sick = false,
+}: {
+  date: string;
+  sick?: boolean;
+}) {
   return (
     <ServerActionButton
       action={cancelLeaveAction.bind(null, date)}
-      confirmMessage="確定取消當日全日放假？"
+      confirmMessage={
+        sick
+          ? "確定撤銷全日病假？可返工時間同未簽到派更會恢復。"
+          : "確定撤銷全日放假？可返工時間會恢復。"
+      }
       className="w-full min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
     >
-      取消放假
+      {sick ? "撤銷病假" : "撤銷放假"}
     </ServerActionButton>
   );
 }
