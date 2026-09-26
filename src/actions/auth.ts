@@ -1,10 +1,33 @@
 "use server";
 
+import {
+  homePath,
+  PROFILE_COOKIE,
+  PROFILE_SELECT,
+  parseProfileRecord,
+  profileCookieOptions,
+  signProfileCookie,
+} from "@/lib/session-profile";
 import { createClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import type { ActionResult } from "@/lib/types";
-import { redirect } from "next/navigation";
+import type { ActionResult, Profile } from "@/lib/types";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+async function rememberProfile(profile: Profile) {
+  const cookieStore = await cookies();
+  cookieStore.set(
+    PROFILE_COOKIE,
+    await signProfileCookie(profile),
+    profileCookieOptions(),
+  );
+}
+
+async function forgetProfile() {
+  const cookieStore = await cookies();
+  cookieStore.set(PROFILE_COOKIE, "", { ...profileCookieOptions(), maxAge: 0 });
+}
 
 function isNextRedirect(error: unknown): boolean {
   return (
@@ -38,21 +61,33 @@ export async function loginAction(
     }
 
     const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (error) {
+    if (error || !data.user) {
       console.error("[loginAction] signIn", {
-        message: error.message,
-        status: error.status,
+        message: error?.message,
+        status: error?.status,
       });
       return { ok: false, error: "登入失敗，請檢查電郵或密碼" };
     }
 
+    const { data: profileRow, error: profileError } = await supabase
+      .from("profiles")
+      .select(PROFILE_SELECT)
+      .eq("id", data.user.id)
+      .single();
+    const profile = parseProfileRecord(profileRow);
+    if (profileError || !profile) {
+      console.error("[loginAction] profile", { profileError });
+      return { ok: false, error: "登入失敗，請檢查電郵或密碼" };
+    }
+
+    await rememberProfile(profile);
     revalidatePath("/", "layout");
-    redirect("/");
+    redirect(homePath(profile));
   } catch (error) {
     if (isNextRedirect(error)) {
       throw error;
@@ -110,6 +145,7 @@ export async function confirmRecoverySessionAction(
 export async function logoutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
+  await forgetProfile();
   redirect("/login");
 }
 
@@ -158,16 +194,18 @@ export async function changePasswordAction(
       .from("profiles")
       .update({ must_change_password: false })
       .eq("id", user.id)
-      .select("role, must_change_password")
+      .select(PROFILE_SELECT)
       .maybeSingle();
+    const profile = parseProfileRecord(updated);
 
-    if (profileError || !updated || updated.must_change_password) {
+    if (profileError || !profile || profile.must_change_password) {
       console.error("[changePasswordAction] profile", { profileError, updated });
       return { ok: false, error: "更新帳號狀態失敗" };
     }
 
+    await rememberProfile(profile);
     revalidatePath("/", "layout");
-    redirect(updated.role === "employer" ? "/employer" : "/coach");
+    redirect(homePath(profile));
   } catch (error) {
     if (isNextRedirect(error)) {
       throw error;

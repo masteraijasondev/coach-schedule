@@ -1,9 +1,16 @@
-import { cache } from "react";
+import { PROFILE_HEADER, PROFILE_SELECT, parseProfileRecord, readProfileHeader } from "@/lib/session-profile";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 export const requireProfile = cache(async (): Promise<Profile> => {
+  const fromMiddleware = readProfileHeader((await headers()).get(PROFILE_HEADER));
+  if (fromMiddleware) {
+    return fromMiddleware;
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,17 +20,18 @@ export const requireProfile = cache(async (): Promise<Profile> => {
     redirect("/login");
   }
 
-  const { data: profile, error } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, must_change_password, created_at")
+    .select(PROFILE_SELECT)
     .eq("id", user.id)
     .single();
+  const profile = parseProfileRecord(data);
 
   if (error || !profile) {
     redirect("/login");
   }
 
-  return profile as Profile;
+  return profile;
 });
 
 export async function requireEmployer(): Promise<Profile> {
