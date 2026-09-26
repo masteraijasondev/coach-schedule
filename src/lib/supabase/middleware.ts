@@ -8,8 +8,8 @@ function isStaleRefreshToken(error: { code?: string; message?: string } | null) 
   return (
     error.code === "refresh_token_not_found" ||
     error.code === "refresh_token_already_used" ||
-    error.message.includes("Refresh Token Not Found") ||
-    error.message.includes("Invalid Refresh Token")
+    error.message?.includes("Refresh Token Not Found") ||
+    error.message?.includes("Invalid Refresh Token")
   );
 }
 
