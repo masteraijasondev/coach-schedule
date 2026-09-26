@@ -30,6 +30,7 @@ import {
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import {
+  appendStudentNames,
   calendarAssignmentLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
@@ -67,6 +68,7 @@ export type CoachWeekLesson = {
   status?: string;
   lesson_type_id?: string;
   student_id?: string;
+  student_names?: string[];
 };
 
 export type StaffWorkTypeOption = {
@@ -504,7 +506,12 @@ export function CoachWeekCalendar({
                       >
                         <summary className="cursor-pointer list-none">
                           <p className="font-medium tabular-nums">{timeLabel}</p>
-                          <p>{calendarAssignmentLabel("completed")} 修改</p>
+                          <p>
+                            {appendStudentNames(
+                              `${calendarAssignmentLabel("completed")} 修改`,
+                              segment.lesson.student_names,
+                            )}
+                          </p>
                         </summary>
                         <div className="min-w-0 border-t border-sky-100 bg-white p-2 text-stone-900">
                           <LessonCheckInForm
@@ -518,6 +525,7 @@ export function CoachWeekCalendar({
                                 endMinute: lessonWindow.endMinute,
                               },
                             ]}
+                            initialStudentNames={segment.lesson.student_names}
                             initialLessonTypeId={segment.lesson.lesson_type_id}
                             workTypes={workTypes}
                             staffKind={staffKind}

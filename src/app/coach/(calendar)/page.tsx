@@ -12,7 +12,7 @@ import {
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
-import { nestedStudentId } from "@/lib/format";
+import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -50,7 +50,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   ] = await Promise.all([
       supabase
         .from("lessons")
-        .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id)")
+        .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id, students(name))")
         .eq("coach_id", coach.id)
         .neq("status", "cancelled")
         .gte("starts_at", start)
@@ -110,6 +110,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         status: lesson.status,
         lesson_type_id: lesson.lesson_type_id,
         student_id: nestedStudentId(lesson),
+        student_names: nestedStudentNames(lesson),
       }))}
       availabilities={availabilities ?? []}
       leaves={leaves ?? []}

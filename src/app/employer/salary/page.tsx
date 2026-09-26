@@ -66,7 +66,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           >
             上期
           </Link>
-          <p className="text-lg font-semibold">{formatMoney(grandTotal)}</p>
+          <p className="text-lg font-semibold">本結算期總薪資：{formatMoney(grandTotal)}</p>
           <Link
             href={`/employer/salary?month=${next}`}
             className="text-sm text-stone-600 underline"
@@ -108,7 +108,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
                     {lines.map((line) => (
                       <li
                         key={line.typeId}
-                        className="flex justify-between gap-3 pl-3 text-sm text-stone-600"
+                        className="flex justify-between gap-3 text-sm text-stone-600"
                       >
                         <span>{line.name}</span>
                         <span>{formatMoney(line.amount)}</span>

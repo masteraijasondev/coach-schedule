@@ -34,6 +34,7 @@ import {
 } from "@/lib/calendar-filter";
 import { employerCalendarHref, employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import {
+  appendStudentNames,
   calendarAssignmentLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
@@ -247,9 +248,15 @@ export function EmployerMonthWorkspace({
       }
       list.push({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        label: `${coachName} ${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+        label: appendStudentNames(
+          `${coachName} ${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+          variant === "confirmed" ? segment.lesson?.student_names : undefined,
+        ),
         coachName,
-        timeLabel: `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+        timeLabel: appendStudentNames(
+          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+          variant === "confirmed" ? segment.lesson?.student_names : undefined,
+        ),
         variant,
       });
     }
@@ -403,6 +410,7 @@ export function EmployerMonthWorkspace({
             endMinute: lessonWindow.endMinute,
           },
         ]}
+        initialStudentNames={lesson.student_names}
         initialLessonTypeId={lesson.lesson_type_id}
         workTypes={coachWorkTypes}
         staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
@@ -511,11 +519,14 @@ export function EmployerMonthWorkspace({
             key: `${slot.id}-${segment.startMinute}-${segment.endMinute}`,
             start: segment.startMinute,
             tone: variant,
-            label: `${timeLabel} ${
-              overlap.status === "assigned"
-                ? calendarAssignmentLabel("assigned")
-                : calendarAssignmentLabel("completed")
-            }${typeMap.get(overlap.lesson_type_id) ? ` · ${typeMap.get(overlap.lesson_type_id)}` : ""}`,
+            label: appendStudentNames(
+              `${timeLabel} ${
+                overlap.status === "assigned"
+                  ? calendarAssignmentLabel("assigned")
+                  : calendarAssignmentLabel("completed")
+              }${typeMap.get(overlap.lesson_type_id) ? ` · ${typeMap.get(overlap.lesson_type_id)}` : ""}`,
+              overlap.status === "completed" ? overlap.student_names : undefined,
+            ),
             body: lessonBody(overlap, slot.start, slot.end),
           });
           continue;
@@ -562,11 +573,14 @@ export function EmployerMonthWorkspace({
       key: lesson.id,
       start: window.startMinute,
       tone: pending ? "pending" : "confirmed",
-      label: `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${
-        pending
-          ? calendarAssignmentLabel("assigned")
-          : calendarAssignmentLabel("completed")
-      }`,
+      label: appendStudentNames(
+        `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${
+          pending
+            ? calendarAssignmentLabel("assigned")
+            : calendarAssignmentLabel("completed")
+        }`,
+        pending ? undefined : lesson.student_names,
+      ),
       body: lessonBody(lesson, window.startMinute, window.endMinute),
     });
   }

@@ -677,7 +677,7 @@ async function confirmLessonPeriodsForStaff(
         return { ok: false, error: "請選擇教了哪位學生" };
       }
       const ratio = Number(staffProfile.pay_ratio);
-      if (!Number.isFinite(ratio) || ratio < 0) {
+      if (!Number.isFinite(ratio) || ratio <= 0) {
         return { ok: false, error: "尚未設定 Coach 分成比例" };
       }
       let namedRows: { id: string; name: string }[] = [];

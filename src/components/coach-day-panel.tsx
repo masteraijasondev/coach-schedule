@@ -27,6 +27,7 @@ import {
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import {
+  appendStudentNames,
   calendarAssignmentLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
@@ -45,6 +46,7 @@ export type CoachDayLesson = {
   status: LessonStatus;
   lesson_type_id?: string;
   student_id?: string;
+  student_names?: string[];
 };
 
 export type StaffWorkTypeOption = {
@@ -301,7 +303,10 @@ export function CoachDayPanel({
                 return (
                   <StaffShiftChip
                     key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                    label={`${timeLabel} ${calendarAssignmentLabel("completed")}`}
+                    label={appendStudentNames(
+                      `${timeLabel} ${calendarAssignmentLabel("completed")}`,
+                      segment.lesson?.student_names,
+                    )}
                     tone="confirmed"
                   >
                     {segment.lesson && lessonWindow ? (
@@ -317,6 +322,7 @@ export function CoachDayPanel({
                               endMinute: lessonWindow.endMinute,
                             },
                           ]}
+                          initialStudentNames={segment.lesson.student_names}
                           initialLessonTypeId={segment.lesson.lesson_type_id}
                           workTypes={workTypes}
                           staffKind={staffKind}

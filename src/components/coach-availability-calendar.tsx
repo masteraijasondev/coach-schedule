@@ -5,7 +5,7 @@ import {
   parseAvailabilityWeekParam,
   type CalendarView,
 } from "@/lib/calendar";
-import { nestedStudentId } from "@/lib/format";
+import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export async function CoachAvailabilityCalendar({
@@ -50,7 +50,7 @@ export async function CoachAvailabilityCalendar({
       .lte("leave_date", weekEnd),
     supabase
       .from("lessons")
-      .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id)")
+      .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id, students(name))")
       .eq("coach_id", coachId)
       .in("status", ["assigned", "completed"])
       .gte("starts_at", weekStartIso)
@@ -103,6 +103,7 @@ export async function CoachAvailabilityCalendar({
         status: lesson.status,
         lesson_type_id: lesson.lesson_type_id,
         student_id: nestedStudentId(lesson),
+        student_names: nestedStudentNames(lesson),
       }))}
       workTypes={workTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}

@@ -60,6 +60,7 @@ function LessonCheckInFields({
   windowStart,
   windowEnd,
   initialPeriods = [],
+  initialStudentNames = [],
   submitLabel = "確認簽到",
   workTypes,
   initialLessonTypeId,
@@ -72,6 +73,7 @@ function LessonCheckInFields({
   windowStart: number;
   windowEnd: number;
   initialPeriods?: CheckInPeriod[];
+  initialStudentNames?: string[];
   submitLabel?: string;
   workTypes: { id: string; name: string }[];
   initialLessonTypeId?: string;
@@ -102,12 +104,14 @@ function LessonCheckInFields({
       ? initialLessonTypeId ?? ""
       : workTypes[0]?.id ?? "",
   );
-  const [selectedNames, setSelectedNames] = useState<string[]>([]);
+  const [selectedNames, setSelectedNames] = useState<string[]>(initialStudentNames);
   const [studentQuery, setStudentQuery] = useState("");
   const [searchNames, setSearchNames] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const registered = initialPeriods.length > 0;
+  const [editing, setEditing] = useState(!registered);
   const payload = useMemo(() => JSON.stringify(periods), [periods]);
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
@@ -207,22 +211,56 @@ function LessonCheckInFields({
     );
   }
 
+  function startingLessonTypeId() {
+    return workTypes.some((type) => type.id === initialLessonTypeId)
+      ? initialLessonTypeId ?? ""
+      : workTypes[0]?.id ?? "";
+  }
+
+  function cancelEdit() {
+    setDraftStart(initialStart);
+    setDraftEnd(defaultEnd(initialStart, pastEnd ?? windowEnd));
+    setPeriods(initialPeriods);
+    setLessonTypeId(startingLessonTypeId());
+    setSelectedNames(initialStudentNames);
+    setStudentQuery("");
+    setSearchNames([]);
+    setSearching(false);
+    setSearchError(null);
+    setAddError(null);
+    setEditing(false);
+  }
+
+  if (registered && !editing) {
+    return (
+      <button
+        type="button"
+        className="min-h-11 w-full cursor-pointer rounded-md border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800"
+        onClick={() => setEditing(true)}
+      >
+        修改
+      </button>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      <p className="text-[10px] leading-snug text-amber-800">
-        實際上下班可以早過或遲過派更，以 30 分鐘為單位。只可加入已經結束的時間；未加入的時間不計入薪資。
+      <p className="text-[12px] leading-snug text-amber-800">
+        實際上下班可以早或遲於派更，以 30 分鐘為單位。只可簽到已經結束的時間；未完成簽到時段不計入薪資。
       </p>
       {workTypes.length === 0 ? (
         <p className="text-sm text-amber-800">尚未獲分配工作類型，請聯絡公司。</p>
       ) : (
         <label className="block space-y-1 text-sm">
-          <span className="text-stone-700">實際工作</span>
           <select
             required
             value={lessonTypeId}
             onChange={(event) => setLessonTypeId(event.target.value)}
             className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
           >
+            <option value="" disabled>
+              請選擇實際工作類型
+            </option>
             {workTypes.map((type) => (
               <option key={type.id} value={type.id}>
                 {type.name}
@@ -236,8 +274,8 @@ function LessonCheckInFields({
           <label className="block space-y-1">
             <span className="text-stone-700">
               {sessionKind === "group"
-                ? "學生（可揀多於一位，輸入姓名搜尋 Airtable）"
-                : "學生（輸入姓名搜尋 Airtable）"}
+                ? "學生（可多於一位學生）"
+                : "學生"}
             </span>
             <input
               value={studentQuery}
@@ -272,7 +310,7 @@ function LessonCheckInFields({
             ))}
           </div>
           {selectedNames.length > 0 ? (
-            <p className="text-xs text-stone-600">已記錄：{selectedNames.join("、")}</p>
+            <p className="text-xs text-stone-600">學生：{selectedNames.join("、")}</p>
           ) : null}
         </div>
       ) : null}
@@ -290,7 +328,7 @@ function LessonCheckInFields({
       />
       <button
         type="button"
-        className="min-h-11 w-full cursor-pointer rounded-md border border-amber-300 bg-white px-2 py-1 text-xs text-amber-950"
+        className="min-h-11 w-full cursor-pointer rounded-md border border-amber-300 bg-white px-2 py-1 text-sm text-amber-950"
         onClick={addPeriod}
       >
         加入此時段
@@ -336,6 +374,7 @@ function LessonCheckInFields({
         action={action}
         className="space-y-2"
         onSuccess={() => {
+          setEditing(false);
           router.refresh();
         }}
       >
@@ -343,15 +382,26 @@ function LessonCheckInFields({
         <input type="hidden" name="periods" value={payload} />
         <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
         <input type="hidden" name="student_names" value={studentNamesPayload} />
-        <SubmitButton
-          disabled={
-            periods.length === 0 ||
-            workTypes.length === 0 ||
-            (asksStudent && selectedNames.length === 0)
-          }
-        >
-          {submitLabel}
-        </SubmitButton>
+        <div className="flex gap-2">
+          {registered ? (
+            <button
+              type="button"
+              className="min-h-11 flex-1 cursor-pointer rounded-md border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800"
+              onClick={cancelEdit}
+            >
+              取消
+            </button>
+          ) : null}
+          <SubmitButton
+            disabled={
+              periods.length === 0 ||
+              workTypes.length === 0 ||
+              (asksStudent && selectedNames.length === 0)
+            }
+          >
+            {submitLabel}
+          </SubmitButton>
+        </div>
       </ActionForm>
     </div>
   );

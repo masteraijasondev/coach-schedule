@@ -67,7 +67,7 @@ export function AppHeader({
         id="app-nav-menu"
         className={`${
           open ? "flex" : "hidden"
-        } mx-auto max-w-6xl flex-col gap-1 border-t border-stone-100 px-4 py-2 md:flex md:flex-row md:flex-wrap md:border-t-0 md:pb-3 md:pt-0`}
+        } mx-auto max-w-6xl flex-col gap-1 border-t border-stone-100 px-4 py-2 md:flex md:flex-row md:flex-wrap md:border-t-0 md:pb-3 md:pt-0 md:gap-5`}
       >
         {items.map((item) => {
           const active = isActive(pathname, item);
@@ -76,9 +76,9 @@ export function AppHeader({
               key={item.href}
               href={item.href}
               className={[
-                "flex min-h-11 w-full items-center rounded-md px-3 py-2.5 text-base md:min-h-0 md:w-auto md:py-1.5 md:text-sm",
+                "flex min-h-11 w-full items-center rounded-md px-3 py-2.5 text-lg font-semibold md:w-auto",
                 active
-                  ? "bg-stone-900 font-medium text-white"
+                  ? "bg-stone-900 font-bold text-white"
                   : "text-stone-700 hover:bg-stone-100",
               ].join(" ")}
             >

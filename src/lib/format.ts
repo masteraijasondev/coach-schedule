@@ -15,6 +15,30 @@ export function nestedStudentId(related: {
   return link.student_id;
 }
 
+export function nestedStudentNames(related: {
+  lesson_students:
+    | { students: { name: string } | { name: string }[] | null }
+    | { students: { name: string } | { name: string }[] | null }[]
+    | null;
+}): string[] {
+  const links = related.lesson_students;
+  if (!links) {
+    return [];
+  }
+  const list = Array.isArray(links) ? links : [links];
+  return list
+    .map((link) => nestedStudentName(link))
+    .filter((name): name is string => name != null && name.trim() !== "");
+}
+
+export function appendStudentNames(label: string, names: string[] | undefined): string {
+  const text = (names ?? []).filter((name) => name.trim() !== "").join("、");
+  if (!text) {
+    return label;
+  }
+  return `${label} · ${text}`;
+}
+
 export function nestedStudentName(related: {
   students: { name: string } | { name: string }[] | null;
 }): string | null {

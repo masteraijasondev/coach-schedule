@@ -16,7 +16,7 @@ import {
 } from "@/lib/calendar-history";
 import { coachCalendarHref } from "@/lib/coach-href";
 import { TIMEZONE } from "@/lib/constants";
-import { formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
+import { appendStudentNames, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -27,6 +27,7 @@ export type CoachMonthLesson = {
   status: LessonStatus;
   lesson_type_id?: string;
   student_id?: string;
+  student_names?: string[];
 };
 
 export type CoachMonthSlot = {
@@ -146,9 +147,15 @@ export function CoachMonthWorkspace({
       const confirmed = segment.lesson?.status === "completed";
       list.push({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        label: `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+        label: appendStudentNames(
+          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+          confirmed ? segment.lesson?.student_names : undefined,
+        ),
         coachName,
-        timeLabel: `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+        timeLabel: appendStudentNames(
+          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
+          confirmed ? segment.lesson?.student_names : undefined,
+        ),
         variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
       });
     }

@@ -4,7 +4,7 @@ import Link from "next/link";
 export function EmployerSettingsBackLink() {
   return (
     <Link href="/employer/settings" className={buttonTone.secondary}>
-      ← 設定
+      返回設定
     </Link>
   );
 }

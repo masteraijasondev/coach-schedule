@@ -58,7 +58,7 @@ export function EmployerAssignForm({
         {formatAvailabilityTime(slotEndMinute)}
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        派更與暫無需要可各自選擇時段。例如可返工為 12:00–18:00，可派 12:30–16:30，並將 16:30–18:00 標為暫無需要。
+        派更與暫無需要可各自選擇時段。
       </p>
       <div className="mt-3 grid gap-4">
         <ActionForm
@@ -128,7 +128,7 @@ export function EmployerAssignForm({
         >
           <p className="text-sm font-medium text-stone-800">暫無需要時段</p>
           <p className="text-sm text-stone-500">
-            只會釋放下面選中的時間，其餘可返工維持待派更。
+            只會釋放下面選中的時間，其餘可返工時間維持待派更。
           </p>
           <input type="hidden" name="coach_id" value={coachId} />
           <input type="hidden" name="date" value={date} />
@@ -157,7 +157,7 @@ export function EmployerAssignForm({
             className="w-full min-w-0 border border-stone-400 bg-stone-200 text-stone-800 hover:bg-stone-300"
           >
             {releasingAll
-              ? `整段暫無需要（${formatAvailabilityTime(releaseStart)}–${formatAvailabilityTime(releaseEnd)}）`
+              ? `整段暫無需要`
               : `暫無需要（${formatAvailabilityTime(releaseStart)}–${formatAvailabilityTime(releaseEnd)}）`}
           </SubmitButton>
         </ActionForm>
