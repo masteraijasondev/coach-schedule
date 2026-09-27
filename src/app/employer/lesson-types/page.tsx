@@ -50,7 +50,7 @@ export default async function LessonTypesPage() {
               { value: "per_hour", label: PAY_MODE_LABELS.per_hour },
             ]}
           />
-          <SubmitButton>新增</SubmitButton>
+          <SubmitButton>新增課堂類型</SubmitButton>
         </ActionForm>
       </Panel>
 

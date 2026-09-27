@@ -19,7 +19,7 @@ import type { ReactNode } from "react";
 const STATUS_DOT: Record<CalendarStatus, string> = {
   available: "bg-amber-400",
   assigned: "bg-emerald-400",
-  leave: "bg-rose-400",
+  leave: "bg-stone-500",
   checked_in: "bg-sky-500",
   released: "bg-stone-400",
 };

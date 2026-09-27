@@ -2,7 +2,8 @@ export const CALENDAR_LEGEND = [
   { className: "bg-amber-400", label: "待公司派更" },
   { className: "bg-emerald-400", label: "已派更，待簽到" },
   { className: "bg-sky-500", label: "已簽到" },
-  { className: "bg-rose-400", label: "放假或 Short Break" },
+  { className: "bg-stone-500", label: "放假或 Short Break" },
+  { className: "bg-red-500", label: "病假" },
   { className: "bg-stone-400", label: "暫無需要" },
 ];
 

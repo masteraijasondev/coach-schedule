@@ -1,6 +1,6 @@
 "use client";
 
-import { buttonTone } from "@/components/button-styles";
+import { buttonLabelClass, buttonTone, type ButtonVariant } from "@/components/button-styles";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useFormStatus } from "react-dom";
 
@@ -14,19 +14,12 @@ export function SubmitButton({
   children: React.ReactNode;
   pendingLabel?: string;
   disabled?: boolean;
-  variant?: "primary" | "danger" | "secondary" | "leave";
+  variant?: ButtonVariant;
   className?: string;
 }) {
   const { pending } = useFormStatus();
   const isDisabled = pending || disabled;
-  const tone =
-    variant === "danger"
-      ? buttonTone.danger
-      : variant === "leave"
-        ? buttonTone.leave
-        : variant === "secondary"
-          ? buttonTone.secondary
-          : buttonTone.primary;
+  const tone = buttonTone[variant];
 
   return (
     <button
@@ -40,7 +33,7 @@ export function SubmitButton({
           <LoadingSpinner
             size="sm"
             label={pendingLabel}
-            className={variant === "secondary" ? "text-stone-800" : "text-white"}
+            className={buttonLabelClass(variant)}
           />
           <span>{pendingLabel}</span>
         </>

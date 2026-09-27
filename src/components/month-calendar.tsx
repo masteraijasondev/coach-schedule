@@ -26,13 +26,13 @@ type CalendarAvailability = {
   label: string;
   coachName: string;
   timeLabel?: string;
-  variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
+  variant?: "slot" | "leave" | "sick" | "pending" | "confirmed" | "released";
 };
 
 type EventBar = {
   id: string;
   text: string;
-  variant: "pending" | "confirmed" | "slot" | "leave" | "released";
+  variant: "pending" | "confirmed" | "slot" | "leave" | "sick" | "released";
   sortKey: string;
 };
 
@@ -40,7 +40,8 @@ const VARIANT_CHIP_CLASS: Record<EventBar["variant"], string> = {
   pending: "bg-emerald-100 text-emerald-900",
   confirmed: "bg-sky-100 text-sky-900",
   slot: "bg-amber-100 text-amber-900",
-  leave: "bg-rose-100 text-rose-800",
+  leave: "bg-stone-300 text-stone-800",
+  sick: "bg-red-100 text-red-800",
   released: "bg-stone-200 text-stone-600",
 };
 
@@ -50,6 +51,7 @@ function variantOf(
 ): EventBar["variant"] {
   if (
     variant === "leave" ||
+    variant === "sick" ||
     variant === "pending" ||
     variant === "confirmed" ||
     variant === "released"
@@ -78,18 +80,16 @@ function barFromAvailability(
 ): EventBar {
   const variant = variantOf(item.variant);
   const name = displayName(item.coachName, showNames);
-  const text =
-    variant === "leave"
-      ? item.label
-      : [item.timeLabel, name].filter(Boolean).join(" ");
+  const absence = variant === "leave" || variant === "sick";
+  const text = absence
+    ? item.label
+    : [item.timeLabel, name].filter(Boolean).join(" ");
   return {
     id: item.id,
     text,
     variant,
     sortKey:
-      variant === "leave" && !item.timeLabel
-        ? "0"
-        : `1-${item.timeLabel ?? item.label}`,
+      absence && !item.timeLabel ? "0" : `1-${item.timeLabel ?? item.label}`,
   };
 }
 

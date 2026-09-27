@@ -196,7 +196,7 @@ export default async function CoachesPage() {
                       defaultValue={ratioValue}
                     />
                   </div>
-                  <SubmitButton>更新</SubmitButton>
+                  <SubmitButton>更新員工資料</SubmitButton>
                 </ActionForm>
                 
                 <ActionForm
@@ -261,7 +261,7 @@ export default async function CoachesPage() {
                           { value: "no", label: "否" },
                         ]}
                       />
-                      <SubmitButton>重設密碼</SubmitButton>
+                      <SubmitButton variant="secondary">重設密碼</SubmitButton>
                     </ActionForm>
                     <ActionForm
                       action={deleteCoachAction}

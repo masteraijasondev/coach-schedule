@@ -187,7 +187,9 @@ export async function EmployerLessonList({
                     <ServerActionButton
                       action={cancelLessonAction.bind(null, lesson.id)}
                       confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
-                      className="rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-60"
+                      confirmLabel="確定撤銷派更"
+                      confirmVariant="slot"
+                      className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-50 disabled:opacity-60"
                     >
                       撤銷派更
                     </ServerActionButton>
@@ -196,6 +198,8 @@ export async function EmployerLessonList({
                     <ServerActionButton
                       action={undoCheckInAction.bind(null, lesson.id)}
                       confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                      confirmLabel="確定撤銷簽到"
+                      confirmVariant="confirmedQuiet"
                       className="rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 hover:bg-sky-50 disabled:opacity-60"
                     >
                       撤銷簽到

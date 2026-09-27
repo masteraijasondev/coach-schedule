@@ -5,6 +5,7 @@ import { searchAirtableStudentsAction } from "@/actions/students";
 import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
+import { buttonTone } from "@/components/button-styles";
 import { SubmitButton } from "@/components/ui";
 import { useServerNow } from "@/components/use-server-now";
 import {
@@ -40,7 +41,7 @@ export function LessonCheckInForm(
         <p className="text-sm text-amber-800">{error}</p>
         <button
           type="button"
-          className="min-h-10 rounded-lg border border-stone-300 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm"
+          className={buttonTone.secondary}
           onClick={retry}
         >
           再試一次
@@ -328,7 +329,7 @@ function LessonCheckInFields({
       />
       <button
         type="button"
-        className="min-h-11 w-full cursor-pointer rounded-md border border-amber-300 bg-white px-2 py-1 text-sm text-amber-950"
+        className={`${buttonTone.secondary} min-h-11 w-full`}
         onClick={addPeriod}
       >
         加入此時段
@@ -351,7 +352,7 @@ function LessonCheckInFields({
               </span>
               <button
                 type="button"
-                className="min-h-11 cursor-pointer rounded-md px-2 text-red-700"
+                className="min-h-11 cursor-pointer rounded-md px-2 text-stone-600"
                 onClick={() =>
                   setPeriods(
                     periods.filter(
@@ -362,7 +363,7 @@ function LessonCheckInFields({
                   )
                 }
               >
-                刪除
+                移除
               </button>
             </li>
           ))}
@@ -386,13 +387,14 @@ function LessonCheckInFields({
           {registered ? (
             <button
               type="button"
-              className="min-h-11 flex-1 cursor-pointer rounded-md border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800"
+              className={`${buttonTone.secondary} min-h-11 flex-1`}
               onClick={cancelEdit}
             >
               取消
             </button>
           ) : null}
           <SubmitButton
+            variant={registered ? "confirmed" : "checkIn"}
             disabled={
               periods.length === 0 ||
               workTypes.length === 0 ||

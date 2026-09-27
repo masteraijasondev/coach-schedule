@@ -19,6 +19,7 @@ import {
 import { Panel, SubmitButton } from "@/components/ui";
 import {
   availabilitySegments,
+  takeCompletedLessonOnce,
   dayHasLessonOnDate,
   isFullDayLeave,
   lessonDayKey,
@@ -144,6 +145,10 @@ export function CoachDayPanel({
   const fullDayLeave = leaves.some(
     (leave) => leave.leave_date === day && isFullDayLeave(leave),
   );
+  const fullDaySick = leaves.some(
+    (leave) =>
+      leave.leave_date === day && leave.kind === "sick" && isFullDayLeave(leave),
+  );
   const shortBreaks = leaves.filter(
     (leave) => leave.leave_date === day && !isFullDayLeave(leave),
   );
@@ -151,6 +156,7 @@ export function CoachDayPanel({
   const suggestedStart = defaultStartMinute(day, today, now);
   const hasAssigned = dayHasLessonOnDate(day, shiftLessons);
   const canReport = suggestedStart != null && !fullDayLeave;
+  const seenCompleted = new Set<string>();
 
   function refresh() {
     router.refresh();
@@ -163,21 +169,17 @@ export function CoachDayPanel({
       </p>
       {fullDayLeave ? (
         <div className="mt-3 flex flex-col gap-2">
-          <div className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
-            {leaves.some((leave) => leave.leave_date === day && leave.kind === "sick" && isFullDayLeave(leave))
-              ? "全日病假"
-              : "全日放假"}
+          <div
+            className={`rounded-2xl px-4 py-3 text-sm font-medium ${
+              fullDaySick
+                ? "bg-red-50 text-red-900"
+                : "bg-stone-200 text-stone-900"
+            }`}
+          >
+            {fullDaySick ? "全日病假" : "全日放假"}
           </div>
           {day >= today ? (
-            <CancelFullDayLeaveButton
-              date={day}
-              sick={leaves.some(
-                (leave) =>
-                  leave.leave_date === day &&
-                  leave.kind === "sick" &&
-                  isFullDayLeave(leave),
-              )}
-            />
+            <CancelFullDayLeaveButton date={day} sick={fullDaySick} />
           ) : null}
         </div>
       ) : (
@@ -198,7 +200,7 @@ export function CoachDayPanel({
                 label={
                   leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`
                 }
-                tone="leave"
+                tone={leave.kind === "sick" ? "sick" : "leave"}
               >
                 {editable && leave.kind !== "sick" ? (
                   <div className="flex flex-col gap-2">
@@ -214,15 +216,17 @@ export function CoachDayPanel({
                         defaultEndMinute={leave.end_minute ?? 0}
                       />
                       <SubmitButton className="w-full min-w-0">
-                        儲存
+                        儲存修改
                       </SubmitButton>
                     </ActionForm>
                     <ServerActionButton
                       action={cancelLeaveByIdAction.bind(null, leave.id)}
                       confirmMessage="確定撤銷此時段放假？"
-                      className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
+                      confirmLabel="確定撤銷放假"
+                      confirmVariant="leaveQuiet"
+                      className="min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
                     >
-                      撤銷
+                      撤銷放假
                     </ServerActionButton>
                   </div>
                 ) : day >= today && leave.id ? (
@@ -233,9 +237,17 @@ export function CoachDayPanel({
                         ? "確定撤銷此時段病假？"
                         : "確定撤銷此時段放假？"
                     }
-                    className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
+                    confirmLabel={
+                      leave.kind === "sick" ? "確定撤銷病假" : "確定撤銷放假"
+                    }
+                    confirmVariant={leave.kind === "sick" ? "sickQuiet" : "leaveQuiet"}
+                    className={
+                      leave.kind === "sick"
+                        ? "min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-800 disabled:opacity-60"
+                        : "min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+                    }
                   >
-                    {leave.kind === "sick" ? "撤銷病假" : "撤銷"}
+                    {leave.kind === "sick" ? "撤銷病假" : "撤銷放假"}
                   </ServerActionButton>
                 ) : null}
               </StaffShiftChip>
@@ -265,7 +277,11 @@ export function CoachDayPanel({
               slot.start_minute,
               slot.end_minute,
               shiftLessons,
-            ).map((segment) => {
+            )
+              .filter((segment) =>
+                takeCompletedLessonOnce(segment, seenCompleted),
+              )
+              .map((segment) => {
               const timeLabel = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
               const pending = segment.lesson?.status === "assigned";
               const confirmed = segment.lesson?.status === "completed";
@@ -331,6 +347,8 @@ export function CoachDayPanel({
                         <ServerActionButton
                           action={undoCheckInAction.bind(null, segment.lesson.id)}
                           confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                          confirmLabel="確定撤銷簽到"
+                          confirmVariant="confirmedQuiet"
                           className="min-h-11 rounded-md border border-sky-200 px-2 py-1 text-xs text-sky-900 disabled:opacity-60"
                         >
                           撤銷簽到
@@ -368,12 +386,14 @@ export function CoachDayPanel({
                           defaultEndMinute={slot.end_minute}
                         />
                         <SubmitButton className="w-full min-w-0">
-                          儲存
+                          儲存可返工時間
                         </SubmitButton>
                       </ActionForm>
                       <ServerActionButton
                         action={deleteAvailabilityAction.bind(null, slot.id)}
                         confirmMessage="確定刪除此可返工時段？"
+                        confirmLabel="確定刪除"
+                        confirmVariant="danger"
                         className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
                       >
                         刪除

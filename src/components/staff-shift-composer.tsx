@@ -33,7 +33,8 @@ const CHIP_TONE = {
   slot: "bg-amber-100 text-amber-950",
   pending: "bg-emerald-50 text-emerald-950",
   confirmed: "bg-sky-50 text-sky-950",
-  leave: "bg-rose-50 text-rose-900",
+  leave: "bg-stone-200 text-stone-800",
+  sick: "bg-red-50 text-red-900",
   released: "bg-stone-100 text-stone-500",
   staff: "border border-stone-200 bg-white text-stone-900",
 } as const;
@@ -136,7 +137,7 @@ export function StaffShiftComposer({
                   MINUTES_PER_DAY,
                 )}
               />
-              <SubmitButton className="w-full min-w-0">新增</SubmitButton>
+              <SubmitButton className="w-full min-w-0">新增可返工時間</SubmitButton>
             </ActionForm>
           </div>
           <div className="mt-3">

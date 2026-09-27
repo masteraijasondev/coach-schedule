@@ -18,6 +18,7 @@ import { Panel, SubmitButton } from "@/components/ui";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import {
   availabilitySegments,
+  takeCompletedLessonOnce,
   availabilityWeekDays,
   availabilityWeekStart,
   dayHasLessonOnDate,
@@ -285,7 +286,13 @@ export function CoachWeekCalendar({
                 if (onLeave) {
                   return (
                     <div className="space-y-1">
-                      <p className="rounded-sm bg-rose-100 px-1 py-1 text-center text-xs font-medium text-rose-900">
+                      <p
+                        className={`rounded-sm px-1 py-1 text-center text-xs font-medium ${
+                          sickFullDays.has(date)
+                            ? "bg-red-100 text-red-900"
+                            : "bg-stone-100 text-stone-900"
+                        }`}
+                      >
                         {sickFullDays.has(date) ? "全日病假" : "放假"}
                       </p>
                       {date >= today ? (
@@ -326,13 +333,17 @@ export function CoachWeekCalendar({
                     );
                     const shell =
                       "absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs leading-tight";
+                    const blockTone =
+                      leave.kind === "sick"
+                        ? "border-red-300 bg-red-100 text-red-950"
+                        : "border-stone-300 bg-stone-100 text-stone-950";
                     const started =
                       availabilityStartsAt(date, start) <= now;
                     if (!leave.id || date < today) {
                       return (
                         <div
                           key={leave.id ?? `${date}-${start}`}
-                          className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                          className={`${shell} ${blockTone}`}
                           style={{ top, height }}
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
@@ -344,7 +355,7 @@ export function CoachWeekCalendar({
                       return (
                         <div
                           key={leave.id}
-                          className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                          className={`${shell} ${blockTone}`}
                           style={{ top, height }}
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
@@ -356,9 +367,19 @@ export function CoachWeekCalendar({
                                 ? "確定撤銷此時段病假？"
                                 : "確定撤銷此時段放假？"
                             }
-                            className="mt-1 min-h-8 w-full rounded-sm border border-rose-300 bg-white px-1 py-0.5 text-[10px] text-rose-900 disabled:opacity-60"
+                            confirmLabel={
+                              leave.kind === "sick" ? "確定撤銷病假" : "確定撤銷放假"
+                            }
+                            confirmVariant={
+                              leave.kind === "sick" ? "sickQuiet" : "leaveQuiet"
+                            }
+                            className={
+                              leave.kind === "sick"
+                                ? "mt-1 min-h-8 w-full rounded-sm border border-red-300 bg-white px-1 py-0.5 text-[10px] text-red-900 disabled:opacity-60"
+                                : "mt-1 min-h-8 w-full rounded-sm border border-stone-300 bg-white px-1 py-0.5 text-[10px] text-stone-900 disabled:opacity-60"
+                            }
                           >
-                            {leave.kind === "sick" ? "撤銷病假" : "撤銷"}
+                            {leave.kind === "sick" ? "撤銷病假" : "撤銷放假"}
                           </ServerActionButton>
                         </div>
                       );
@@ -366,13 +387,13 @@ export function CoachWeekCalendar({
                     return (
                       <details
                         key={leave.id}
-                        className={`${shell} border-rose-300 bg-rose-100 text-rose-950`}
+                        className={`${shell} border-stone-300 bg-stone-100 text-stone-950`}
                         style={{ top, height }}
                       >
                         <summary className="cursor-pointer list-none font-medium tabular-nums">
                           {leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`}
                         </summary>
-                        <div className="min-w-0 space-y-2 border-t border-rose-200 bg-white p-2 text-stone-900">
+                        <div className="min-w-0 space-y-2 border-t border-stone-200 bg-white p-2 text-stone-900">
                           <ActionForm
                             action={saveShortBreakAction}
                             className="space-y-2"
@@ -391,20 +412,23 @@ export function CoachWeekCalendar({
                               defaultStartMinute={start}
                               defaultEndMinute={end}
                             />
-                            <SubmitButton>儲存</SubmitButton>
+                            <SubmitButton>儲存修改</SubmitButton>
                           </ActionForm>
                           <ServerActionButton
                             action={cancelLeaveByIdAction.bind(null, leave.id)}
                             confirmMessage="確定撤銷此時段放假？可返工時間會恢復。"
-                            className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
+                            confirmLabel="確定撤銷放假"
+                            confirmVariant="leaveQuiet"
+                            className="min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
                           >
-                            撤銷
+                            撤銷放假
                           </ServerActionButton>
                         </div>
                       </details>
                     );
                   },
                 );
+                const seenCompleted = new Set<string>();
                 const availabilityBlocks = (byDate.get(date) ?? []).flatMap(
                   (availability) => {
                   if (availability.released) {
@@ -447,7 +471,11 @@ export function CoachWeekCalendar({
                     availability.start_minute,
                     availability.end_minute,
                     assignedLessons,
-                  ).map((segment) => {
+                  )
+                    .filter((segment) =>
+                      takeCompletedLessonOnce(segment, seenCompleted),
+                    )
+                    .map((segment) => {
                   const pending = segment.lesson?.status === "assigned";
                   const confirmed = segment.lesson?.status === "completed";
                   const timeLabel = `${formatAvailabilityTime(
@@ -534,6 +562,8 @@ export function CoachWeekCalendar({
                           <ServerActionButton
                             action={undoCheckInAction.bind(null, segment.lesson.id)}
                             confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                            confirmLabel="確定撤銷簽到"
+                            confirmVariant="confirmedQuiet"
                             className="mt-2 min-h-11 w-full rounded-md border border-sky-200 px-2 py-1 text-xs text-sky-900 disabled:opacity-60"
                           >
                             撤銷簽到
@@ -588,7 +618,7 @@ export function CoachWeekCalendar({
                             defaultStartMinute={availability.start_minute}
                             defaultEndMinute={availability.end_minute}
                           />
-                          <SubmitButton>儲存</SubmitButton>
+                          <SubmitButton>儲存可返工時間</SubmitButton>
                         </ActionForm>
                         <ServerActionButton
                           action={deleteAvailabilityAction.bind(
@@ -596,6 +626,8 @@ export function CoachWeekCalendar({
                             availability.id,
                           )}
                           confirmMessage="確定刪除此可返工時段？"
+                          confirmLabel="確定刪除"
+                          confirmVariant="danger"
                           className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
                         >
                           刪除

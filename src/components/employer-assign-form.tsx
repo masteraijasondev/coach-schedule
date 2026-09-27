@@ -152,10 +152,7 @@ export function EmployerAssignForm({
               }
             }}
           />
-          <SubmitButton
-            variant="secondary"
-            className="w-full min-w-0 border border-stone-400 bg-stone-200 text-stone-800 hover:bg-stone-300"
-          >
+          <SubmitButton variant="released" className="w-full min-w-0">
             {releasingAll
               ? `整段暫無需要`
               : `暫無需要（${formatAvailabilityTime(releaseStart)}–${formatAvailabilityTime(releaseEnd)}）`}

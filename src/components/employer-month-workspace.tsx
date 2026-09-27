@@ -17,6 +17,7 @@ import { Panel } from "@/components/ui";
 import {
   availabilityWeekStart,
   availabilitySegments,
+  takeCompletedLessonOnce,
   isFullDayLeave,
   lessonDayKey,
   lessonMinutesInHongKong,
@@ -178,7 +179,7 @@ export function EmployerMonthWorkspace({
       label: string;
       coachName: string;
       timeLabel?: string;
-      variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
+      variant?: "slot" | "leave" | "sick" | "pending" | "confirmed" | "released";
     }[]
   >();
   const shiftLessons = lessons.filter(
@@ -200,10 +201,11 @@ export function EmployerMonthWorkspace({
       timeLabel: isFullDayLeave(leave)
         ? undefined
         : `${formatAvailabilityTime(leave.start_minute ?? 0)}–${formatAvailabilityTime(leave.end_minute ?? 0)}`,
-      variant: "leave",
+      variant: leave.kind === "sick" ? "sick" : "leave",
     });
     availabilityByDay.set(leave.leave_date, list);
   }
+  const seenCompletedOnMonth = new Set<string>();
   for (const availability of availabilities) {
     if (!visibleStaff.has(availability.coach_id)) {
       continue;
@@ -237,6 +239,9 @@ export function EmployerMonthWorkspace({
       availability.end_minute,
       shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
     )) {
+      if (!takeCompletedLessonOnce(segment, seenCompletedOnMonth)) {
+        continue;
+      }
       const variant =
         segment.lesson?.status === "assigned"
           ? "pending"
@@ -350,7 +355,7 @@ export function EmployerMonthWorkspace({
     key: string;
     start: number;
     label: string;
-    tone: "slot" | "pending" | "confirmed" | "leave" | "released";
+    tone: "slot" | "pending" | "confirmed" | "leave" | "sick" | "released";
     defaultOpen?: boolean;
     body?: ReactNode;
   };
@@ -380,6 +385,8 @@ export function EmployerMonthWorkspace({
           <ServerActionButton
             action={cancelLessonAction.bind(null, lesson.id)}
             confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
+            confirmLabel="確定撤銷派更"
+            confirmVariant="slot"
             className="min-h-11 rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 disabled:opacity-60"
           >
             撤銷派更
@@ -387,7 +394,9 @@ export function EmployerMonthWorkspace({
           <ServerActionButton
             action={markAssignmentSickLeaveAction.bind(null, lesson.id)}
             confirmMessage="確定將這段派更轉為病假？"
-            className="min-h-11 rounded-md border border-rose-200 px-3 py-1.5 text-sm text-rose-800 disabled:opacity-60"
+            confirmLabel="確定轉為病假"
+            confirmVariant="sick"
+            className="min-h-11 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-800 disabled:opacity-60"
           >
             轉為病假
           </ServerActionButton>
@@ -420,6 +429,8 @@ export function EmployerMonthWorkspace({
       <ServerActionButton
         action={undoCheckInAction.bind(null, lesson.id)}
         confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+        confirmLabel="確定撤銷簽到"
+        confirmVariant="confirmedQuiet"
         className="min-h-11 rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 disabled:opacity-60"
       >
         撤銷簽到
@@ -435,7 +446,7 @@ export function EmployerMonthWorkspace({
     coachChips(leave.coachId, leave.coachName).items.push({
       key: leave.id,
       start,
-      tone: "leave",
+      tone: leave.kind === "sick" ? "sick" : "leave",
       label: fullDay
         ? leave.kind === "sick"
           ? "全日病假"
@@ -448,6 +459,7 @@ export function EmployerMonthWorkspace({
     const coachDayLessons = dayLessonsForSplit.filter(
       (lesson) => lesson.coach_id === group.coachId,
     );
+    const seenCompleted = new Set<string>();
     for (const slot of group.slots) {
       if (slot.released) {
         if (!variantVisible("released", filter.statuses)) {
@@ -461,7 +473,7 @@ export function EmployerMonthWorkspace({
           body: (
             <ServerActionButton
               action={restoreReleasedAvailabilityAction.bind(null, slot.id)}
-              className="min-h-11 rounded-md border border-stone-400 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+              className="min-h-11 rounded-md border border-amber-400 bg-amber-50 px-2 py-1 text-xs text-amber-950 disabled:opacity-60"
             >
               恢復待派更
             </ServerActionButton>
@@ -503,6 +515,9 @@ export function EmployerMonthWorkspace({
         range.end,
         coachDayLessons,
       )) {
+        if (!takeCompletedLessonOnce(segment, seenCompleted)) {
+          continue;
+        }
         const overlap = segment.lesson;
         const variant = overlap
           ? overlap.status === "assigned"
@@ -590,14 +605,21 @@ export function EmployerMonthWorkspace({
       const items = [...group.items].sort(
         (a, b) => a.start - b.start || a.label.localeCompare(b.label, "zh-Hant"),
       );
-      const leaveOnly = items.length > 0 && items.every((item) => item.tone === "leave");
+      const absenceOnly =
+        items.length > 0 &&
+        items.every((item) => item.tone === "leave" || item.tone === "sick");
+      const sickOnly = absenceOnly && items.every((item) => item.tone === "sick");
       return {
         key: coachId,
         start: items[0]?.start ?? 0,
         coachName: group.coachName,
-        tone: leaveOnly ? ("leave" as const) : ("staff" as const),
+        tone: sickOnly ? ("sick" as const) : absenceOnly ? ("leave" as const) : ("staff" as const),
         defaultOpen: items.some((item) => item.defaultOpen),
-        label: leaveOnly ? `${group.coachName} 放假` : group.coachName,
+        label: sickOnly
+          ? `${group.coachName} 病假`
+          : absenceOnly
+            ? `${group.coachName} 放假`
+            : group.coachName,
         items,
       };
     })

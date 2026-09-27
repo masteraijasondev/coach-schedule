@@ -1,6 +1,6 @@
 "use client";
 
-import { buttonTone } from "@/components/button-styles";
+import { buttonTone, type ButtonVariant } from "@/components/button-styles";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -11,6 +11,8 @@ type Props = {
   children: React.ReactNode;
   className?: string;
   confirmMessage?: string;
+  confirmLabel?: string;
+  confirmVariant?: ButtonVariant;
 };
 
 export function ServerActionButton({
@@ -18,6 +20,8 @@ export function ServerActionButton({
   children,
   className,
   confirmMessage,
+  confirmLabel = "確定",
+  confirmVariant = "primary",
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -51,10 +55,10 @@ export function ServerActionButton({
             <button
               type="button"
               disabled={pending}
-              className={buttonTone.primary}
+              className={buttonTone[confirmVariant]}
               onClick={runAction}
             >
-              確定
+              {confirmLabel}
             </button>
             <button
               type="button"

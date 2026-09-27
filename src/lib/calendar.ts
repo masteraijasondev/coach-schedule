@@ -186,7 +186,11 @@ export type AvailabilitySegment<T extends AvailabilitySegmentLesson> = {
   lesson?: T;
 };
 
-/** Split an availability window by overlapping lessons so leftover stays 可返工. */
+/**
+ * Split an availability window by overlapping lessons so leftover stays 可返工.
+ * A completed check-in keeps its real start and end, even when that is outside
+ * this window. The window only loses the minutes the check-in actually covers.
+ */
 export function availabilitySegments<T extends AvailabilitySegmentLesson>(
   date: string,
   startMinute: number,
@@ -196,35 +200,55 @@ export function availabilitySegments<T extends AvailabilitySegmentLesson>(
   const covers = overlappingLessons(date, startMinute, endMinute, lessons)
     .map((lesson) => {
       const range = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+      const occupyStart = Math.max(startMinute, range.startMinute);
+      const occupyEnd = Math.min(endMinute, range.endMinute);
+      const completed = lesson.status === "completed";
       return {
-        start: Math.max(startMinute, range.startMinute),
-        end: Math.min(endMinute, range.endMinute),
+        occupyStart,
+        occupyEnd,
+        showStart: completed ? range.startMinute : occupyStart,
+        showEnd: completed ? range.endMinute : occupyEnd,
         lesson,
       };
     })
-    .filter((cover) => cover.start < cover.end)
-    .sort((a, b) => a.start - b.start || a.end - b.end);
+    .filter((cover) => cover.occupyStart < cover.occupyEnd)
+    .sort((a, b) => a.occupyStart - b.occupyStart || a.occupyEnd - b.occupyEnd);
 
   const segments: AvailabilitySegment<T>[] = [];
   let cursor = startMinute;
   for (const cover of covers) {
-    if (cover.start > cursor) {
-      segments.push({ startMinute: cursor, endMinute: cover.start });
+    if (cover.occupyStart > cursor) {
+      segments.push({ startMinute: cursor, endMinute: cover.occupyStart });
     }
-    const segStart = Math.max(cursor, cover.start);
-    if (cover.end > segStart) {
+    const occupiedFrom = Math.max(cursor, cover.occupyStart);
+    if (cover.occupyEnd > occupiedFrom) {
       segments.push({
-        startMinute: segStart,
-        endMinute: cover.end,
+        startMinute: cover.showStart,
+        endMinute: cover.showEnd,
         lesson: cover.lesson,
       });
-      cursor = cover.end;
+      cursor = cover.occupyEnd;
     }
   }
   if (cursor < endMinute) {
     segments.push({ startMinute: cursor, endMinute });
   }
   return segments;
+}
+
+/** A check-in that crosses two windows should appear once, at its real times. */
+export function takeCompletedLessonOnce<T extends AvailabilitySegmentLesson>(
+  segment: AvailabilitySegment<T>,
+  seenLessonIds: Set<string>,
+): boolean {
+  if (segment.lesson?.status !== "completed") {
+    return true;
+  }
+  if (seenLessonIds.has(segment.lesson.id)) {
+    return false;
+  }
+  seenLessonIds.add(segment.lesson.id);
+  return true;
 }
 
 export function availabilityOverlapsLessons(

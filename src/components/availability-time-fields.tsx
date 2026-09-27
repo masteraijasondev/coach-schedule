@@ -16,16 +16,28 @@ const SELECT_CHEVRON = {
   default:
     "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2378716c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
   leave:
-    "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%239f1239' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+    "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%2344403c' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+  sick:
+    "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 16 16'%3E%3Cpath stroke='%23991b1b' stroke-linecap='round' stroke-width='1.5' d='m4 6 4 4 4-4'/%3E%3C/svg%3E\")]",
+} as const;
+
+const FIELD_CLASS = {
+  default: "border-stone-300 text-stone-900 focus:border-stone-500",
+  leave: "border-stone-300 text-stone-900 focus:border-stone-500",
+  sick: "border-red-200 text-red-950 focus:border-red-400",
+} as const;
+
+const LABEL_CLASS = {
+  default: "text-stone-600",
+  leave: "text-stone-700",
+  sick: "text-red-800",
 } as const;
 
 function selectClass(tone: keyof typeof SELECT_CHEVRON, compact: boolean) {
   return [
     "w-full appearance-none rounded-md border bg-white bg-[length:0.75rem] bg-[right_0.35rem_center] bg-no-repeat outline-none tabular-nums",
     compact ? "min-w-0 py-1 pl-1 pr-5 text-xs" : "min-w-[6.5rem] py-2 pl-2.5 pr-8 text-base",
-    tone === "leave"
-      ? "border-rose-200 text-rose-950 focus:border-rose-400"
-      : "border-stone-300 text-stone-900 focus:border-stone-500",
+    FIELD_CLASS[tone],
     SELECT_CHEVRON[tone],
   ].join(" ");
 }
@@ -48,7 +60,7 @@ function TimeSelect({
   compact?: boolean;
 }) {
   const fieldClass = selectClass(tone, compact);
-  const labelClass = tone === "leave" ? "text-rose-800" : "text-stone-600";
+  const labelClass = LABEL_CLASS[tone];
 
   return (
     <label className={`block min-w-0 space-y-1 ${compact ? "text-xs" : "text-sm"}`}>

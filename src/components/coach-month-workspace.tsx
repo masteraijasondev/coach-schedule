@@ -5,6 +5,7 @@ import { MonthCalendar } from "@/components/month-calendar";
 import { Panel } from "@/components/ui";
 import {
   availabilitySegments,
+  takeCompletedLessonOnce,
   availabilityWeekStart,
   isFullDayLeave,
   lessonDayKey,
@@ -105,7 +106,7 @@ export function CoachMonthWorkspace({
       label: string;
       coachName: string;
       timeLabel?: string;
-      variant?: "slot" | "leave" | "pending" | "confirmed" | "released";
+      variant?: "slot" | "leave" | "sick" | "pending" | "confirmed" | "released";
     }[]
   >();
   for (const leave of leaves) {
@@ -117,10 +118,11 @@ export function CoachMonthWorkspace({
       timeLabel: isFullDayLeave(leave)
         ? undefined
         : `${formatAvailabilityTime(leave.start_minute ?? 0)}–${formatAvailabilityTime(leave.end_minute ?? 0)}`,
-      variant: "leave",
+      variant: leave.kind === "sick" ? "sick" : "leave",
     });
     availabilityByDay.set(leave.leave_date, list);
   }
+  const seenCompleted = new Set<string>();
   for (const availability of availabilities) {
     if (leaveDates.has(availability.available_date)) {
       continue;
@@ -143,6 +145,9 @@ export function CoachMonthWorkspace({
       availability.end_minute,
       shiftLessons,
     )) {
+      if (!takeCompletedLessonOnce(segment, seenCompleted)) {
+        continue;
+      }
       const pending = segment.lesson?.status === "assigned";
       const confirmed = segment.lesson?.status === "completed";
       list.push({
