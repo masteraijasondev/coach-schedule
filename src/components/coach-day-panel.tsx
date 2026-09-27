@@ -219,7 +219,7 @@ export function CoachDayPanel({
                     </ActionForm>
                     <ServerActionButton
                       action={cancelLeaveByIdAction.bind(null, leave.id)}
-                      confirmMessage="確定撤銷此時段放假？可返工時間會恢復。"
+                      confirmMessage="確定撤銷此時段放假？"
                       className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
                     >
                       撤銷
@@ -230,8 +230,8 @@ export function CoachDayPanel({
                     action={cancelLeaveByIdAction.bind(null, leave.id)}
                     confirmMessage={
                       leave.kind === "sick"
-                        ? "確定撤銷此時段病假？可返工時間同未簽到派更會恢復。"
-                        : "確定撤銷此時段放假？可返工時間會恢復。"
+                        ? "確定撤銷此時段病假？"
+                        : "確定撤銷此時段放假？"
                     }
                     className="min-h-11 rounded-md border border-rose-200 px-2 py-1 text-xs text-rose-800 disabled:opacity-60"
                   >

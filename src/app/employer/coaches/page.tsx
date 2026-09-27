@@ -86,7 +86,7 @@ export default async function CoachesPage() {
     <div className="space-y-6">
       <EmployerSettingsBackLink />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
-        <Panel title="新增教練帳號">
+        <Panel title="新增員工帳號">
           <ActionForm action={createCoachAction} className="space-y-3">
             <Field label="姓名" name="full_name" required />
             <SelectField
@@ -108,13 +108,13 @@ export default async function CoachesPage() {
               required
             />
             <p className="text-xs text-stone-500">
-              教練首次登入必須更改密碼。
+              員工首次登入必須更改密碼。
             </p>
             <SubmitButton>建立帳號</SubmitButton>
           </ActionForm>
         </Panel>
 
-        <Panel title="教練列表">
+        <Panel title="員工列表">
           <ul className="space-y-3">
             {(coaches ?? []).map((coach) => {
               const hourlyValue =
@@ -288,7 +288,7 @@ export default async function CoachesPage() {
               );
             })}
             {(coaches ?? []).length === 0 ? (
-              <li className="py-3 text-sm text-stone-500">尚未新增教練</li>
+              <li className="py-3 text-sm text-stone-500">尚未新增員工</li>
             ) : null}
           </ul>
         </Panel>

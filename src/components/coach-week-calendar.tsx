@@ -353,8 +353,8 @@ export function CoachWeekCalendar({
                             action={cancelLeaveByIdAction.bind(null, leave.id)}
                             confirmMessage={
                               leave.kind === "sick"
-                                ? "確定撤銷此時段病假？可返工時間同未簽到派更會恢復。"
-                                : "確定撤銷此時段放假？可返工時間會恢復。"
+                                ? "確定撤銷此時段病假？"
+                                : "確定撤銷此時段放假？"
                             }
                             className="mt-1 min-h-8 w-full rounded-sm border border-rose-300 bg-white px-1 py-0.5 text-[10px] text-rose-900 disabled:opacity-60"
                           >
