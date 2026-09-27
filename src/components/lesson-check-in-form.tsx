@@ -1,7 +1,7 @@
 "use client";
 
 import { confirmLessonPeriodsAction } from "@/actions/lessons";
-import { searchAirtableStudentsAction } from "@/actions/students";
+import { listAirtableStudentNamesAction } from "@/actions/students";
 import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
@@ -21,6 +21,25 @@ import { useEffect, useMemo, useState } from "react";
 
 const DEFAULT_DURATION_MINUTES = 60;
 const TIME_STEP_MINUTES = 30;
+const MAX_STUDENT_MATCHES = 8;
+
+function matchingStudentNames(names: string[], query: string): string[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return [];
+  }
+  const starts: string[] = [];
+  const contains: string[] = [];
+  for (const name of names) {
+    const lower = name.toLowerCase();
+    if (lower.startsWith(needle)) {
+      starts.push(name);
+    } else if (lower.includes(needle)) {
+      contains.push(name);
+    }
+  }
+  return [...starts, ...contains].slice(0, MAX_STUDENT_MATCHES);
+}
 
 function snapStart(windowStart: number, windowEnd: number): number {
   const snapped = Math.ceil(windowStart / TIME_STEP_MINUTES) * TIME_STEP_MINUTES;
@@ -107,8 +126,8 @@ function LessonCheckInFields({
   );
   const [selectedNames, setSelectedNames] = useState<string[]>(initialStudentNames);
   const [studentQuery, setStudentQuery] = useState("");
-  const [searchNames, setSearchNames] = useState<string[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [studentDirectory, setStudentDirectory] = useState<string[] | null>(null);
+  const [directoryLoading, setDirectoryLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const registered = initialPeriods.length > 0;
@@ -119,54 +138,44 @@ function LessonCheckInFields({
   const sessionKind = airtableSessionKind(workTypeName);
   const asksStudent = staffKind === "coach" && sessionKind != null;
   const studentNamesPayload = JSON.stringify(asksStudent ? selectedNames : []);
+  const searchNames = useMemo(
+    () => matchingStudentNames(studentDirectory ?? [], studentQuery),
+    [studentDirectory, studentQuery],
+  );
 
   useEffect(() => {
-    if (!asksStudent) {
+    if (!asksStudent || studentDirectory) {
       return;
     }
-    const query = studentQuery.trim();
-    if (query.length < 1) {
-      setSearchNames([]);
-      setSearchError(null);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
-    setSearchNames([]);
     let cancelled = false;
-    const timer = window.setTimeout(() => {
-      searchAirtableStudentsAction(query)
-        .then((result) => {
-          if (cancelled) {
-            return;
-          }
-          if (!result.ok) {
-            setSearchNames([]);
-            setSearchError(result.error);
-            return;
-          }
-          setSearchNames(result.data);
-          setSearchError(null);
-        })
-        .catch((error: unknown) => {
-          console.error("[LessonCheckInFields] student search", { error });
-          if (cancelled) {
-            return;
-          }
-          setSearchNames([]);
+    setDirectoryLoading(true);
+    listAirtableStudentNamesAction()
+      .then((result) => {
+        if (cancelled) {
+          return;
+        }
+        if (!result.ok) {
+          setSearchError(result.error);
+          return;
+        }
+        setStudentDirectory(result.data);
+        setSearchError(null);
+      })
+      .catch((error: unknown) => {
+        console.error("[LessonCheckInFields] student directory", { error });
+        if (!cancelled) {
           setSearchError("無法搜尋 Airtable 學生");
-        })
-        .finally(() => {
-          if (!cancelled) {
-            setSearching(false);
-          }
-        });
-    }, 300);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setDirectoryLoading(false);
+        }
+      });
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
     };
-  }, [asksStudent, studentQuery]);
+  }, [asksStudent, studentDirectory]);
 
   function toggleStudent(name: string) {
     setSelectedNames((current) =>
@@ -225,8 +234,6 @@ function LessonCheckInFields({
     setLessonTypeId(startingLessonTypeId());
     setSelectedNames(initialStudentNames);
     setStudentQuery("");
-    setSearchNames([]);
-    setSearching(false);
     setSearchError(null);
     setAddError(null);
     setEditing(false);
@@ -288,10 +295,14 @@ function LessonCheckInFields({
           {searchError ? (
             <p className="text-xs text-amber-800">{searchError}</p>
           ) : null}
-          {searching ? (
-            <p className="text-xs text-stone-500">搜尋中…</p>
+          {directoryLoading ? (
+            <p className="text-xs text-stone-500">載入學生名單…</p>
           ) : null}
-          {studentQuery.trim() && !searching && searchNames.length === 0 && !searchError ? (
+          {studentQuery.trim() &&
+          !directoryLoading &&
+          studentDirectory &&
+          searchNames.length === 0 &&
+          !searchError ? (
             <p className="text-xs text-stone-500">沒有符合的學生</p>
           ) : null}
           <div className="max-h-36 space-y-1 overflow-auto">

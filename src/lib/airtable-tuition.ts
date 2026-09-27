@@ -39,6 +39,16 @@ type CacheEntry = {
 let cache: CacheEntry | null = null;
 let inflight: Promise<CacheEntry> | null = null;
 
+type StudentNameCache = {
+  at: number;
+  names: string[];
+};
+
+let studentNameCache: StudentNameCache | null = null;
+let studentNameInflight: Promise<StudentNameCache> | null = null;
+
+const MAX_STUDENT_MATCHES = 8;
+
 function airtableToken(): string | null {
   return process.env.AIRTABLE_API_TOKEN?.trim() || null;
 }
@@ -452,11 +462,85 @@ export async function createAirtableStudent(
     if (!response.ok) {
       return { ok: false, error: payload.error?.message ?? "寫入 Airtable 失敗" };
     }
+    studentNameCache = null;
     return { ok: true };
   } catch (error) {
     console.error("[createAirtableStudent]", { error });
     return { ok: false, error: "寫入 Airtable 失敗" };
   }
+}
+
+export async function listAirtableStudentNames(): Promise<{
+  names: string[];
+  error: string | null;
+}> {
+  const now = Date.now();
+  if (studentNameCache && now - studentNameCache.at < CACHE_MS) {
+    return { names: studentNameCache.names, error: null };
+  }
+  if (!airtableToken()) {
+    return { names: [], error: "尚未設定 Airtable" };
+  }
+  if (studentNameInflight) {
+    try {
+      const pending = await studentNameInflight;
+      return { names: pending.names, error: null };
+    } catch (error) {
+      console.error("[listAirtableStudentNames] inflight", { error });
+      return { names: [], error: "無法搜尋 Airtable 學生" };
+    }
+  }
+  const request = loadStudentNames(now).finally(() => {
+    studentNameInflight = null;
+  });
+  studentNameInflight = request;
+  try {
+    const loaded = await request;
+    return { names: loaded.names, error: null };
+  } catch (error) {
+    console.error("[listAirtableStudentNames]", { error });
+    return { names: [], error: "無法搜尋 Airtable 學生" };
+  }
+}
+
+async function loadStudentNames(now: number): Promise<StudentNameCache> {
+  const records = await listAirtableRecords(STUDENT_TABLE, {
+    "fields[]": ["Full_Name", "Student_Name"],
+  });
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const record of records) {
+    const name = (
+      fieldString(record.fields, "Full_Name") ||
+      fieldString(record.fields, "Student_Name")
+    ).trim();
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    names.push(name);
+  }
+  studentNameCache = { at: now, names };
+  return studentNameCache;
+}
+
+export function matchAirtableStudentNames(names: string[], query: string): string[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return [];
+  }
+  const starts: string[] = [];
+  const contains: string[] = [];
+  for (const name of names) {
+    const lower = name.toLowerCase();
+    if (lower.startsWith(needle)) {
+      starts.push(name);
+    } else if (lower.includes(needle)) {
+      contains.push(name);
+    }
+  }
+  return [...starts, ...contains].slice(0, MAX_STUDENT_MATCHES);
 }
 
 export async function searchAirtableStudents(
@@ -466,37 +550,11 @@ export async function searchAirtableStudents(
   if (trimmed.length < 1) {
     return { names: [], error: null };
   }
-  if (!airtableToken()) {
-    return { names: [], error: "尚未設定 Airtable" };
+  const listed = await listAirtableStudentNames();
+  if (listed.error) {
+    return { names: [], error: listed.error };
   }
-  const safe = trimmed.replace(/'/g, "''");
-  try {
-    const records = await listAirtableRecords(STUDENT_TABLE, {
-      filterByFormula: `OR(FIND(LOWER('${safe}'), LOWER({Full_Name}&'')), FIND(LOWER('${safe}'), LOWER({Student_Name}&'')))`,
-      "fields[]": ["Full_Name", "Student_Name"],
-      maxRecords: "8",
-    });
-    const names: string[] = [];
-    const seen = new Set<string>();
-    for (const record of records) {
-      const name =
-        fieldString(record.fields, "Full_Name") ||
-        fieldString(record.fields, "Student_Name");
-      const key = name.trim().toLowerCase();
-      if (!name || seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      names.push(name);
-      if (names.length >= 8) {
-        break;
-      }
-    }
-    return { names, error: null };
-  } catch (error) {
-    console.error("[searchAirtableStudents]", { error });
-    return { names: [], error: "無法搜尋 Airtable 學生" };
-  }
+  return { names: matchAirtableStudentNames(listed.names, trimmed), error: null };
 }
 
 export async function lookupAirtableTuition(

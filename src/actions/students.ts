@@ -2,6 +2,7 @@
 
 import {
   createAirtableStudent,
+  listAirtableStudentNames,
   lookupAirtableExpectedStudents,
   searchAirtableStudents,
 } from "@/lib/airtable-tuition";
@@ -72,6 +73,25 @@ export async function createCheckInStudentAction(
   } catch (error) {
     console.error("[createCheckInStudentAction] unexpected", { error });
     return { ok: false, error: "新增學生時發生錯誤" };
+  }
+}
+
+export async function listAirtableStudentNamesAction(): Promise<
+  ActionResult<string[]>
+> {
+  try {
+    const profile = await requireProfile();
+    if (profile.role !== "coach" && profile.role !== "employer") {
+      return { ok: false, error: "沒有權限讀取學生" };
+    }
+    const result = await listAirtableStudentNames();
+    if (result.error) {
+      return { ok: false, error: result.error };
+    }
+    return { ok: true, data: result.names };
+  } catch (error) {
+    console.error("[listAirtableStudentNamesAction]", { error });
+    return { ok: false, error: "無法搜尋 Airtable 學生" };
   }
 }
 
