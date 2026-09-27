@@ -6,7 +6,7 @@ import {
   availabilityWeekDays,
   availabilityWeekStart,
   hongKongToday,
-  monthBoundsIso,
+  inclusiveDateRangeBoundsIso,
   monthGridDateRange,
   parseCalendarView,
   parseAvailabilityWeekParam,
@@ -55,12 +55,15 @@ export default async function EmployerHomePage({ searchParams }: Props) {
   const slotEnd = parseMinuteParam(params.slotEnd);
   const view = parseCalendarView(params.view);
 
-  const { start, end } = monthBoundsIso(month);
   const gridRange = monthGridDateRange(month);
+  const lessonRange = inclusiveDateRangeBoundsIso(
+    gridRange.start,
+    gridRange.end,
+  );
   const { lessons, types, coaches: staff, availabilities, leaves, workTypes } =
     await loadEmployerCalendarData({
-      lessonStart: start,
-      lessonEnd: end,
+      lessonStart: lessonRange.start,
+      lessonEnd: lessonRange.end,
       gridStart: gridRange.start,
       gridEnd: gridRange.end,
     });

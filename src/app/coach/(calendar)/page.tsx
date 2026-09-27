@@ -5,7 +5,7 @@ import { requireCoach } from "@/lib/auth";
 import {
   availabilityWeekDays,
   hongKongToday,
-  monthBoundsIso,
+  inclusiveDateRangeBoundsIso,
   monthGridDateRange,
   parseAvailabilityWeekParam,
   parseCalendarView,
@@ -33,8 +33,11 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const today = hongKongToday();
   const view = parseCalendarView(params.view);
   const week = parseAvailabilityWeekParam(params.week ?? day);
-  const { start, end } = monthBoundsIso(month);
   const gridRange = monthGridDateRange(month);
+  const lessonRange = inclusiveDateRangeBoundsIso(
+    gridRange.start,
+    gridRange.end,
+  );
   const days = availabilityWeekDays(week);
   const weekInGrid = days.every(
     (date) => date >= gridRange.start && date <= gridRange.end,
@@ -53,8 +56,8 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id, students(name))")
         .eq("coach_id", coach.id)
         .neq("status", "cancelled")
-        .gte("starts_at", start)
-        .lt("starts_at", end)
+        .gte("starts_at", lessonRange.start)
+        .lt("starts_at", lessonRange.end)
         .order("starts_at", { ascending: true }),
       supabase
         .from("staff_availabilities")

@@ -109,12 +109,16 @@ export function shiftMonth(month: string, delta: number): string {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-export function monthBoundsIso(month: string): { start: string; end: string } {
-  const startLocal = fromZonedTime(`${month}-01T00:00:00`, TIMEZONE);
-  const [y, m] = month.split("-").map(Number);
-  const next =
-    m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-  const endLocal = fromZonedTime(`${next}-01T00:00:00`, TIMEZONE);
+/** Inclusive Hong Kong dates. End is exclusive so the last day is included. */
+export function inclusiveDateRangeBoundsIso(
+  startDate: string,
+  endDate: string,
+): { start: string; end: string } {
+  const startLocal = fromZonedTime(`${startDate}T00:00:00`, TIMEZONE);
+  const endLocal = fromZonedTime(
+    `${addDaysToYmd(endDate, 1)}T00:00:00`,
+    TIMEZONE,
+  );
   return { start: startLocal.toISOString(), end: endLocal.toISOString() };
 }
 

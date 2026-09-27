@@ -8,6 +8,9 @@ export function airtableSessionKind(
   if (name.includes("miit")) {
     return "miit";
   }
+  if (name.includes("hyrox")) {
+    return "pt";
+  }
   if (name.includes("pt") || name.includes("personal")) {
     return "pt";
   }
