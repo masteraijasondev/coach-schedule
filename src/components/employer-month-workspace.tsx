@@ -631,7 +631,7 @@ export function EmployerMonthWorkspace({
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Panel title="月曆">
-        <p className="mb-3 text-sm text-stone-500">
+        <p className="mb-3 text-sm text-slate-700">
           格內最多顯示五項。請使用上方篩選查看整體時段。點選日期後，當日詳情與派更顯示於右側。
         </p>
         <MonthCalendar
@@ -665,7 +665,7 @@ export function EmployerMonthWorkspace({
         className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto"
       >
         <Panel title={day}>
-          <p className="mb-3 text-sm text-stone-500">
+          <p className="mb-3 text-sm text-slate-700">
             當日時段按時間排列。選擇員工後即可派更或修改。
           </p>
           <div className="flex flex-col gap-2">
@@ -704,7 +704,7 @@ export function EmployerMonthWorkspace({
               ),
             )}
             {dayChips.length === 0 ? (
-              <p className="text-sm text-stone-500">今日暫未有時段安排</p>
+              <p className="text-sm text-slate-700">今日暫未有時段安排</p>
             ) : null}
           </div>
         </Panel>

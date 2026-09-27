@@ -191,7 +191,7 @@ export function EmployerCalendarShell({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-base font-semibold">全體員工日曆</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-950">全體員工日曆</h1>
         <CalendarViewToggle
           view={view}
           monthHref={href({
@@ -239,11 +239,11 @@ export function EmployerCalendarShell({
 
       <div hidden={view !== "week"} className="space-y-6">
         <Panel title="週曆">
-          <p className="mb-3 text-sm text-stone-500">
+          <p className="mb-3 text-sm text-slate-700">
             選擇員工以查看本週可返工時段。點選時段即可派更。名單跟隨上方篩選。
           </p>
           {visibleCoaches.length === 0 ? (
-            <p className="text-sm text-stone-500">請至少選取一名員工，方可於週曆派更。</p>
+            <p className="text-sm text-slate-700">請至少選取一名員工，方可於週曆派更。</p>
           ) : (
           <EmployerCoachPicker
             coaches={visibleCoaches}

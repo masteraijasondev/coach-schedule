@@ -37,12 +37,12 @@ type EventBar = {
 };
 
 const VARIANT_CHIP_CLASS: Record<EventBar["variant"], string> = {
-  pending: "bg-emerald-100 text-emerald-900",
-  confirmed: "bg-sky-100 text-sky-900",
-  slot: "bg-amber-100 text-amber-900",
-  leave: "bg-stone-300 text-stone-800",
-  sick: "bg-red-100 text-red-800",
-  released: "bg-stone-200 text-stone-600",
+  pending: "bg-emerald-100 text-emerald-950",
+  confirmed: "bg-sky-100 text-sky-950",
+  slot: "bg-amber-100 text-amber-950",
+  leave: "bg-stone-300 text-stone-900",
+  sick: "bg-red-100 text-red-900",
+  released: "bg-stone-200 text-stone-800",
 };
 
 function variantOf(
@@ -173,7 +173,7 @@ export function MonthCalendar({
           上月
         </Link>
         <div className="flex items-center gap-3">
-          <p className="font-semibold">{month}</p>
+          <p className="text-lg font-bold tracking-tight text-stone-950">{month}</p>
           <Link
             href={hrefForToday}
             onClick={(event) => handleSelectDay(event, today)}
@@ -195,7 +195,7 @@ export function MonthCalendar({
         </Link>
       </div>
       <CalendarLegend items={legendItems} />
-      <div className="grid grid-cols-7 gap-1 text-center text-xs text-stone-500">
+      <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-stone-700">
         {WEEKDAYS.map((d) => (
           <div key={d} className="py-1">
             {d}
@@ -220,19 +220,19 @@ export function MonthCalendar({
               href={hrefForDay(day)}
               onClick={(event) => handleSelectDay(event, day)}
               className={[
-                "flex h-36 w-full flex-col overflow-hidden rounded-md border p-1 text-left",
+                "flex h-36 w-full cursor-pointer flex-col overflow-hidden rounded-md border p-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900",
                 inMonth
-                  ? "border-stone-200 bg-white"
-                  : "border-transparent bg-stone-50 text-stone-400",
-                selected ? "bg-stone-50 ring-2 ring-stone-900" : "",
+                  ? "border-slate-300 bg-white text-slate-950"
+                  : "border-slate-200 bg-slate-100 text-slate-700",
+                selected ? "bg-slate-50 ring-2 ring-slate-950" : "hover:border-slate-400",
               ].join(" ")}
             >
               <div className="flex justify-start">
                 <span
                   className={[
-                    "inline-flex h-6 w-6 items-center justify-center text-sm font-medium",
+                    "inline-flex h-6 w-6 items-center justify-center text-sm font-bold tabular-nums",
                     isToday
-                      ? "rounded-full bg-stone-900 text-white"
+                      ? "rounded-full bg-slate-950 text-white"
                       : "",
                   ].join(" ")}
                 >
@@ -250,7 +250,7 @@ export function MonthCalendar({
                   </div>
                 ))}
                 {hiddenCount > 0 ? (
-                  <div className="px-1 text-xs text-stone-500">
+                  <div className="px-1 text-xs font-medium text-stone-700">
                     +{hiddenCount} 項
                   </div>
                 ) : null}

@@ -229,7 +229,7 @@ export function EmployerAssignWorkspace({
           返回本週
         </Link>
       ) : null}
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-slate-700">
         點選可返工色塊即可派更或標為暫無需要。放假或 Short Break 以灰色顯示，病假以紅色顯示。
       </p>
       <CalendarLegend items={EMPLOYER_CALENDAR_LEGEND} />

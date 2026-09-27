@@ -25,7 +25,7 @@ export default async function EmployerLayout({
 
   return (
     <StudentDirectoryProvider>
-      <AppShell title="僱主管理" name={profile.full_name} items={items}>
+      <AppShell title="僱主管理" name={profile.full_name} items={items} tone="ops">
         {children}
       </AppShell>
     </StudentDirectoryProvider>

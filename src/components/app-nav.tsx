@@ -22,23 +22,38 @@ export function AppHeader({
   title,
   name,
   items,
+  tone = "default",
 }: {
   title: string;
   name: string;
   items: NavItem[];
+  tone?: "default" | "ops";
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const ops = tone === "ops";
 
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-stone-200 bg-white">
+    <header
+      className={
+        ops
+          ? "sticky top-0 z-20 border-b-4 border-[#FF6B00] bg-white text-[#2C2C2C]"
+          : "sticky top-0 z-20 border-b border-stone-200 bg-white"
+      }
+    >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-stone-500 sm:text-lg sm:font-semibold sm:tracking-tight sm:text-stone-900">
+          <p
+            className={
+              ops
+                ? "text-sm font-semibold tracking-wide text-[#525252] sm:text-lg"
+                : "text-sm font-medium text-stone-700 sm:text-lg sm:font-semibold sm:tracking-tight sm:text-stone-900"
+            }
+          >
             {title}
           </p>
           <p className="truncate text-lg font-bold sm:text-2xl">{name}</p>
@@ -58,8 +73,12 @@ export function AppHeader({
                 className={[
                   "flex min-h-11 items-center rounded-md px-3 py-2.5 text-lg font-semibold",
                   active
-                    ? "bg-stone-900 font-bold text-white"
-                    : "text-stone-700 hover:bg-stone-100",
+                    ? ops
+                      ? "bg-[#2C2C2C] font-bold text-white"
+                      : "bg-stone-900 font-bold text-white"
+                    : ops
+                      ? "text-[#2C2C2C] hover:bg-stone-100"
+                      : "text-stone-700 hover:bg-stone-100",
                 ].join(" ")}
               >
                 {item.label}

@@ -15,7 +15,7 @@ export function CalendarLegend({
   items?: { className: string; label: string }[];
 }) {
   return (
-    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-stone-600">
+    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-stone-800">
       {items.map((item) => (
         <li key={item.label} className="inline-flex items-center gap-1.5">
           <span
