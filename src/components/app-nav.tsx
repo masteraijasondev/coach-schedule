@@ -43,6 +43,30 @@ export function AppHeader({
           </p>
           <p className="truncate text-lg font-bold sm:text-2xl">{name}</p>
         </div>
+        <nav
+          id="app-nav-menu"
+          className={`${
+            open ? "flex" : "hidden"
+          } min-w-0 flex-1 flex-wrap items-center justify-end gap-1 md:flex md:gap-5`}
+        >
+          {items.map((item) => {
+            const active = isActive(pathname, item);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={[
+                  "flex min-h-11 items-center rounded-md px-3 py-2.5 text-lg font-semibold",
+                  active
+                    ? "bg-stone-900 font-bold text-white"
+                    : "text-stone-700 hover:bg-stone-100",
+                ].join(" ")}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
         <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
@@ -63,30 +87,6 @@ export function AppHeader({
           </form>
         </div>
       </div>
-      <nav
-        id="app-nav-menu"
-        className={`${
-          open ? "flex" : "hidden"
-        } mx-auto max-w-6xl flex-col gap-1 border-t border-stone-100 px-4 py-2 md:flex md:flex-row md:flex-wrap md:border-t-0 md:pb-3 md:pt-0 md:gap-5`}
-      >
-        {items.map((item) => {
-          const active = isActive(pathname, item);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={[
-                "flex min-h-11 w-full items-center rounded-md px-3 py-2.5 text-lg font-semibold md:w-auto",
-                active
-                  ? "bg-stone-900 font-bold text-white"
-                  : "text-stone-700 hover:bg-stone-100",
-              ].join(" ")}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
     </header>
   );
 }

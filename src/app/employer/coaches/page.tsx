@@ -147,7 +147,7 @@ export default async function CoachesPage() {
                   )}
                 </div>
                 <ActionForm
-                  key={`${coach.id}:${hourlyValue}:${ratioValue}`}
+                  key={`${coach.id}:${coach.staff_kind}:${hourlyValue}:${ratioValue}`}
                   action={updateCoachNameAction}
                   className="flex flex-wrap items-end gap-2"
                 >
