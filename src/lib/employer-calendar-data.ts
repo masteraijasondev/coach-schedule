@@ -69,7 +69,7 @@ export async function loadEmployerCalendarData(range: {
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
-  workTypes: { coachId: string; id: string; name: string }[];
+  workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
 }> {
   const supabase = await createClient();
   const [
