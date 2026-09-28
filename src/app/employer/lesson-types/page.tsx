@@ -21,7 +21,7 @@ export default async function LessonTypesPage() {
   const supabase = await createClient();
   const { data: types } = await supabase
     .from("lesson_types")
-    .select("id, name, default_duration_minutes, pay_mode, active")
+    .select("id, name, default_duration_minutes, pay_mode, registers_student, active")
     .order("name");
 
   return (
@@ -50,6 +50,17 @@ export default async function LessonTypesPage() {
               { value: "per_hour", label: PAY_MODE_LABELS.per_hour },
             ]}
           />
+          <SelectField
+            label="簽到時加入學生"
+            name="registers_student"
+            required
+            allowEmpty
+            emptyLabel="請選擇"
+            options={[
+              { value: "yes", label: "可以加入學生" },
+              { value: "no", label: "不可加入學生" },
+            ]}
+          />
           <SubmitButton>新增課堂類型</SubmitButton>
         </ActionForm>
       </Panel>
@@ -65,7 +76,8 @@ export default async function LessonTypesPage() {
                 <p className="font-medium">{type.name}</p>
                 <p className="text-sm text-stone-500">
                   預設 {type.default_duration_minutes} 分鐘 ·{" "}
-                  {PAY_MODE_LABELS[type.pay_mode] ?? type.pay_mode}
+                  {PAY_MODE_LABELS[type.pay_mode] ?? type.pay_mode} ·{" "}
+                  {type.registers_student ? "簽到可加入學生" : "簽到不可加入學生"}
                 </p>
               </div>
               <form

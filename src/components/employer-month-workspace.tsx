@@ -119,7 +119,7 @@ export function EmployerMonthWorkspace({
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
-  workTypes: { coachId: string; id: string; name: string }[];
+  workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
   filter: CalendarFilter;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {

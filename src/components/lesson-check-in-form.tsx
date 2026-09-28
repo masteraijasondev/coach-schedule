@@ -95,7 +95,7 @@ function LessonCheckInFields({
   initialPeriods?: CheckInPeriod[];
   initialStudentNames?: string[];
   submitLabel?: string;
-  workTypes: { id: string; name: string }[];
+  workTypes: { id: string; name: string; registersStudent: boolean }[];
   initialLessonTypeId?: string;
   staffKind?: "coach" | "operations";
   action?: typeof confirmLessonPeriodsAction;
@@ -136,7 +136,9 @@ function LessonCheckInFields({
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
   const sessionKind = airtableSessionKind(workTypeName);
-  const asksStudent = staffKind === "coach" && sessionKind != null;
+  const asksStudent =
+    staffKind === "coach" &&
+    workTypes.find((type) => type.id === lessonTypeId)?.registersStudent === true;
   const studentNamesPayload = JSON.stringify(asksStudent ? selectedNames : []);
   const searchNames = useMemo(
     () => matchingStudentNames(studentDirectory ?? [], studentQuery),

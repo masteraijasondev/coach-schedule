@@ -51,7 +51,7 @@ export function CoachCalendarShell({
   lessons: CoachMonthLesson[];
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
-  workTypes: { id: string; name: string }[];
+  workTypes: { id: string; name: string; registersStudent: boolean }[];
   staffKind: "coach" | "operations";
   remoteWeekCalendar: ReactNode;
 }) {

@@ -57,7 +57,7 @@ export async function CoachAvailabilityCalendar({
       .lt("starts_at", weekEndIso),
     supabase
       .from("staff_work_types")
-      .select("lesson_type_id, lesson_types(id, name, active)")
+      .select("lesson_type_id, lesson_types(id, name, active, registers_student)")
       .eq("coach_id", coachId),
     supabase
       .from("profiles")
@@ -74,9 +74,16 @@ export async function CoachAvailabilityCalendar({
       if (!type || !type.active) {
         return null;
       }
-      return { id: type.id, name: type.name };
+      return {
+        id: type.id,
+        name: type.name,
+        registersStudent: type.registers_student === true,
+      };
     })
-    .filter((type): type is { id: string; name: string } => type != null)
+    .filter(
+      (type): type is { id: string; name: string; registersStudent: boolean } =>
+        type != null,
+    )
     .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
 
   if (error || leavesError) {

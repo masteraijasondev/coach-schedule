@@ -75,6 +75,7 @@ export type CoachWeekLesson = {
 export type StaffWorkTypeOption = {
   id: string;
   name: string;
+  registersStudent: boolean;
 };
 
 function availabilityStartsAt(date: string, startMinute: number): Date {

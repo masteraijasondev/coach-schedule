@@ -24,12 +24,17 @@ export async function createLessonTypeAction(
     if (!["per_student", "per_head", "per_session", "per_hour"].includes(payMode)) {
       return { ok: false, error: "薪資模式無效" };
     }
+    const registersStudent = String(formData.get("registers_student") ?? "");
+    if (registersStudent !== "yes" && registersStudent !== "no") {
+      return { ok: false, error: "請選擇簽到時是否可加入學生" };
+    }
 
     const supabase = await createClient();
     const { error } = await supabase.from("lesson_types").insert({
       name,
       default_duration_minutes: duration,
       pay_mode: payMode,
+      registers_student: registersStudent === "yes",
     });
 
     if (error) {

@@ -53,6 +53,7 @@ export type CoachDayLesson = {
 export type StaffWorkTypeOption = {
   id: string;
   name: string;
+  registersStudent: boolean;
 };
 
 export type CoachDaySlot = {

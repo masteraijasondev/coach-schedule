@@ -10,7 +10,6 @@ import {
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { lookupAirtableTuition } from "@/lib/airtable-tuition";
-import { airtableSessionKind } from "@/lib/session-kind";
 import { calculateLessonPay } from "@/lib/pay";
 import { coachPayFromFeeRatio } from "@/lib/pt-rate";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -579,7 +578,7 @@ async function confirmLessonPeriodsForStaff(
           .maybeSingle(),
         supabase
           .from("lesson_types")
-          .select("id, name")
+          .select("id, name, registers_student")
           .eq("id", lessonTypeId)
           .eq("active", true)
           .maybeSingle(),
@@ -660,7 +659,7 @@ async function confirmLessonPeriodsForStaff(
 
     const isAdmin =
       staffProfile.staff_kind === "operations" ||
-      airtableSessionKind(activeType?.name ?? "") == null;
+      activeType.registers_student !== true;
     const studentNames = selectedStudentNames(formData);
     let studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
