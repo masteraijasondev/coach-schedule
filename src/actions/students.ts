@@ -58,7 +58,10 @@ export async function createAirtableStudentProfileAction(
   formData: FormData,
 ): Promise<ActionResult> {
   try {
-    await requireEmployer();
+    const profile = await requireProfile();
+    if (profile.role !== "employer" && profile.role !== "coach") {
+      return { ok: false, error: "沒有權限新增學生" };
+    }
     const gender = parseGender(String(formData.get("gender") ?? "").trim());
     if (gender === "invalid") {
       return { ok: false, error: "性別只可以選擇男或女" };
@@ -73,6 +76,7 @@ export async function createAirtableStudentProfileAction(
       return result;
     }
     revalidatePath("/employer/students");
+    revalidatePath("/coach/students");
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createAirtableStudentProfileAction]", { error });
