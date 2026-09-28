@@ -121,7 +121,7 @@ export function CalendarFilterBar({
         <div>
           <p className="text-sm font-medium text-stone-900">篩選月曆</p>
           <p className="mt-0.5 text-xs text-stone-500">
-            點一下顯示或隱藏。每組有自己的框，全選會一次選取該組。
+            點選即可顯示或隱藏。員工按組別區分，狀態以顏色及勾號表示。
           </p>
         </div>
         <button

@@ -21,10 +21,10 @@ export function CalendarViewToggle({
 }) {
   const itemClass = (active: boolean) =>
     [
-      "inline-flex min-h-11 min-w-11 items-center justify-center rounded px-3 text-sm sm:min-h-0 sm:py-1.5",
+      "inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]",
       active
-        ? "bg-stone-900 font-medium text-white"
-        : "text-stone-700 hover:bg-stone-100",
+        ? "bg-[#2C2C2C] text-white"
+        : "text-[#2C2C2C] hover:bg-stone-100",
     ].join(" ");
 
   function selectView(event: MouseEvent<HTMLAnchorElement>, next: CalendarView) {
@@ -49,7 +49,7 @@ export function CalendarViewToggle({
         className={itemClass(view === "month")}
         onClick={(event) => selectView(event, "month")}
       >
-        月
+        月曆
       </Link>
       <Link
         href={weekHref}

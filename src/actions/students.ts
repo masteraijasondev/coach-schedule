@@ -2,9 +2,11 @@
 
 import {
   createAirtableStudent,
+  createAirtableStudentProfile,
   listAirtableStudentNames,
   lookupAirtableExpectedStudents,
   searchAirtableStudents,
+  type AirtableStudentGender,
 } from "@/lib/airtable-tuition";
 import { requireEmployer, requireProfile } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -37,6 +39,43 @@ export async function createStudentAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createStudentAction] unexpected", { error });
+    return { ok: false, error: "新增學生時發生錯誤" };
+  }
+}
+
+function parseGender(value: string): AirtableStudentGender | null | "invalid" {
+  if (!value) {
+    return null;
+  }
+  if (value === "男" || value === "女") {
+    return value;
+  }
+  return "invalid";
+}
+
+export async function createAirtableStudentProfileAction(
+  _prev: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    await requireEmployer();
+    const gender = parseGender(String(formData.get("gender") ?? "").trim());
+    if (gender === "invalid") {
+      return { ok: false, error: "性別只可以選擇男或女" };
+    }
+    const result = await createAirtableStudentProfile({
+      name: String(formData.get("name") ?? ""),
+      phone: String(formData.get("phone") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      gender,
+    });
+    if (!result.ok) {
+      return result;
+    }
+    revalidatePath("/employer/students");
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[createAirtableStudentProfileAction]", { error });
     return { ok: false, error: "新增學生時發生錯誤" };
   }
 }

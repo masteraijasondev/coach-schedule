@@ -6,6 +6,7 @@ import Link from "next/link";
 const LINKS = [
   { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、Admin / PT / MIIT；時薪或分成" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
+  { href: "/employer/students", label: "新增學生", hint: "寫入 Airtable：姓名、電話、電郵、性別" },
 ];
 
 export default async function EmployerSettingsPage() {

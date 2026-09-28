@@ -632,7 +632,7 @@ export function EmployerMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-slate-700">
-          格內最多顯示五項。請使用上方篩選查看整體時段。點選日期後，當日詳情與派更顯示於右側。
+          每日最多顯示五項。點選日期後，當日詳情與派更顯示於右側。
         </p>
         <MonthCalendar
           month={month}
@@ -704,7 +704,7 @@ export function EmployerMonthWorkspace({
               ),
             )}
             {dayChips.length === 0 ? (
-              <p className="text-sm text-slate-700">今日暫未有時段安排</p>
+              <p className="text-sm text-slate-700">此日尚未有時段。請選擇其他日期，或於右側派更。</p>
             ) : null}
           </div>
         </Panel>

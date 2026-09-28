@@ -191,7 +191,12 @@ export function EmployerCalendarShell({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950">全體員工日曆</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-950">全體員工日曆</h1>
+          <p className="mt-1 text-sm text-[#525252]">
+            請先選擇員工及狀態，再點選日期查看或派更。
+          </p>
+        </div>
         <CalendarViewToggle
           view={view}
           monthHref={href({

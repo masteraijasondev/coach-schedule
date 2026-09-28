@@ -168,7 +168,7 @@ export function MonthCalendar({
       <div className="flex items-center justify-between gap-2">
         <Link
           href={hrefForMonth(prev)}
-          className="text-sm text-stone-600 underline"
+          className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-[#2C2C2C] hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
         >
           上月
         </Link>
@@ -177,11 +177,7 @@ export function MonthCalendar({
           <Link
             href={hrefForToday}
             onClick={(event) => handleSelectDay(event, today)}
-            className={
-              viewingToday
-                ? "text-sm text-stone-400"
-                : "text-sm text-stone-600 underline"
-            }
+            className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-[#2C2C2C] hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
             aria-current={viewingToday ? "date" : undefined}
           >
             今日
@@ -189,7 +185,7 @@ export function MonthCalendar({
         </div>
         <Link
           href={hrefForMonth(next)}
-          className="text-sm text-stone-600 underline"
+          className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-[#2C2C2C] hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
         >
           下月
         </Link>
@@ -232,7 +228,7 @@ export function MonthCalendar({
                   className={[
                     "inline-flex h-6 w-6 items-center justify-center text-sm font-bold tabular-nums",
                     isToday
-                      ? "rounded-full bg-slate-950 text-white"
+                      ? "rounded-full bg-[#FFF6F0] text-[#C2410C] ring-2 ring-[#FF6B00]"
                       : "",
                   ].join(" ")}
                 >
