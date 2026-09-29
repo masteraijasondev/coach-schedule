@@ -64,17 +64,10 @@ export async function createCoachAction(
       if (existing.role !== "coach" || existing.active) {
         return { ok: false, error: "此電郵已有使用中的帳號" };
       }
-      const restoreError = await restoreInactiveCoach(admin, existing.id, {
-        email,
-        fullName,
-        tempPassword,
-        staffKind,
-      });
-      if (restoreError) {
-        return { ok: false, error: restoreError };
+      const releaseError = await releaseInactiveEmail(admin, existing.id, email);
+      if (releaseError) {
+        return { ok: false, error: releaseError };
       }
-      revalidateCoachPages();
-      return { ok: true, data: undefined };
     }
 
     const { data: created, error: createError } =
@@ -300,44 +293,41 @@ async function findCoachAccount(coachId: string) {
 }
 
 const DISABLED_LOGIN_BAN = "876000h";
-const CLEARED_LOGIN_BAN = "none";
 
-async function restoreInactiveCoach(
+function archivedStaffEmail(coachId: string): string {
+  return `deleted.${coachId}@example.com`;
+}
+
+async function releaseInactiveEmail(
   admin: ReturnType<typeof createAdminClient>,
   coachId: string,
-  input: {
-    email: string;
-    fullName: string;
-    tempPassword: string;
-    staffKind: "coach" | "operations";
-  },
+  originalEmail: string,
 ): Promise<string | null> {
-  const { error: authError } = await admin.auth.admin.updateUserById(coachId, {
-    email: input.email,
-    password: input.tempPassword,
-    email_confirm: true,
-    ban_duration: CLEARED_LOGIN_BAN,
-  });
-  if (authError) {
-    console.error("[restoreInactiveCoach] auth", { authError });
-    return "無法重新啟用帳號";
-  }
-
+  const archivedEmail = archivedStaffEmail(coachId);
   const { error: profileError } = await admin
     .from("profiles")
-    .update({
-      email: input.email,
-      full_name: input.fullName,
-      staff_kind: input.staffKind,
-      active: true,
-      must_change_password: true,
-    })
+    .update({ email: archivedEmail, active: false })
     .eq("id", coachId)
     .eq("role", "coach")
     .eq("active", false);
   if (profileError) {
-    console.error("[restoreInactiveCoach] profile", { profileError });
-    return "無法重新啟用帳號";
+    console.error("[releaseInactiveEmail] profile", { profileError });
+    return "無法釋出電郵";
+  }
+
+  const { error: authError } = await admin.auth.admin.updateUserById(coachId, {
+    email: archivedEmail,
+    email_confirm: true,
+    ban_duration: DISABLED_LOGIN_BAN,
+  });
+  if (authError) {
+    console.error("[releaseInactiveEmail] auth", { authError });
+    await admin
+      .from("profiles")
+      .update({ email: originalEmail })
+      .eq("id", coachId)
+      .eq("role", "coach");
+    return "無法釋出電郵";
   }
   return null;
 }
@@ -346,9 +336,21 @@ async function disableCoachLogin(
   admin: ReturnType<typeof createAdminClient>,
   coachId: string,
 ): Promise<string | null> {
+  const { data: existingProfile, error: readError } = await admin
+    .from("profiles")
+    .select("email")
+    .eq("id", coachId)
+    .eq("role", "coach")
+    .maybeSingle();
+  if (readError || !existingProfile) {
+    console.error("[disableCoachLogin] read", { readError });
+    return "無法停用帳號";
+  }
+
+  const archivedEmail = archivedStaffEmail(coachId);
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ active: false })
+    .update({ active: false, email: archivedEmail })
     .eq("id", coachId)
     .eq("role", "coach");
   if (profileError) {
@@ -357,11 +359,18 @@ async function disableCoachLogin(
   }
 
   const { error: banError } = await admin.auth.admin.updateUserById(coachId, {
+    email: archivedEmail,
+    email_confirm: true,
     ban_duration: DISABLED_LOGIN_BAN,
     password: crypto.randomUUID(),
   });
   if (banError) {
     console.error("[disableCoachLogin] ban", { banError });
+    await admin
+      .from("profiles")
+      .update({ email: existingProfile.email })
+      .eq("id", coachId)
+      .eq("role", "coach");
     return "帳號已從名單移除，但未能禁止登入";
   }
 
