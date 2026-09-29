@@ -34,7 +34,7 @@ import {
   formatAvailabilityTime,
 } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
-import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 
 const DEFAULT_START_MINUTE = 9 * 60;
@@ -73,26 +73,8 @@ export type CoachDayLeave = {
   kind?: string | null;
 };
 
-function availabilityStartsAt(date: string, startMinute: number): Date {
-  const hour = String(Math.floor(startMinute / 60)).padStart(2, "0");
-  const minute = String(startMinute % 60).padStart(2, "0");
-  return fromZonedTime(`${date}T${hour}:${minute}:00`, TIMEZONE);
-}
-
-function canEditAvailability(
-  availability: CoachDaySlot,
-  now: Date,
-  locked: boolean,
-): boolean {
-  if (locked) {
-    return false;
-  }
-  return (
-    availabilityStartsAt(
-      availability.available_date,
-      availability.start_minute,
-    ) > now
-  );
+function canEditAvailability(locked: boolean): boolean {
+  return !locked;
 }
 
 function defaultStartMinute(
@@ -101,7 +83,7 @@ function defaultStartMinute(
   now: Date,
 ): number | null {
   if (date < today) {
-    return null;
+    return DEFAULT_START_MINUTE;
   }
   if (date > today) {
     return DEFAULT_START_MINUTE;
@@ -272,7 +254,7 @@ export function CoachDayPanel({
                 slot.end_minute,
                 shiftLessons,
               ) != null;
-            const editable = canEditAvailability(slot, now, locked);
+            const editable = canEditAvailability(locked);
             return availabilitySegments(
               day,
               slot.start_minute,

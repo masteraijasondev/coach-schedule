@@ -84,20 +84,8 @@ function availabilityStartsAt(date: string, startMinute: number): Date {
   return fromZonedTime(`${date}T${hour}:${minute}:00`, TIMEZONE);
 }
 
-function canEditAvailability(
-  availability: CoachWeekSlot,
-  now: Date,
-  locked: boolean,
-): boolean {
-  if (locked) {
-    return false;
-  }
-  return (
-    availabilityStartsAt(
-      availability.available_date,
-      availability.start_minute,
-    ) > now
-  );
+function canEditAvailability(locked: boolean): boolean {
+  return !locked;
 }
 
 function defaultStartMinute(
@@ -106,7 +94,7 @@ function defaultStartMinute(
   now: Date,
 ): number | null {
   if (date < today) {
-    return null;
+    return DEFAULT_START_MINUTE;
   }
   if (date > today) {
     return DEFAULT_START_MINUTE;
@@ -460,11 +448,7 @@ export function CoachWeekCalendar({
                       availability.end_minute,
                       assignedLessons,
                     ) != null;
-                  const editable = canEditAvailability(
-                    availability,
-                    now,
-                    locked,
-                  );
+                  const editable = canEditAvailability(locked);
                   const shell =
                     "absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs leading-tight";
                   return availabilitySegments(

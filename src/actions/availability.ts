@@ -27,7 +27,7 @@ function validateAvailabilityInput(
   date: string,
   startMinute: number | null,
   endMinute: number | null,
-  options?: { allowStarted?: boolean },
+  options?: { allowStarted?: boolean; allowPast?: boolean },
 ): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return "日期無效";
@@ -47,6 +47,9 @@ function validateAvailabilityInput(
   }
 
   if (date < hongKongToday()) {
+    if (options?.allowPast) {
+      return null;
+    }
     return "只可提交今天或未來的可返工時間";
   }
 
@@ -56,7 +59,7 @@ function validateAvailabilityInput(
     `${date}T${startHour}:${startMins}:00`,
     TIMEZONE,
   );
-  if (!options?.allowStarted && startsAt <= new Date()) {
+  if (!options?.allowStarted && !options?.allowPast && startsAt <= new Date()) {
     return "只可新增或修改尚未開始的時段";
   }
 
@@ -300,6 +303,7 @@ export async function saveAvailabilityAction(
       date,
       startMinute,
       endMinute,
+      { allowPast: true },
     );
     if (validationError) {
       return { ok: false, error: validationError };
