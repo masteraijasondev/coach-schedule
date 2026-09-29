@@ -49,11 +49,13 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
     wagesByCoach.set(lesson.coach_id, byType);
   }
 
-  const grandTotal = [...wagesByCoach.values()].reduce(
-    (sum, byType) =>
-      sum + [...byType.values()].reduce((typeSum, amount) => typeSum + amount, 0),
-    0,
-  );
+  const activeCoachIds = new Set((coaches ?? []).map((person) => person.id));
+  const grandTotal = [...wagesByCoach.entries()].reduce((sum, [coachId, byType]) => {
+    if (!activeCoachIds.has(coachId)) {
+      return sum;
+    }
+    return sum + [...byType.values()].reduce((typeSum, amount) => typeSum + amount, 0);
+  }, 0);
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
 
