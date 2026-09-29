@@ -51,6 +51,32 @@ export async function createCoachAction(
     }
 
     const admin = createAdminClient();
+    const { data: existing, error: existingError } = await admin
+      .from("profiles")
+      .select("id, active, role")
+      .eq("email", email)
+      .maybeSingle();
+    if (existingError) {
+      console.error("[createCoachAction] existing", { error: existingError });
+      return { ok: false, error: "建立帳號失敗" };
+    }
+    if (existing) {
+      if (existing.role !== "coach" || existing.active) {
+        return { ok: false, error: "此電郵已有使用中的帳號" };
+      }
+      const restoreError = await restoreInactiveCoach(admin, existing.id, {
+        email,
+        fullName,
+        tempPassword,
+        staffKind,
+      });
+      if (restoreError) {
+        return { ok: false, error: restoreError };
+      }
+      revalidateCoachPages();
+      return { ok: true, data: undefined };
+    }
+
     const { data: created, error: createError } =
       await admin.auth.admin.createUser({
         email,
@@ -274,6 +300,47 @@ async function findCoachAccount(coachId: string) {
 }
 
 const DISABLED_LOGIN_BAN = "876000h";
+const CLEARED_LOGIN_BAN = "none";
+
+async function restoreInactiveCoach(
+  admin: ReturnType<typeof createAdminClient>,
+  coachId: string,
+  input: {
+    email: string;
+    fullName: string;
+    tempPassword: string;
+    staffKind: "coach" | "operations";
+  },
+): Promise<string | null> {
+  const { error: authError } = await admin.auth.admin.updateUserById(coachId, {
+    email: input.email,
+    password: input.tempPassword,
+    email_confirm: true,
+    ban_duration: CLEARED_LOGIN_BAN,
+  });
+  if (authError) {
+    console.error("[restoreInactiveCoach] auth", { authError });
+    return "無法重新啟用帳號";
+  }
+
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({
+      email: input.email,
+      full_name: input.fullName,
+      staff_kind: input.staffKind,
+      active: true,
+      must_change_password: true,
+    })
+    .eq("id", coachId)
+    .eq("role", "coach")
+    .eq("active", false);
+  if (profileError) {
+    console.error("[restoreInactiveCoach] profile", { profileError });
+    return "無法重新啟用帳號";
+  }
+  return null;
+}
 
 async function disableCoachLogin(
   admin: ReturnType<typeof createAdminClient>,

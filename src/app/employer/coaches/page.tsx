@@ -279,7 +279,7 @@ export default async function CoachesPage() {
                         確認刪除此帳號
                       </label>
                       <p className="text-xs text-stone-500">
-                        刪除後不能再登入，並會從員工名單移除。已有課堂紀錄會保留。
+                        刪除後不能再登入，並會從員工名單移除。已有課堂紀錄會保留。日後可用同一電郵重新建立帳號。
                       </p>
                       <SubmitButton variant="danger">刪除帳號</SubmitButton>
                     </ActionForm>
