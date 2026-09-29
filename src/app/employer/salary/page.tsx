@@ -27,6 +27,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
         .from("profiles")
         .select("id, full_name")
         .eq("role", "coach")
+        .eq("active", true)
         .order("full_name"),
       supabase
         .from("lessons")

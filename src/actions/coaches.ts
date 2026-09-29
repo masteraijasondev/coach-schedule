@@ -233,13 +233,21 @@ export async function deleteCoachAction(
       return { ok: false, error: "無法檢查課堂紀錄" };
     }
     if ((count ?? 0) > 0) {
-      return { ok: false, error: "此教練仍有課堂紀錄，無法刪除帳號" };
+      const disableError = await disableCoachLogin(admin, coachId);
+      if (disableError) {
+        return { ok: false, error: disableError };
+      }
+      revalidateCoachPages();
+      return { ok: true, data: undefined };
     }
 
     const { error: deleteError } = await admin.auth.admin.deleteUser(coachId);
     if (deleteError) {
       console.error("[deleteCoachAction] deleteUser", { deleteError });
-      return { ok: false, error: deleteError.message ?? "刪除帳號失敗" };
+      const disableError = await disableCoachLogin(admin, coachId);
+      if (disableError) {
+        return { ok: false, error: "刪除帳號失敗" };
+      }
     }
 
     revalidateCoachPages();
@@ -263,6 +271,34 @@ async function findCoachAccount(coachId: string) {
     return null;
   }
   return data;
+}
+
+const DISABLED_LOGIN_BAN = "876000h";
+
+async function disableCoachLogin(
+  admin: ReturnType<typeof createAdminClient>,
+  coachId: string,
+): Promise<string | null> {
+  const { error: profileError } = await admin
+    .from("profiles")
+    .update({ active: false })
+    .eq("id", coachId)
+    .eq("role", "coach");
+  if (profileError) {
+    console.error("[disableCoachLogin] profile", { profileError });
+    return "無法停用帳號";
+  }
+
+  const { error: banError } = await admin.auth.admin.updateUserById(coachId, {
+    ban_duration: DISABLED_LOGIN_BAN,
+    password: crypto.randomUUID(),
+  });
+  if (banError) {
+    console.error("[disableCoachLogin] ban", { banError });
+    return "帳號已從名單移除，但未能禁止登入";
+  }
+
+  return null;
 }
 
 function revalidateCoachPages() {

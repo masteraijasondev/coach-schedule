@@ -9,6 +9,7 @@ export type Profile = {
   full_name: string;
   role: UserRole;
   must_change_password: boolean;
+  active: boolean;
   created_at: string;
 };
 

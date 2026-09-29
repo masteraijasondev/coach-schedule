@@ -108,6 +108,7 @@ export async function loadEmployerCalendarData(range: {
       .from("profiles")
       .select("id, full_name, staff_kind")
       .eq("role", "coach")
+      .eq("active", true)
       .order("full_name"),
     supabase.rpc("employer_calendar_student_names", {
       p_start: range.lessonStart,
@@ -148,6 +149,7 @@ export async function loadEmployerCalendarData(range: {
       .from("profiles")
       .select("id, full_name")
       .eq("role", "coach")
+      .eq("active", true)
       .order("full_name");
     coachRows = (fallback.data ?? []).map((coach) => ({
       id: coach.id,

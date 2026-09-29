@@ -7,7 +7,7 @@ export const PROFILE_HEADER = "x-staff-profile";
 export const PROFILE_COOKIE = "staff_profile";
 
 export const PROFILE_SELECT =
-  "id, email, full_name, role, must_change_password, created_at";
+  "id, email, full_name, role, must_change_password, active, created_at";
 
 const PROFILE_MAX_AGE_SECONDS = 60 * 60 * 12;
 
@@ -95,6 +95,7 @@ function isProfile(value: unknown): value is Profile {
     typeof profile.full_name === "string" &&
     isRole(profile.role) &&
     typeof profile.must_change_password === "boolean" &&
+    typeof profile.active === "boolean" &&
     typeof profile.created_at === "string"
   );
 }

@@ -150,6 +150,14 @@ export async function updateSession(request: NextRequest) {
     profileCookie = await signProfileCookie(profile);
   }
 
+  if (!profile.active) {
+    const response = isPublicAuthPath
+      ? NextResponse.next({ request })
+      : NextResponse.redirect(loginUrl(request));
+    clearSupabaseAuthCookies(request, response);
+    return response;
+  }
+
   const destination = homePath(profile);
   if (pathname === "/") {
     return finish(request, authCookies, profile, profileCookie, {

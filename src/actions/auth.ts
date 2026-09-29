@@ -84,6 +84,11 @@ export async function loginAction(
       console.error("[loginAction] profile", { profileError });
       return { ok: false, error: "登入失敗，請檢查電郵或密碼" };
     }
+    if (!profile.active) {
+      await supabase.auth.signOut();
+      await forgetProfile();
+      return { ok: false, error: "此帳號已刪除，不能登入" };
+    }
 
     await rememberProfile(profile);
     revalidatePath("/", "layout");

@@ -68,6 +68,7 @@ export default async function CoachesPage() {
         .from("profiles")
         .select("id, email, full_name, staff_kind, hourly_rate_hkd, pay_ratio, must_change_password")
         .eq("role", "coach")
+        .eq("active", true)
         .order("full_name"),
       supabase
         .from("lesson_types")
@@ -278,7 +279,7 @@ export default async function CoachesPage() {
                         確認刪除此帳號
                       </label>
                       <p className="text-xs text-stone-500">
-                        有課堂紀錄的教練無法刪除。
+                        刪除後不能再登入，並會從員工名單移除。已有課堂紀錄會保留。
                       </p>
                       <SubmitButton variant="danger">刪除帳號</SubmitButton>
                     </ActionForm>

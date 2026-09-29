@@ -38,6 +38,7 @@ export default async function EmployerCoachSalaryPage({
         .select("id, full_name")
         .eq("id", coachId)
         .eq("role", "coach")
+        .eq("active", true)
         .maybeSingle(),
       supabase
         .from("lessons")

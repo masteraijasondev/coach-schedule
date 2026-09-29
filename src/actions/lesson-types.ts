@@ -75,6 +75,7 @@ export async function saveStaffWorkTypesAction(
       .select("id")
       .eq("id", coachId)
       .eq("role", "coach")
+      .eq("active", true)
       .maybeSingle();
     if (coachError || !coach) {
       console.error("[saveStaffWorkTypesAction] coach", { error: coachError });
