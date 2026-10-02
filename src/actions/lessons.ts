@@ -44,6 +44,121 @@ async function assertCoachAvailabilityCovers(
   return null;
 }
 
+async function assertCoachNotOnLeave(
+  coachId: string,
+  date: string,
+  startMinute: number,
+  endMinute: number,
+  supabase: SupabaseServerClient,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("staff_leaves")
+    .select("start_minute, end_minute")
+    .eq("coach_id", coachId)
+    .eq("leave_date", date);
+
+  if (error) {
+    console.error("[assertCoachNotOnLeave]", { error });
+    return "無法檢查放假紀錄";
+  }
+
+  for (const leave of data ?? []) {
+    if (leave.start_minute == null) {
+      return "該員工當日全日放假，不可派更";
+    }
+    if (
+      leave.start_minute < endMinute &&
+      (leave.end_minute ?? 0) > startMinute
+    ) {
+      return "派更時段與放假或 Short Break 重疊";
+    }
+  }
+  return null;
+}
+
+type MinuteRange = { start: number; end: number };
+
+function uncoveredAvailabilityGaps(
+  ranges: MinuteRange[],
+  startMinute: number,
+  endMinute: number,
+): MinuteRange[] {
+  const clipped = ranges
+    .map((range) => ({
+      start: Math.max(range.start, startMinute),
+      end: Math.min(range.end, endMinute),
+    }))
+    .filter((range) => range.end > range.start)
+    .sort((a, b) => a.start - b.start || a.end - b.end);
+
+  const merged: MinuteRange[] = [];
+  for (const range of clipped) {
+    const last = merged[merged.length - 1];
+    if (!last || range.start > last.end) {
+      merged.push({ ...range });
+      continue;
+    }
+    last.end = Math.max(last.end, range.end);
+  }
+
+  const gaps: MinuteRange[] = [];
+  let cursor = startMinute;
+  for (const range of merged) {
+    if (range.start > cursor) {
+      gaps.push({ start: cursor, end: range.start });
+    }
+    cursor = Math.max(cursor, range.end);
+  }
+  if (cursor < endMinute) {
+    gaps.push({ start: cursor, end: endMinute });
+  }
+  return gaps;
+}
+
+async function ensureOpenAvailability(
+  coachId: string,
+  date: string,
+  startMinute: number,
+  endMinute: number,
+): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("staff_availabilities")
+    .select("start_minute, end_minute")
+    .eq("coach_id", coachId)
+    .eq("available_date", date)
+    .eq("released", false);
+
+  if (error) {
+    console.error("[ensureOpenAvailability] load", { error });
+    return "無法準備派更時段";
+  }
+
+  const gaps = uncoveredAvailabilityGaps(
+    (data ?? []).map((row) => ({
+      start: row.start_minute,
+      end: row.end_minute,
+    })),
+    startMinute,
+    endMinute,
+  );
+
+  for (const gap of gaps) {
+    const { error: insertError } = await admin.from("staff_availabilities").insert({
+      coach_id: coachId,
+      available_date: date,
+      start_minute: gap.start,
+      end_minute: gap.end,
+      released: false,
+    });
+    if (insertError) {
+      console.error("[ensureOpenAvailability] insert", { insertError, gap });
+      return "無法準備派更時段";
+    }
+  }
+  return null;
+}
+
 function parseHongKongDateTime(date: string, time: string): Date {
   if (time === "24:00") {
     return fromZonedTime(`${addDaysToYmd(date, 1)}T00:00:00`, TIMEZONE);
@@ -320,10 +435,35 @@ export async function createLessonAction(
       return { ok: false, error: "結束時間必須晚於開始時間" };
     }
 
+    const assignStartMinute =
+      startMinuteRaw !== ""
+        ? Number(startMinuteRaw)
+        : Number(startTime.slice(0, 2)) * 60 + Number(startTime.slice(3, 5));
+    const assignEndMinute =
+      endMinuteRaw !== ""
+        ? Number(endMinuteRaw)
+        : endTime === "24:00"
+          ? 1440
+          : Number(endTime.slice(0, 2)) * 60 + Number(endTime.slice(3, 5));
+    const directAssign = String(formData.get("direct") ?? "") === "1";
+
     const supabase = await createClient();
     const requestedTypeId = String(formData.get("lesson_type_id") ?? "").trim();
+    const leaveError = await assertCoachNotOnLeave(
+      coachId,
+      date,
+      assignStartMinute,
+      assignEndMinute,
+      supabase,
+    );
+    if (leaveError) {
+      return { ok: false, error: leaveError };
+    }
+
     const [coverError, overlapError, fallbackTypeResult] = await Promise.all([
-      assertCoachAvailabilityCovers(coachId, startsAt, endsAt, supabase),
+      directAssign
+        ? Promise.resolve(null)
+        : assertCoachAvailabilityCovers(coachId, startsAt, endsAt, supabase),
       assertNoCoachOverlap(coachId, startsAt, endsAt, undefined, supabase),
       requestedTypeId
         ? Promise.resolve({ data: { id: requestedTypeId }, error: null })
@@ -340,6 +480,18 @@ export async function createLessonAction(
     }
     if (overlapError) {
       return { ok: false, error: overlapError };
+    }
+
+    if (directAssign) {
+      const availabilityError = await ensureOpenAvailability(
+        coachId,
+        date,
+        assignStartMinute,
+        assignEndMinute,
+      );
+      if (availabilityError) {
+        return { ok: false, error: availabilityError };
+      }
     }
 
     const lessonTypeId = fallbackTypeResult.data?.id;

@@ -9,6 +9,7 @@ import {
 } from "@/actions/lessons";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EmployerDirectAssignForm } from "@/components/employer-direct-assign-form";
 import { EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -666,8 +667,15 @@ export function EmployerMonthWorkspace({
       >
         <Panel title={day}>
           <p className="mb-3 text-sm text-slate-700">
-            當日時段按時間排列。選擇員工後即可派更或修改。
+            當日時段按時間排列。可於下方直接派更，無需員工先申報可返工。
           </p>
+          <div className="mb-3">
+            <EmployerDirectAssignForm
+              coaches={coaches.filter((coach) => visibleStaff.has(coach.id))}
+              date={day}
+              selectedCoachId={selectedCoach?.id}
+            />
+          </div>
           <div className="flex flex-col gap-2">
             {dayChips.map((chip) =>
               chip.items.length === 1 && !chip.items[0]?.body ? (
