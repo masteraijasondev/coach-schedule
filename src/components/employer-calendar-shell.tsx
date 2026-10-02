@@ -194,7 +194,7 @@ export function EmployerCalendarShell({
         <div className="min-w-0">
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">全體員工日曆</h1>
           <p className="mt-1 text-sm text-[#525252]">
-            請先選擇員工及狀態，再點選日期查看或直接派更。
+            請先選擇員工及狀態，再點選日期查看或派更。
           </p>
         </div>
         <CalendarViewToggle
@@ -245,7 +245,7 @@ export function EmployerCalendarShell({
       <div hidden={view !== "week"} className="space-y-6">
         <Panel title="週曆">
           <p className="mb-3 text-sm text-slate-700">
-            選擇員工以查看本週可返工時段。可直接派更，亦可點選時段派更。名單跟隨上方篩選。
+            選擇員工以查看本週可返工時段。點選時段即可派更；若尚未申報，可使用底部直接派更。名單跟隨上方篩選。
           </p>
           {visibleCoaches.length === 0 ? (
             <p className="text-sm text-slate-700">請至少選取一名員工，方可於週曆派更。</p>

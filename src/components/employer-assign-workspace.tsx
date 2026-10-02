@@ -231,20 +231,8 @@ export function EmployerAssignWorkspace({
         </Link>
       ) : null}
       <p className="text-sm text-slate-700">
-        可於下方直接派更，無需員工先申報。亦可點選可返工色塊派更或標為暫無需要。放假或 Short Break 以灰色顯示，病假以紅色顯示。
+        請先點選可返工色塊派更或標為暫無需要。放假或 Short Break 以灰色顯示，病假以紅色顯示。若員工尚未申報，可使用頁面底部的直接派更。
       </p>
-      <EmployerDirectAssignForm
-        coaches={[{ id: coachId, full_name: coachName }]}
-        date={
-          days.includes(selection.day)
-            ? selection.day
-            : days.includes(today)
-              ? today
-              : week
-        }
-        dateOptions={days}
-        selectedCoachId={coachId}
-      />
       <CalendarLegend items={EMPLOYER_CALENDAR_LEGEND} />
       <WeekTimeGrid
         days={days}
@@ -432,6 +420,20 @@ export function EmployerAssignWorkspace({
           />
         </section>
       ) : null}
+      <div className="border-t border-stone-200 pt-4">
+        <EmployerDirectAssignForm
+          coaches={[{ id: coachId, full_name: coachName }]}
+          date={
+            days.includes(selection.day)
+              ? selection.day
+              : days.includes(today)
+                ? today
+                : week
+          }
+          dateOptions={days}
+          selectedCoachId={coachId}
+        />
+      </div>
     </div>
   );
 }

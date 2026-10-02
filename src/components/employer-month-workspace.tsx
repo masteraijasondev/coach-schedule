@@ -667,15 +667,8 @@ export function EmployerMonthWorkspace({
       >
         <Panel title={day}>
           <p className="mb-3 text-sm text-slate-700">
-            當日時段按時間排列。可於下方直接派更，無需員工先申報可返工。
+            當日時段按時間排列。請先點選員工的可返工時段派更；若員工尚未申報，可使用頁面底部的直接派更。
           </p>
-          <div className="mb-3">
-            <EmployerDirectAssignForm
-              coaches={coaches.filter((coach) => visibleStaff.has(coach.id))}
-              date={day}
-              selectedCoachId={selectedCoach?.id}
-            />
-          </div>
           <div className="flex flex-col gap-2">
             {dayChips.map((chip) =>
               chip.items.length === 1 && !chip.items[0]?.body ? (
@@ -712,8 +705,15 @@ export function EmployerMonthWorkspace({
               ),
             )}
             {dayChips.length === 0 ? (
-              <p className="text-sm text-slate-700">此日尚未有時段。請選擇其他日期，或於右側派更。</p>
+              <p className="text-sm text-slate-700">此日尚未有時段。請選擇其他日期，或使用下方直接派更。</p>
             ) : null}
+          </div>
+          <div className="mt-4 border-t border-stone-200 pt-4">
+            <EmployerDirectAssignForm
+              coaches={coaches.filter((coach) => visibleStaff.has(coach.id))}
+              date={day}
+              selectedCoachId={selectedCoach?.id}
+            />
           </div>
         </Panel>
       </section>
