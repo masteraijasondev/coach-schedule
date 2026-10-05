@@ -5,7 +5,6 @@ import { isModifiedClick } from "@/lib/calendar-history";
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import {
-  formatCellDay,
   getMonthCells,
   hongKongToday,
   shiftMonth,
@@ -199,8 +198,7 @@ export function MonthCalendar({
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
-        {cells.map((cell) => {
-          const day = formatCellDay(cell);
+        {cells.map((day) => {
           const inMonth = day.startsWith(month);
           const lessons = lessonsByDay.get(day) ?? [];
           const availabilities = availabilityByDay?.get(day) ?? [];

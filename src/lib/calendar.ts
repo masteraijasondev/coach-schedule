@@ -1,10 +1,3 @@
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  startOfMonth,
-  startOfWeek,
-} from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { TIMEZONE } from "@/lib/constants";
 
@@ -281,15 +274,30 @@ export function isFullDayLeave(leave: {
   return leave.start_minute == null || leave.end_minute == null;
 }
 
-export function getMonthCells(month: string): Date[] {
-  const anchor = fromZonedTime(`${month}-01T12:00:00`, TIMEZONE);
-  const start = startOfWeek(startOfMonth(anchor), { weekStartsOn: 0 });
-  const end = endOfWeek(endOfMonth(anchor), { weekStartsOn: 0 });
-  return eachDayOfInterval({ start, end });
-}
-
-export function formatCellDay(date: Date): string {
-  return formatInTimeZone(date, TIMEZONE, "yyyy-MM-dd");
+/**
+ * Month grid days as yyyy-MM-dd strings, Sunday-first.
+ * Pure UTC date math so the grid is identical on every device,
+ * regardless of the viewer's local timezone.
+ */
+export function getMonthCells(month: string): string[] {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const firstDay = `${month}-01`;
+  const lastDay = `${month}-${String(
+    new Date(Date.UTC(year, monthNumber, 0)).getUTCDate(),
+  ).padStart(2, "0")}`;
+  const start = addDaysToYmd(
+    firstDay,
+    -new Date(`${firstDay}T00:00:00Z`).getUTCDay(),
+  );
+  const end = addDaysToYmd(
+    lastDay,
+    6 - new Date(`${lastDay}T00:00:00Z`).getUTCDay(),
+  );
+  const cells: string[] = [];
+  for (let day = start; day <= end; day = addDaysToYmd(day, 1)) {
+    cells.push(day);
+  }
+  return cells;
 }
 
 export function monthGridDateRange(month: string): {
@@ -298,8 +306,8 @@ export function monthGridDateRange(month: string): {
 } {
   const cells = getMonthCells(month);
   return {
-    start: formatCellDay(cells[0]),
-    end: formatCellDay(cells[cells.length - 1]),
+    start: cells[0],
+    end: cells[cells.length - 1],
   };
 }
 
