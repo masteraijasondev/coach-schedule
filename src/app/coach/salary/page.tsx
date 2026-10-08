@@ -113,7 +113,11 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
           >
             上期
           </Link>
-          <ExpectedPaySummary confirmed={total} expected={expected} />
+          <ExpectedPaySummary
+            confirmed={total}
+            expected={expected}
+            tour="coach-salary-totals"
+          />
           <Link
             href={`/coach/salary?month=${next}`}
             className="text-sm text-stone-600 underline"

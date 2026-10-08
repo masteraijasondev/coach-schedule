@@ -212,9 +212,10 @@ export function CoachMonthWorkspace({
             })
           }
           monthHref={(target) => coachCalendarHref({ month: target })}
+          tour="coach-month"
         />
       </Panel>
-      <div id="day" className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
+      <div id="day" data-tour="coach-day" className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
         <CoachDayPanel
           day={day}
           today={today}

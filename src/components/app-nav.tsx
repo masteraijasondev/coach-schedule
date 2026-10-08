@@ -6,7 +6,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export type NavItem = { href: string; label: string; activeWhen?: string[] };
+export type NavItem = {
+  href: string;
+  label: string;
+  activeWhen?: string[];
+  tour?: string;
+};
 
 function isActive(pathname: string, item: NavItem): boolean {
   const hrefs = item.activeWhen ?? [item.href];
@@ -70,6 +75,7 @@ export function AppHeader({
               <Link
                 key={item.href}
                 href={item.href}
+                data-tour={item.tour}
                 className={[
                   "flex min-h-11 items-center rounded-md px-3 py-2.5 text-lg font-semibold",
                   active
@@ -96,6 +102,7 @@ export function AppHeader({
           >
             {open ? "關閉" : "選單"}
           </button>
+          <div id="tour-help-slot" />
           <form action={logoutAction}>
             <button
               type="submit"

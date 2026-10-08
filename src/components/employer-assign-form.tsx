@@ -82,7 +82,10 @@ export function EmployerAssignForm({
       <p className="mt-1 text-sm text-stone-500">
         派更與暫無需要可各自選擇時段。預期薪金按時薪估計已派更、尚未簽到的時段。
       </p>
-      <div className="mt-3 rounded-md border border-stone-200 bg-white p-3 text-sm">
+      <div
+        data-tour="employer-assign-estimate"
+        className="mt-3 rounded-md border border-stone-200 bg-white p-3 text-sm"
+      >
         <p className="font-medium text-stone-800">
           {payrollPeriodLabel(period)} 估計
         </p>

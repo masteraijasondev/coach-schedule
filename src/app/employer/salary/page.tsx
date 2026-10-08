@@ -116,7 +116,11 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           >
             上期
           </Link>
-          <ExpectedPaySummary confirmed={grandTotal} expected={grandExpected} />
+          <ExpectedPaySummary
+            confirmed={grandTotal}
+            expected={grandExpected}
+            tour="employer-salary-totals"
+          />
           <Link
             href={`/employer/salary?month=${next}`}
             className="text-sm text-stone-600 underline"

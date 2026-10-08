@@ -110,6 +110,7 @@ export function CoachCalendarShell({
             setView(next);
             setWeek(readCalendarWeek(day));
           }}
+          tour="coach-view"
         />
       </div>
 

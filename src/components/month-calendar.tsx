@@ -127,6 +127,7 @@ type Props = {
   showNames?: boolean;
   onSelectDay?: (day: string) => void;
   legendItems?: { className: string; label: string }[];
+  tour?: string;
 };
 
 export function MonthCalendar({
@@ -141,6 +142,7 @@ export function MonthCalendar({
   showNames = false,
   onSelectDay,
   legendItems,
+  tour,
 }: Props) {
   const cells = getMonthCells(month);
   const today = hongKongToday();
@@ -163,7 +165,7 @@ export function MonthCalendar({
   }
 
   return (
-    <div className="space-y-3">
+    <div data-tour={tour} className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <Link
           href={hrefForMonth(prev)}

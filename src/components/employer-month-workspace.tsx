@@ -668,11 +668,13 @@ export function EmployerMonthWorkspace({
             })
           }
           dayHref={(target) => dayHref(target, selectedCoach?.id)}
+          tour="employer-month"
         />
       </Panel>
 
       <section
         id="day"
+        data-tour="employer-day"
         className="min-w-0 scroll-mt-4 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto"
       >
         <Panel title={day}>

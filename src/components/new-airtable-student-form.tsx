@@ -9,6 +9,7 @@ export function NewAirtableStudentForm() {
   const [generation, setGeneration] = useState(0);
 
   return (
+    <div data-tour="coach-student-form">
     <ActionForm
       action={createAirtableStudentProfileAction}
       className="space-y-3"
@@ -32,5 +33,6 @@ export function NewAirtableStudentForm() {
       </div>
       <SubmitButton>新增學生</SubmitButton>
     </ActionForm>
+    </div>
   );
 }

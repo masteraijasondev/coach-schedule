@@ -216,6 +216,7 @@ export function EmployerCalendarShell({
             view: "week",
           })}
           onViewChange={syncFromLocation}
+          tour="employer-view"
         />
       </div>
 

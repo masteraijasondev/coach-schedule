@@ -15,7 +15,7 @@ export default async function EmployerSettingsPage() {
   return (
     <Panel title="設定">
       <p className="mb-4 text-sm text-stone-500">管理同事與課堂類型。</p>
-      <ul className="flex flex-wrap gap-2">
+      <ul data-tour="employer-settings" className="flex flex-wrap gap-2">
         {LINKS.map((link) => (
           <li key={link.href}>
             <Link href={link.href} title={link.hint} className={buttonTone.secondary}>

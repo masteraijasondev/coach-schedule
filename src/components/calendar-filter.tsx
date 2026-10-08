@@ -52,16 +52,18 @@ function FilterSection({
   hint,
   action,
   stacked = false,
+  tour,
   children,
 }: {
   title: string;
   hint?: string;
   action?: ReactNode;
   stacked?: boolean;
+  tour?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 space-y-2">
+    <section data-tour={tour} className="min-w-0 space-y-2">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-bold text-[#2C2C2C]">
           {title}
@@ -134,7 +136,7 @@ export function CalendarFilterBar({
         </button>
       </div>
 
-      <FilterSection title="員工" hint={staffHint}>
+      <FilterSection title="員工" hint={staffHint} tour="employer-filter-staff">
         {staff.length === 0 ? (
           <p className="text-sm text-[#525252]">尚未有員工</p>
         ) : (
@@ -173,6 +175,7 @@ export function CalendarFilterBar({
 
       <FilterSection
         title="狀態"
+        tour="employer-filter-status"
         hint={statusHint}
         action={
           <button

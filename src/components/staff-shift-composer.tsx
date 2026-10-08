@@ -108,7 +108,7 @@ export function StaffShiftComposer({
   }
 
   return (
-    <div className="relative z-[2] flex min-w-0 flex-col gap-2">
+    <div data-tour="coach-report" className="relative z-[2] flex min-w-0 flex-col gap-2">
       {open ? (
         <div className={`rounded-2xl bg-slate-50 ${compact ? "p-1.5" : "p-3"}`}>
           <button

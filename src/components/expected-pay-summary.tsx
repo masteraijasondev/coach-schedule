@@ -8,10 +8,12 @@ export function ExpectedPaySummary({
   confirmed,
   expected,
   compact = false,
+  tour,
 }: {
   confirmed: number;
   expected: number | null;
   compact?: boolean;
+  tour?: string;
 }) {
   const confirmedClass = compact
     ? "text-sm font-medium"
@@ -21,7 +23,7 @@ export function ExpectedPaySummary({
     : "text-sm font-medium text-stone-700";
 
   return (
-    <div className="text-right">
+    <div data-tour={tour} className="text-right">
       <p className={confirmedClass}>已確認薪金：{formatMoney(confirmed)}</p>
       <p className={expectedClass}>
         預期薪金：{formatExpectedPay(expected)}

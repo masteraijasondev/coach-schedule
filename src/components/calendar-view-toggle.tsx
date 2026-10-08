@@ -13,11 +13,13 @@ export function CalendarViewToggle({
   monthHref,
   weekHref,
   onViewChange,
+  tour,
 }: {
   view: CalendarView;
   monthHref: string;
   weekHref: string;
   onViewChange: (view: CalendarView) => void;
+  tour?: string;
 }) {
   const itemClass = (active: boolean) =>
     [
@@ -41,6 +43,7 @@ export function CalendarViewToggle({
       className="inline-flex rounded-md border border-stone-300 p-0.5"
       role="tablist"
       aria-label="日曆檢視"
+      data-tour={tour}
     >
       <Link
         href={monthHref}
