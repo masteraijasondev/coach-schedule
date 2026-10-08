@@ -5,8 +5,16 @@ import {
   parsePayrollPeriodParam,
   payrollPeriodBoundsIso,
   payrollPeriodLabel,
+  lessonDayKey,
+  payrollPeriodForDate,
   shiftMonth,
 } from "@/lib/calendar";
+import { ExpectedPaySummary } from "@/components/expected-pay-summary";
+import {
+  hourlyRateOrNull,
+  periodPayTotals,
+  type PayShift,
+} from "@/lib/expected-pay";
 import { formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,14 +33,14 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, hourly_rate_hkd")
         .eq("role", "coach")
         .eq("active", true)
         .order("full_name"),
       supabase
         .from("lessons")
-        .select("coach_id, lesson_type_id, earned_amount_hkd")
-        .eq("status", "completed")
+        .select("coach_id, lesson_type_id, earned_amount_hkd, starts_at, ends_at, status")
+        .in("status", ["completed", "assigned"])
         .gte("starts_at", start)
         .lt("starts_at", end)
         .not("coach_id", "is", null),
@@ -41,12 +49,32 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
 
   const typeName = new Map((lessonTypes ?? []).map((type) => [type.id, type.name]));
   const wagesByCoach = new Map<string, Map<string, number>>();
+  const shiftsByCoach = new Map<string, PayShift[]>();
   for (const lesson of lessons ?? []) {
     if (!lesson.coach_id) continue;
-    const byType = wagesByCoach.get(lesson.coach_id) ?? new Map<string, number>();
-    const typeId = lesson.lesson_type_id;
-    byType.set(typeId, (byType.get(typeId) ?? 0) + Number(lesson.earned_amount_hkd ?? 0));
-    wagesByCoach.set(lesson.coach_id, byType);
+    if (
+      lesson.status === "completed" &&
+      payrollPeriodForDate(lessonDayKey(lesson.starts_at)) === period
+    ) {
+      const byType = wagesByCoach.get(lesson.coach_id) ?? new Map<string, number>();
+      const typeId = lesson.lesson_type_id;
+      byType.set(typeId, (byType.get(typeId) ?? 0) + Number(lesson.earned_amount_hkd ?? 0));
+      wagesByCoach.set(lesson.coach_id, byType);
+    }
+    const shifts = shiftsByCoach.get(lesson.coach_id) ?? [];
+    if (lesson.status === "assigned" || lesson.status === "completed") {
+      shifts.push({
+        coachId: lesson.coach_id,
+        startsAt: lesson.starts_at,
+        endsAt: lesson.ends_at,
+        status: lesson.status,
+        earnedAmountHkd:
+          lesson.earned_amount_hkd == null
+            ? null
+            : Number(lesson.earned_amount_hkd),
+      });
+      shiftsByCoach.set(lesson.coach_id, shifts);
+    }
   }
 
   const activeCoachIds = new Set((coaches ?? []).map((person) => person.id));
@@ -56,6 +84,25 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
     }
     return sum + [...byType.values()].reduce((typeSum, amount) => typeSum + amount, 0);
   }, 0);
+  const expectedByCoach = new Map(
+    (coaches ?? []).map((person) => [
+      person.id,
+      periodPayTotals(
+        shiftsByCoach.get(person.id) ?? [],
+        hourlyRateOrNull(person.hourly_rate_hkd),
+        period,
+      ).expected,
+    ]),
+  );
+  const grandExpectedValues = [...expectedByCoach.values()].filter(
+    (amount): amount is number => amount != null,
+  );
+  const grandExpected =
+    grandExpectedValues.length === 0
+      ? null
+      : Math.round(
+          grandExpectedValues.reduce((sum, amount) => sum + amount, 0) * 100,
+        ) / 100;
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
 
@@ -69,7 +116,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           >
             上期
           </Link>
-          <p className="text-lg font-semibold">本結算期總薪資：{formatMoney(grandTotal)}</p>
+          <ExpectedPaySummary confirmed={grandTotal} expected={grandExpected} />
           <Link
             href={`/employer/salary?month=${next}`}
             className="text-sm text-stone-600 underline"
@@ -78,7 +125,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)}。
+          結算期：{payrollPeriodLabel(period)}。已確認薪金只計已簽到。預期薪金只計尚未簽到的已派更時段，按時薪估計；學生分成要簽到後先計入已確認薪金。
         </p>
         <ul className="divide-y divide-stone-100">
           {(coaches ?? []).map((person) => {
@@ -100,9 +147,11 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
                   >
                     {person.full_name}
                   </Link>
-                  <p className="text-sm font-medium">
-                    本結算期薪資：{formatMoney(total)}
-                  </p>
+                  <ExpectedPaySummary
+                    compact
+                    confirmed={total}
+                    expected={expectedByCoach.get(person.id) ?? null}
+                  />
                 </div>
                 {lines.length === 0 ? (
                   <p className="mt-1 text-xs text-stone-500">此結算期尚無已簽到工作</p>

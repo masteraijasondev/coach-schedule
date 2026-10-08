@@ -13,11 +13,15 @@ import {
   parseDayParam,
   parseMinuteParam,
   parseMonthParam,
+  payrollPeriodBoundsIso,
+  payrollPeriodForDate,
   shiftAvailabilityWeek,
 } from "@/lib/calendar";
 import { parseCalendarFilter } from "@/lib/calendar-filter";
 import { loadEmployerCalendarData } from "@/lib/employer-calendar-data";
+import { hourlyRateOrNull, type PayShift } from "@/lib/expected-pay";
 import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
+import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   searchParams: Promise<{
@@ -67,6 +71,39 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       gridStart: gridRange.start,
       gridEnd: gridRange.end,
     });
+  const payPeriods = [gridRange.start, gridRange.end, week, weekEnd]
+    .map((date) => payrollPeriodForDate(date))
+    .sort();
+  const payStart = payrollPeriodBoundsIso(payPeriods[0]).start;
+  const payEnd = payrollPeriodBoundsIso(payPeriods[payPeriods.length - 1]).end;
+  const paySupabase = await createClient();
+  const { data: payRows, error: payError } = await paySupabase
+    .from("lessons")
+    .select("coach_id, starts_at, ends_at, status, earned_amount_hkd")
+    .in("status", ["assigned", "completed"])
+    .gte("starts_at", payStart)
+    .lt("starts_at", payEnd)
+    .not("coach_id", "is", null);
+  if (payError) {
+    console.error("[EmployerHomePage] pay shifts", { error: payError });
+  }
+  const payShifts: PayShift[] = (payRows ?? []).flatMap((lesson) => {
+    if (!lesson.coach_id) {
+      return [];
+    }
+    if (lesson.status !== "assigned" && lesson.status !== "completed") {
+      return [];
+    }
+    return [
+      {
+        coachId: lesson.coach_id,
+        startsAt: lesson.starts_at,
+        endsAt: lesson.ends_at,
+        status: lesson.status,
+        earnedAmountHkd: hourlyRateOrNull(lesson.earned_amount_hkd),
+      },
+    ];
+  });
   const initialFilter = parseCalendarFilter(
     { staff: params.staff, status: params.status },
     staff,
@@ -108,6 +145,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
       availabilities={availabilities}
       leaves={leaves}
       workTypes={workTypes}
+      payShifts={payShifts}
       initialFilter={initialFilter}
       remoteWeekPanel={
         selectedCoach && !weekInGrid ? (
@@ -157,6 +195,10 @@ export default async function EmployerHomePage({ searchParams }: Props) {
             isCurrentWeek={week === currentWeek}
             slots={assignSlots}
             view="week"
+            hourlyRate={selectedCoach.hourly_rate_hkd}
+            payShifts={payShifts.filter(
+              (shift) => shift.coachId === selectedCoach.id,
+            )}
           />
         ) : null
       }

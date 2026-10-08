@@ -21,8 +21,12 @@ An employer-created lesson placed fully inside a coach's availability, of any le
 _Avoid_: Open lesson, self-registered lesson, 派工
 
 **已派更，待簽到**:
-Assignment status after the employer assigns and before the coach checks in. Visible on both calendars; does not count toward pay.
+Assignment status after the employer assigns and before the coach checks in. Visible on both calendars; does not count toward 已確認薪金.
 _Avoid_: 待員工確認, 已指派
+
+**預期薪金**:
+Estimate of pay for 已派更，待簽到 windows in the payroll period, using the staff hourly rate × assigned hours. Shown to the employer while assigning, and on both employer and employee salary pages beside 已確認薪金. Student-share pay is not included until check-in.
+_Avoid_: Treating it as the amount that will be paid; counting it inside 已確認薪金
 
 **已確認 / 已確認簽到**:
 Coach-confirmed work periods inside an assignment. Only these periods count toward payroll when an amount is set. Time inside the original assigned window that was not added stays unconfirmed and unpaid.

@@ -3,6 +3,7 @@ import { Panel } from "@/components/ui";
 import { availabilityWeekBoundsIso } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
+import type { PayShift } from "@/lib/expected-pay";
 import { formatInTimeZone } from "date-fns-tz";
 
 type AvailabilitySlot = {
@@ -50,6 +51,8 @@ export async function EmployerAssignPanel({
   selectedDay,
   selectedSlot,
   view,
+  hourlyRate = null,
+  payShifts = [],
 }: {
   coachId: string;
   coachName: string;
@@ -67,6 +70,8 @@ export async function EmployerAssignPanel({
   selectedDay?: string;
   selectedSlot?: SlotSelection | null;
   view?: "month" | "week";
+  hourlyRate?: number | null;
+  payShifts?: PayShift[];
 }) {
   let slots = providedSlots;
   let leaves = providedLeaves;
@@ -152,6 +157,8 @@ export async function EmployerAssignPanel({
           lessons={lessons}
           nowMinute={nowMinute}
           view={view}
+          hourlyRate={hourlyRate}
+          payShifts={payShifts}
         />
       )}
     </Panel>

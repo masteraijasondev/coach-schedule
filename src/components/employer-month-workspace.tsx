@@ -33,6 +33,7 @@ import {
   type CalendarFilter,
   type StaffKind,
 } from "@/lib/calendar-filter";
+import type { PayShift } from "@/lib/expected-pay";
 import { employerCalendarHref, employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import {
   appendStudentNames,
@@ -71,6 +72,7 @@ export type EmployerMonthCoach = {
   id: string;
   full_name: string;
   staff_kind: StaffKind;
+  hourly_rate_hkd: number | null;
 };
 
 export type EmployerMonthSlot = {
@@ -105,6 +107,7 @@ export function EmployerMonthWorkspace({
   availabilities,
   leaves,
   workTypes,
+  payShifts,
   filter,
 }: {
   month: string;
@@ -120,6 +123,7 @@ export function EmployerMonthWorkspace({
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
   workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
+  payShifts: PayShift[];
   filter: CalendarFilter;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
@@ -563,6 +567,13 @@ export function EmployerMonthWorkspace({
               date={day}
               startMinute={segment.startMinute}
               slotEndMinute={segment.endMinute}
+              hourlyRate={
+                coaches.find((coach) => coach.id === group.coachId)
+                  ?.hourly_rate_hkd ?? null
+              }
+              payShifts={payShifts.filter(
+                (shift) => shift.coachId === group.coachId,
+              )}
               clearHref={calendarHref({
                 month,
                 day,

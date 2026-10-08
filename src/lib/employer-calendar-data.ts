@@ -1,4 +1,5 @@
 import { parseStaffKind } from "@/lib/calendar-filter";
+import { hourlyRateOrNull } from "@/lib/expected-pay";
 import type { EmployerMonthCoach } from "@/components/employer-month-workspace";
 import type { EmployerMonthLeave } from "@/components/employer-month-workspace";
 import type { EmployerMonthLesson } from "@/components/employer-month-workspace";
@@ -106,7 +107,7 @@ export async function loadEmployerCalendarData(range: {
       .lte("leave_date", range.gridEnd),
     supabase
       .from("profiles")
-      .select("id, full_name, staff_kind")
+      .select("id, full_name, staff_kind, hourly_rate_hkd")
       .eq("role", "coach")
       .eq("active", true)
       .order("full_name"),
@@ -155,6 +156,7 @@ export async function loadEmployerCalendarData(range: {
       id: coach.id,
       full_name: coach.full_name,
       staff_kind: null,
+      hourly_rate_hkd: null,
     }));
   }
 
@@ -220,6 +222,9 @@ export async function loadEmployerCalendarData(range: {
     full_name: coach.full_name,
     staff_kind: parseStaffKind(
       "staff_kind" in coach ? String(coach.staff_kind) : undefined,
+    ),
+    hourly_rate_hkd: hourlyRateOrNull(
+      "hourly_rate_hkd" in coach ? coach.hourly_rate_hkd : null,
     ),
   }));
 

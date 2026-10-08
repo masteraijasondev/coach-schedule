@@ -8,6 +8,12 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
+import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
+import {
+  durationMinutes,
+  expectedHourlyAmount,
+  hourlyRateOrNull,
+} from "@/lib/expected-pay";
 import { formatDateTime, formatMoney, nestedStudentName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +41,7 @@ export default async function EmployerCoachSalaryPage({
     await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, hourly_rate_hkd")
         .eq("id", coachId)
         .eq("role", "coach")
         .eq("active", true)
@@ -43,10 +49,10 @@ export default async function EmployerCoachSalaryPage({
       supabase
         .from("lessons")
         .select(
-          "id, lesson_type_id, starts_at, ends_at, earned_amount_hkd, student_fee_hkd",
+          "id, lesson_type_id, starts_at, ends_at, status, earned_amount_hkd, student_fee_hkd",
         )
         .eq("coach_id", coachId)
-        .eq("status", "completed")
+        .in("status", ["completed", "assigned"])
         .gte("starts_at", start)
         .lt("starts_at", end)
         .order("starts_at", { ascending: true }),
@@ -73,9 +79,31 @@ export default async function EmployerCoachSalaryPage({
     }
   }
 
+  const hourlyRate = hourlyRateOrNull(coach.hourly_rate_hkd);
+  const assignedLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "assigned",
+  );
+  const confirmedLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "completed",
+  );
+  const expected =
+    hourlyRate == null
+      ? null
+      : Math.round(
+          assignedLessons.reduce(
+            (sum, lesson) =>
+              sum +
+              expectedHourlyAmount(
+                durationMinutes(lesson.starts_at, lesson.ends_at),
+                hourlyRate,
+              ),
+            0,
+          ) * 100,
+        ) / 100;
+
   const typeById = new Map((lessonTypes ?? []).map((type) => [type.id, type]));
-  const lessonsByType = new Map<string, NonNullable<typeof lessons>>();
-  for (const lesson of lessons ?? []) {
+  const lessonsByType = new Map<string, typeof confirmedLessons>();
+  for (const lesson of confirmedLessons) {
     const group = lessonsByType.get(lesson.lesson_type_id) ?? [];
     group.push(lesson);
     lessonsByType.set(lesson.lesson_type_id, group);
@@ -107,7 +135,7 @@ export default async function EmployerCoachSalaryPage({
           >
             上期
           </Link>
-          <p className="text-lg font-semibold">{formatMoney(total)}</p>
+          <ExpectedPaySummary confirmed={total} expected={expected} />
           <Link
             href={`/employer/salary/${coachId}?month=${next}`}
             className="text-sm text-stone-600 underline"
@@ -116,8 +144,39 @@ export default async function EmployerCoachSalaryPage({
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)}。薪資按工作類型分開計算。
+          結算期：{payrollPeriodLabel(period)}。已確認薪金按工作類型分開計算。預期薪金按尚未簽到的已派更時段 × 時薪估計。
         </p>
+        <section className="mb-4">
+          <h3 className="text-sm font-semibold text-stone-800">
+            已派更，待簽到 · {formatExpectedPay(expected)}
+          </h3>
+          {assignedLessons.length === 0 ? (
+            <p className="py-2 text-sm text-stone-500">此結算期尚無未簽到派更</p>
+          ) : (
+            <ul className="divide-y divide-stone-100">
+              {assignedLessons.map((lesson) => (
+                <li key={lesson.id} className="flex justify-between gap-3 py-2">
+                  <p className="text-sm tabular-nums text-stone-700">
+                    {formatDateTime(lesson.starts_at)}
+                    {hourlyRate == null
+                      ? ""
+                      : ` · ${(durationMinutes(lesson.starts_at, lesson.ends_at) / 60).toFixed(1)} 小時`}
+                  </p>
+                  <p className="text-sm font-medium">
+                    {hourlyRate == null
+                      ? "未設定時薪"
+                      : formatMoney(
+                          expectedHourlyAmount(
+                            durationMinutes(lesson.starts_at, lesson.ends_at),
+                            hourlyRate,
+                          ),
+                        )}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
         <p className="mb-3 text-sm">
           <Link
             href={`/employer/salary?month=${period}`}

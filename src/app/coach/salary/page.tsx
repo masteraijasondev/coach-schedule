@@ -7,6 +7,12 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
+import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
+import {
+  durationMinutes,
+  expectedHourlyAmount,
+  hourlyRateOrNull,
+} from "@/lib/expected-pay";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
 import { relatedStudentName } from "@/lib/employer-calendar-data";
 import { createClient } from "@/lib/supabase/server";
@@ -22,19 +28,33 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
   const { start, end } = payrollPeriodBoundsIso(period);
 
   const supabase = await createClient();
-  const { data: lessons } = await supabase
-    .from("lessons")
-    .select(
-      "id, lesson_type_id, starts_at, earned_amount_hkd, headcount, expected_headcount",
-    )
-    .eq("coach_id", coach.id)
-    .eq("status", "completed")
-    .gte("starts_at", start)
-    .lt("starts_at", end)
-    .order("starts_at", { ascending: true });
+  const [{ data: lessons }, { data: profile }] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select(
+        "id, lesson_type_id, starts_at, ends_at, status, earned_amount_hkd, headcount, expected_headcount",
+      )
+      .eq("coach_id", coach.id)
+      .in("status", ["completed", "assigned"])
+      .gte("starts_at", start)
+      .lt("starts_at", end)
+      .order("starts_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("hourly_rate_hkd")
+      .eq("id", coach.id)
+      .maybeSingle(),
+  ]);
+  const confirmedLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "completed",
+  );
+  const assignedLessons = (lessons ?? []).filter(
+    (lesson) => lesson.status === "assigned",
+  );
+  const hourlyRate = hourlyRateOrNull(profile?.hourly_rate_hkd);
 
-  const lessonIds = (lessons ?? []).map((lesson) => lesson.id);
-  const typeIds = [...new Set((lessons ?? []).map((l) => l.lesson_type_id))];
+  const lessonIds = confirmedLessons.map((lesson) => lesson.id);
+  const typeIds = [...new Set(confirmedLessons.map((l) => l.lesson_type_id))];
   const [{ data: types }, { data: lessonStudents }] = await Promise.all([
     typeIds.length
       ? supabase
@@ -61,10 +81,24 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
     }
   }
 
-  const total = (lessons ?? []).reduce(
+  const total = confirmedLessons.reduce(
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
     0,
   );
+  const expected =
+    hourlyRate == null
+      ? null
+      : Math.round(
+          assignedLessons.reduce(
+            (sum, lesson) =>
+              sum +
+              expectedHourlyAmount(
+                durationMinutes(lesson.starts_at, lesson.ends_at),
+                hourlyRate,
+              ),
+            0,
+          ) * 100,
+        ) / 100;
 
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
@@ -79,7 +113,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
           >
             上期
           </Link>
-          <p className="text-lg font-semibold">{formatMoney(total)}</p>
+          <ExpectedPaySummary confirmed={total} expected={expected} />
           <Link
             href={`/coach/salary?month=${next}`}
             className="text-sm text-stone-600 underline"
@@ -88,10 +122,34 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
           </Link>
         </div>
         <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)} · 僅計算已簽到課堂；尚未填寫金額者不計入總額。
+          結算期：{payrollPeriodLabel(period)}。已確認薪金只計已簽到課堂。預期薪金（{formatExpectedPay(expected)}）按尚未簽到的已派更時段 × 時薪估計，學生分成要簽到後先計入已確認薪金。
         </p>
+        {assignedLessons.length > 0 ? (
+          <ul className="mb-4 divide-y divide-stone-100 rounded-md border border-dashed border-stone-300">
+            {assignedLessons.map((lesson) => (
+              <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
+                <div>
+                  <p className="text-sm font-medium">已派更，待簽到</p>
+                  <p className="text-sm tabular-nums text-stone-500">
+                    {formatDateTime(lesson.starts_at)}
+                  </p>
+                </div>
+                <p className="text-sm font-medium">
+                  {hourlyRate == null
+                    ? "未設定時薪"
+                    : formatMoney(
+                        expectedHourlyAmount(
+                          durationMinutes(lesson.starts_at, lesson.ends_at),
+                          hourlyRate,
+                        ),
+                      )}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <ul className="divide-y divide-stone-100">
-          {(lessons ?? []).map((lesson) => {
+          {confirmedLessons.map((lesson) => {
             const payMode = payModeByType.get(lesson.lesson_type_id);
             const sizeLabel = formatLessonSizeLabel(
               payMode,
@@ -132,7 +190,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
             </li>
             );
           })}
-          {(lessons ?? []).length === 0 ? (
+          {confirmedLessons.length === 0 ? (
             <li className="py-3 text-sm text-stone-500">此結算期尚無已簽到課堂</li>
           ) : null}
         </ul>
