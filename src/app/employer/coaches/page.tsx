@@ -87,6 +87,7 @@ export default async function CoachesPage() {
     <div className="space-y-6">
       <EmployerSettingsBackLink />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
+        <div data-tour="employer-coaches">
         <Panel title="新增員工帳號">
           <ActionForm action={createCoachAction} className="space-y-3">
             <Field label="姓名" name="full_name" required />
@@ -114,6 +115,7 @@ export default async function CoachesPage() {
             <SubmitButton>建立帳號</SubmitButton>
           </ActionForm>
         </Panel>
+        </div>
 
         <Panel title="員工列表">
           <ul className="space-y-3">

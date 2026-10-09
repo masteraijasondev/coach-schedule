@@ -1,15 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { StudentDirectoryProvider } from "@/components/student-directory-provider";
 import { requireEmployer } from "@/lib/auth";
-import { EMPLOYER_TOUR } from "@/lib/tours";
 
 const items = [
-  { href: "/employer", label: "日曆", tour: "employer-nav-calendar" },
-  { href: "/employer/salary", label: "薪資", tour: "employer-nav-salary" },
+  { href: "/employer", label: "日曆" },
+  { href: "/employer/salary", label: "薪資" },
   {
     href: "/employer/settings",
     label: "設定",
-    tour: "employer-nav-settings",
     activeWhen: [
       "/employer/settings",
       "/employer/coaches",
@@ -33,7 +31,7 @@ export default async function EmployerLayout({
         name={profile.full_name}
         items={items}
         tone="ops"
-        tour={{ storageKey: "employer", steps: EMPLOYER_TOUR }}
+        tourRole="employer"
       >
         {children}
       </AppShell>

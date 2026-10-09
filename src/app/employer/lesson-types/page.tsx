@@ -28,6 +28,7 @@ export default async function LessonTypesPage() {
     <div className="space-y-6">
       <EmployerSettingsBackLink />
     <div className="grid gap-6 lg:grid-cols-2">
+      <div data-tour="employer-lesson-types">
       <Panel title="新增課堂類型">
         <ActionForm action={createLessonTypeAction} className="space-y-3">
           <Field label="名稱" name="name" required />
@@ -64,6 +65,7 @@ export default async function LessonTypesPage() {
           <SubmitButton>新增課堂類型</SubmitButton>
         </ActionForm>
       </Panel>
+      </div>
 
       <Panel title="課堂類型">
         <ul className="divide-y divide-stone-100">

@@ -1,6 +1,7 @@
 "use client";
 
-import type { TourStep } from "@/lib/tours";
+import { COACH_TOURS, EMPLOYER_TOURS, type RouteTour } from "@/lib/tours";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -40,13 +41,12 @@ function visibleTarget(id: string): HTMLElement | null {
   return null;
 }
 
-export function GuidedTour({
-  storageKey,
-  steps,
-}: {
-  storageKey: string;
-  steps: TourStep[];
-}) {
+export function GuidedTour({ role }: { role: "employer" | "coach" }) {
+  const tours: RouteTour[] = role === "employer" ? EMPLOYER_TOURS : COACH_TOURS;
+  const pathname = usePathname();
+  const tour = tours.find((item) => item.match(pathname)) ?? null;
+  const storageKey = tour?.storageKey ?? "";
+  const steps = tour?.steps ?? [];
   const titleId = useId();
   const nextRef = useRef<HTMLButtonElement>(null);
   const focusedStep = useRef<string | null>(null);
@@ -64,11 +64,13 @@ export function GuidedTour({
 
   useEffect(() => {
     setHelpSlot(document.getElementById(HELP_SLOT_ID));
-    if (!readSeen(storageKey)) {
-      setOpen(true);
-    }
+    setIndex(0);
+    setBox(null);
+    focusedStep.current = null;
+    scrolledStep.current = null;
+    setOpen(tour != null && !readSeen(tour.storageKey));
     setReady(true);
-  }, [storageKey]);
+  }, [pathname, tour]);
 
   useEffect(() => {
     function reopen() {
@@ -97,9 +99,15 @@ export function GuidedTour({
       }
     }
     place();
+    const main = document.querySelector("main");
+    const observer = new MutationObserver(place);
+    if (main) {
+      observer.observe(main, { childList: true, subtree: true });
+    }
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      observer.disconnect();
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
@@ -149,7 +157,7 @@ export function GuidedTour({
     setOpen(false);
   }
 
-  const helpButton = helpSlot
+  const helpButton = helpSlot && tour
     ? createPortal(
         <button
           type="button"

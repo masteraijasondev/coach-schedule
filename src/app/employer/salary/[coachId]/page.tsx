@@ -135,7 +135,11 @@ export default async function EmployerCoachSalaryPage({
           >
             上期
           </Link>
-          <ExpectedPaySummary confirmed={total} expected={expected} />
+          <ExpectedPaySummary
+            confirmed={total}
+            expected={expected}
+            tour="employer-salary-detail"
+          />
           <Link
             href={`/employer/salary/${coachId}?month=${next}`}
             className="text-sm text-stone-600 underline"

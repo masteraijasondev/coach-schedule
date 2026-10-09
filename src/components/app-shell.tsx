@@ -1,14 +1,12 @@
 import { AppHeader, type NavItem } from "@/components/app-nav";
 import { GuidedTour } from "@/components/guided-tour";
 import { APP_VERSION } from "@/lib/constants";
-import type { TourStep } from "@/lib/tours";
-
 type Props = {
   title: string;
   name: string;
   items: NavItem[];
   tone?: "default" | "ops";
-  tour?: { storageKey: string; steps: TourStep[] };
+  tourRole?: "employer" | "coach";
 };
 
 export function AppShell({
@@ -16,7 +14,7 @@ export function AppShell({
   name,
   items,
   tone = "default",
-  tour,
+  tourRole,
   children,
 }: Props & { children: React.ReactNode }) {
   const ops = tone === "ops";
@@ -29,9 +27,7 @@ export function AppShell({
       }
     >
       <AppHeader title={title} name={name} items={items} tone={tone} />
-      {tour ? (
-        <GuidedTour storageKey={tour.storageKey} steps={tour.steps} />
-      ) : null}
+      {tourRole ? <GuidedTour role={tourRole} /> : null}
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
       <p
         className={
