@@ -104,12 +104,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "employer-day",
         title: "當日派更",
-        body: "點開琥珀色可返工色塊，才可以派更或標為暫無需要。色塊打開後才可繼續。若今日沒有可返工，可按略過。",
-      },
-      {
-        id: "employer-assign-estimate",
-        title: "預期薪金",
-        body: "這裡用時薪估計已派更但未簽到的薪金。改時間會更新今次時段估計。已確認薪金要等同事簽到。",
+        body: "點開琥珀色可返工色塊，就可以派更或標為暫無需要。",
       },
     ],
   },

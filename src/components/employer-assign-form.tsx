@@ -83,7 +83,6 @@ export function EmployerAssignForm({
         派更與暫無需要可各自選擇時段。預期薪金按時薪估計已派更、尚未簽到的時段。
       </p>
       <div
-        data-tour="employer-assign-estimate"
         className="mt-3 rounded-md border border-stone-200 bg-white p-3 text-sm"
       >
         <p className="font-medium text-stone-800">
