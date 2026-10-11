@@ -9,6 +9,7 @@ import {
 } from "@/actions/lessons";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EmployerDirectAssignForm } from "@/components/employer-direct-assign-form";
 import { EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { MonthCalendar } from "@/components/month-calendar";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -717,8 +718,15 @@ export function EmployerMonthWorkspace({
               ),
             )}
             {dayChips.length === 0 ? (
-              <p className="text-sm text-slate-700">此日尚未有時段。請選擇其他日期。</p>
+              <p className="text-sm text-slate-700">此日尚未有時段。請選擇其他日期，或使用直接派更。</p>
             ) : null}
+          </div>
+          <div className="mt-4 border-t border-stone-200 pt-4">
+            <EmployerDirectAssignForm
+              coaches={coaches.filter((coach) => visibleStaff.has(coach.id))}
+              date={day}
+              selectedCoachId={selectedCoach?.id}
+            />
           </div>
         </Panel>
       </section>

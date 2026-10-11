@@ -4,6 +4,7 @@ import { restoreReleasedAvailabilityAction } from "@/actions/availability";
 import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
+import { EmployerDirectAssignForm } from "@/components/employer-direct-assign-form";
 import { ServerActionButton } from "@/components/server-action-button";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
 import { availabilityWeekStart, availabilitySegments, isFullDayLeave, lessonMinutesInHongKong, overlappingLesson, shiftAvailabilityWeek, takeCompletedLessonOnce } from "@/lib/calendar";
@@ -426,6 +427,20 @@ export function EmployerAssignWorkspace({
           />
         </section>
       ) : null}
+      <div className="border-t border-stone-200 pt-4">
+        <EmployerDirectAssignForm
+          coaches={[{ id: coachId, full_name: coachName }]}
+          date={
+            days.includes(selection.day)
+              ? selection.day
+              : days.includes(today)
+                ? today
+                : week
+          }
+          dateOptions={days}
+          selectedCoachId={coachId}
+        />
+      </div>
     </div>
   );
 }
