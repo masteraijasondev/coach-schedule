@@ -25,9 +25,11 @@ export function ExpectedPaySummary({
   return (
     <div data-tour={tour} className="text-right">
       <p className={confirmedClass}>已確認薪金：{formatMoney(confirmed)}</p>
-      <p className={expectedClass}>
-        預期薪金：{formatExpectedPay(expected)}
-      </p>
+      {expected === 0 ? null : (
+        <p className={expectedClass}>
+          預期薪金：{formatExpectedPay(expected)}
+        </p>
+      )}
     </div>
   );
 }

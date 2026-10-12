@@ -21,6 +21,24 @@ type Props = {
   searchParams: Promise<{ month?: string }>;
 };
 
+function SalaryWhen({
+  startsAt,
+  endsAt,
+}: {
+  startsAt: string;
+  endsAt: string;
+}) {
+  const [startDate, startTime] = formatDateTime(startsAt).split(" ");
+  const [endDate, endTime] = formatDateTime(endsAt).split(" ");
+  const range =
+    startDate === endDate ? `${startTime}–${endTime}` : `${startTime}–${endDate} ${endTime}`;
+  return (
+    <>
+      {startDate} <span>{range}</span>
+    </>
+  );
+}
+
 export default async function CoachSalaryPage({ searchParams }: Props) {
   const coach = await requireCoach();
   const params = await searchParams;
@@ -105,7 +123,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <Panel title={`薪資 · ${period} 結算期`}>
+      <Panel title={`薪資 · ${period} 結算期 : (${payrollPeriodLabel(period)})`}>
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/coach/salary?month=${prev}`}
@@ -125,8 +143,8 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
             下期
           </Link>
         </div>
-        <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)}。已確認薪金只計已簽到課堂。預期薪金（{formatExpectedPay(expected)}）按尚未簽到的已派更時段 × 時薪估計，學生分成要簽到後先計入已確認薪金。
+        <p className="mb-3">
+          已確認薪金只計已簽到課堂。{expected === 0 ? "" : `預期薪金（${formatExpectedPay(expected)}） 按尚未簽到的已派更時段 × 時薪估計。`}學生分成要簽到後先計入已確認薪金。
         </p>
         {assignedLessons.length > 0 ? (
           <ul className="mb-4 divide-y divide-stone-100 rounded-md border border-dashed border-stone-300">
@@ -134,8 +152,8 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">已派更，待簽到</p>
-                  <p className="text-sm tabular-nums text-stone-500">
-                    {formatDateTime(lesson.starts_at)}
+                  <p className="italic text-stone-950">
+                    <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                   </p>
                 </div>
                 <p className="text-sm font-medium">
@@ -167,8 +185,8 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="font-medium">
                   {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
                 </p>
-                <p className="text-sm tabular-nums text-stone-500">
-                  {formatDateTime(lesson.starts_at)}
+                <p className=" italic text-stone-950">
+                  <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                 </p>
                 {payMode === "per_student" ? (
                   <p className="text-sm text-stone-500">
@@ -186,7 +204,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 className={
                   lesson.earned_amount_hkd == null
                     ? "text-sm font-medium text-amber-700"
-                    : "text-sm font-medium"
+                    : "font-bold italic text-stone-950"
                 }
               >
                 {formatMoneyOrPending(lesson.earned_amount_hkd)}

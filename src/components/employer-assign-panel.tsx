@@ -2,6 +2,7 @@ import { EmployerAssignWorkspace } from "@/components/employer-assign-workspace"
 import { Panel } from "@/components/ui";
 import { availabilityWeekBoundsIso } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
+import { groupStudentNames } from "@/lib/employer-calendar-data";
 import { createClient } from "@/lib/supabase/server";
 import type { PayShift } from "@/lib/expected-pay";
 import { formatInTimeZone } from "date-fns-tz";
@@ -27,11 +28,26 @@ type LeaveSlot = {
   end_minute?: number | null;
 };
 
+type LessonRow = {
+  id: string;
+  lesson_type_id: string;
+  starts_at: string;
+  ends_at: string;
+  status?: string;
+};
+
 type WeekLesson = {
   id: string;
   starts_at: string;
   ends_at: string;
   status?: string;
+  lesson_type_name?: string;
+  student_names?: string[];
+};
+
+type LessonTypeOption = {
+  id: string;
+  name: string;
 };
 
 export async function EmployerAssignPanel({
@@ -53,6 +69,7 @@ export async function EmployerAssignPanel({
   view,
   hourlyRate = null,
   payShifts = [],
+  types,
 }: {
   coachId: string;
   coachName: string;
@@ -72,6 +89,7 @@ export async function EmployerAssignPanel({
   view?: "month" | "week";
   hourlyRate?: number | null;
   payShifts?: PayShift[];
+  types: LessonTypeOption[];
 }) {
   let slots = providedSlots;
   let leaves = providedLeaves;
@@ -87,7 +105,8 @@ export async function EmployerAssignPanel({
   const { start: weekStartIso, end: weekEndIso } =
     availabilityWeekBoundsIso(week);
   const supabase = await createClient();
-  const [availabilityResult, leavesResult, lessonsResult] = await Promise.all([
+  const [availabilityResult, leavesResult, lessonsResult, namesResult] =
+    await Promise.all([
     slots == null
       ? supabase
           .from("staff_availabilities")
@@ -108,19 +127,36 @@ export async function EmployerAssignPanel({
       : Promise.resolve({ data: leaves, error: null }),
     supabase
       .from("lessons")
-      .select("id, starts_at, ends_at, status")
+      .select("id, lesson_type_id, starts_at, ends_at, status")
       .eq("coach_id", coachId)
       .in("status", ["assigned", "completed"])
       .gte("starts_at", weekStartIso)
       .lt("starts_at", weekEndIso),
+    supabase.rpc("employer_calendar_student_names", {
+      p_start: weekStartIso,
+      p_end: weekEndIso,
+    }),
   ]);
 
   availabilityError = slots == null ? availabilityResult.error : null;
   leavesError = leaves == null ? leavesResult.error : null;
-  lessonsError = lessonsResult.error;
+  lessonsError = lessonsResult.error ?? namesResult.error;
   slots = slots ?? availabilityResult.data ?? [];
   leaves = leaves ?? leavesResult.data ?? [];
-  lessons = lessonsResult.data ?? [];
+  const typeNameById = new Map(types.map((type) => [type.id, type.name]));
+  const lessonRows = (lessonsResult.data ?? []) as LessonRow[];
+  const namesByLesson = groupStudentNames(
+    (namesResult.data as { lesson_id: string; student_name: string }[] | null) ??
+      null,
+  );
+  lessons = lessonRows.map((lesson) => ({
+    id: lesson.id,
+    starts_at: lesson.starts_at,
+    ends_at: lesson.ends_at,
+    status: lesson.status,
+    lesson_type_name: typeNameById.get(lesson.lesson_type_id),
+    student_names: namesByLesson.get(lesson.id) ?? [],
+  }));
 
   if (availabilityError || leavesError || lessonsError) {
     console.error("[EmployerAssignPanel] load assign data", {

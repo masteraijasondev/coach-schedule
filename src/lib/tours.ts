@@ -34,13 +34,73 @@ export const EMPLOYER_TOURS: RouteTour[] = [
     ],
   },
   {
-    storageKey: "employer-coaches",
+    storageKey: "employer-coaches-workflow",
     match: (pathname) => pathname === "/employer/coaches",
     steps: [
       {
-        id: "employer-coaches",
-        title: "同事與工作類型",
-        body: "新增帳號時選擇 Admin 或 Coach。列表可改姓名、時薪或分成，以及這位同事簽到時可報的工作類型。",
+        id: "employer-coach-create-name",
+        title: "新同事姓名",
+        body: "輸入顯示姓名。建立後，右側列表同月曆都會用這個名字。",
+      },
+      {
+        id: "employer-coach-create-role",
+        title: "職位",
+        body: "選 Coach 或 Admin。Coach 可以填分成，教班跟學生價。Admin 只計時薪。",
+      },
+      {
+        id: "employer-coach-create-email",
+        title: "登入電郵",
+        body: "這是登入帳號。同一電郵不能再建立另一個使用中的帳號。",
+      },
+      {
+        id: "employer-coach-create-password",
+        title: "臨時密碼",
+        body: "至少 8 字元。員工第一次登入必須自行更改密碼。",
+      },
+      {
+        id: "employer-coach-create-submit",
+        title: "建立帳號",
+        body: "按這裡建立。成功後，這位同事會出現在右側列表。",
+      },
+      {
+        id: "employer-coach-edit-name",
+        title: "修改姓名",
+        body: "改這位同事的顯示姓名。要按「更新員工資料」先生效。",
+      },
+      {
+        id: "employer-coach-edit-role",
+        title: "更改職位",
+        body: "改為 Admin 會收起分成。改為 Coach 後可以填分成。",
+      },
+      {
+        id: "employer-coach-hourly",
+        title: "預設時薪",
+        body: "按時數簽到時，若該工作類型沒有另填時薪，就用這個數。",
+      },
+      {
+        id: "employer-coach-ratio",
+        title: "Coach 分成",
+        body: "只適用於 Coach。教班簽到按學生學費乘這個百分比計人工。Admin 沒有這一欄。",
+      },
+      {
+        id: "employer-coach-save-profile",
+        title: "儲存資料",
+        body: "按「更新員工資料」先儲存姓名、職位、時薪同分成。",
+      },
+      {
+        id: "employer-coach-types",
+        title: "可做的工作",
+        body: "勾選後，這位同事簽到時才可以報這種工作。",
+      },
+      {
+        id: "employer-coach-type-rate",
+        title: "工作類型時薪",
+        body: "按時數的工作可以各自填時薪，例如 Admin 100、PTA 120。留空就用上面的預設時薪。教班仍然跟學生價。",
+      },
+      {
+        id: "employer-coach-save-types",
+        title: "儲存工作類型",
+        body: "按這裡後，勾選同各類型時薪先會用於之後的簽到。",
       },
     ],
   },

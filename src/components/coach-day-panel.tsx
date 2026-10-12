@@ -28,14 +28,15 @@ import {
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import {
-  appendStudentNames,
   calendarAssignmentLabel,
+  checkedInLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
 } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
 import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
 const MINUTES_PER_DAY = 1440;
@@ -102,6 +103,7 @@ export function CoachDayPanel({
   leaves,
   workTypes,
   staffKind,
+  teamDay = null,
 }: {
   day: string;
   today: string;
@@ -110,6 +112,7 @@ export function CoachDayPanel({
   leaves: CoachDayLeave[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
+  teamDay?: ReactNode;
 }) {
   const router = useRouter();
   const now = new Date();
@@ -140,6 +143,7 @@ export function CoachDayPanel({
   const hasAssigned = dayHasLessonOnDate(day, shiftLessons);
   const canReport = suggestedStart != null && !fullDayLeave;
   const seenCompleted = new Set<string>();
+  const typeNameById = new Map(workTypes.map((type) => [type.id, type.name]));
 
   function refresh() {
     router.refresh();
@@ -302,10 +306,11 @@ export function CoachDayPanel({
                 return (
                   <StaffShiftChip
                     key={`${slot.id}-${segment.startMinute}-${segment.endMinute}`}
-                    label={appendStudentNames(
-                      `${timeLabel} ${calendarAssignmentLabel("completed")}`,
-                      segment.lesson?.student_names,
-                    )}
+                    label={checkedInLabel({
+                      time: timeLabel,
+                      typeName: typeNameById.get(segment.lesson?.lesson_type_id ?? ""),
+                      studentNames: segment.lesson?.student_names,
+                    })}
                     tone="confirmed"
                   >
                     {segment.lesson && lessonWindow ? (
@@ -395,6 +400,7 @@ export function CoachDayPanel({
           ) : null}
         </div>
       )}
+      {teamDay}
     </Panel>
   );
 }

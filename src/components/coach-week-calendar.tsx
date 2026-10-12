@@ -31,8 +31,8 @@ import {
 } from "@/lib/calendar";
 import { TIMEZONE } from "@/lib/constants";
 import {
-  appendStudentNames,
   calendarAssignmentLabel,
+  checkedInLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
 } from "@/lib/format";
@@ -149,6 +149,7 @@ export function CoachWeekCalendar({
     event: MouseEvent<HTMLAnchorElement>,
   ) => void;
 }) {
+  const typeNameById = new Map(workTypes.map((type) => [type.id, type.name]));
   const currentWeek = availabilityWeekStart();
   const prevWeek = shiftAvailabilityWeek(week, -1);
   const nextWeek = shiftAvailabilityWeek(week, 1);
@@ -520,10 +521,13 @@ export function CoachWeekCalendar({
                         <summary className="cursor-pointer list-none">
                           <p className="font-medium tabular-nums">{timeLabel}</p>
                           <p>
-                            {appendStudentNames(
-                              `${calendarAssignmentLabel("completed")} 修改`,
-                              segment.lesson.student_names,
-                            )}
+                            {checkedInLabel({
+                              typeName: typeNameById.get(
+                                segment.lesson.lesson_type_id ?? "",
+                              ),
+                              studentNames: segment.lesson.student_names,
+                            })}{" "}
+                            修改
                           </p>
                         </summary>
                         <div className="min-w-0 border-t border-sky-100 bg-white p-2 text-stone-900">

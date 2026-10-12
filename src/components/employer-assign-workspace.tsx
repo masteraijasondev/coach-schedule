@@ -16,7 +16,7 @@ import {
 } from "@/lib/calendar-history";
 import type { PayShift } from "@/lib/expected-pay";
 import { employerCalendarHref } from "@/lib/employer-href";
-import { calendarAssignmentLabel, calendarSlotLabel, formatAvailabilityTime } from "@/lib/format";
+import { calendarAssignmentLabel, calendarSlotLabel, checkedInLabel, formatAvailabilityTime } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
 import Link from "next/link";
 import type { MouseEvent } from "react";
@@ -47,6 +47,8 @@ type WeekLesson = {
   starts_at: string;
   ends_at: string;
   status?: string;
+  lesson_type_name?: string;
+  student_names?: string[];
 };
 
 export function EmployerAssignWorkspace({
@@ -335,6 +337,12 @@ export function EmployerAssignWorkspace({
               gridEnd,
             );
             const label = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+            const statusLabel = pending
+              ? calendarAssignmentLabel("assigned")
+              : checkedInLabel({
+                  typeName: segment.lesson?.lesson_type_name,
+                  studentNames: segment.lesson?.student_names,
+                });
             const className = selected
               ? "border-stone-900 bg-stone-900 text-white"
               : pending
@@ -347,16 +355,12 @@ export function EmployerAssignWorkspace({
               return (
                 <div
                   key={key}
-                  title={`${label} ${pending ? calendarAssignmentLabel("assigned") : calendarAssignmentLabel("completed")}`}
+                  title={`${label} ${statusLabel}`}
                   className={`absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                   style={{ top, height }}
                 >
                   <span className="tabular-nums">{label}</span>
-                  <span className="mt-0.5 block truncate">
-                    {pending
-                      ? calendarAssignmentLabel("assigned")
-                      : calendarAssignmentLabel("completed")}
-                  </span>
+                  <span className="mt-0.5 block">{statusLabel}</span>
                   {segment.lesson ? (
                     <ServerActionButton
                       action={

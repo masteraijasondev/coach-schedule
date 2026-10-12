@@ -31,12 +31,32 @@ export function nestedStudentNames(related: {
     .filter((name): name is string => name != null && name.trim() !== "");
 }
 
-export function appendStudentNames(label: string, names: string[] | undefined): string {
-  const text = (names ?? []).filter((name) => name.trim() !== "").join("、");
-  if (!text) {
-    return label;
+export function checkedInLabel({
+  time,
+  typeName,
+  studentNames,
+  withStatus = true,
+}: {
+  time?: string;
+  typeName?: string | null;
+  studentNames?: string[];
+  withStatus?: boolean;
+}): string {
+  const students = (studentNames ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name !== "")
+    .join("、");
+  const type = typeName?.trim() ?? "";
+  const details = [withStatus ? "已簽到" : "", type, students]
+    .filter(Boolean)
+    .join(" · ");
+  if (!time) {
+    return details;
   }
-  return `${label} · ${text}`;
+  if (!details) {
+    return time;
+  }
+  return withStatus ? `${time} ${details}` : `${time} · ${details}`;
 }
 
 export function nestedStudentName(related: {

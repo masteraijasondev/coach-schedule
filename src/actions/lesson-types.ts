@@ -50,6 +50,49 @@ export async function createLessonTypeAction(
   }
 }
 
+async function saveHourlyJobRates(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  coachId: string,
+  formData: FormData,
+  types: { id: string; pay_mode: string }[],
+): Promise<string | null> {
+  for (const type of types) {
+    if (type.pay_mode !== "per_hour") {
+      continue;
+    }
+    const raw = String(formData.get(`hourly_rate_${type.id}`) ?? "").trim();
+    if (!raw) {
+      const { error } = await supabase
+        .from("coach_rates")
+        .delete()
+        .eq("coach_id", coachId)
+        .eq("lesson_type_id", type.id);
+      if (error) {
+        console.error("[saveHourlyJobRates] delete", { error, coachId, typeId: type.id });
+        return "更新工作類型時薪失敗";
+      }
+      continue;
+    }
+    const amount = Number(raw);
+    if (!Number.isFinite(amount) || amount < 0) {
+      return "請輸入有效的工作類型時薪";
+    }
+    const { error } = await supabase.from("coach_rates").upsert(
+      {
+        coach_id: coachId,
+        lesson_type_id: type.id,
+        amount_hkd: Math.round(amount * 100) / 100,
+      },
+      { onConflict: "coach_id,lesson_type_id" },
+    );
+    if (error) {
+      console.error("[saveHourlyJobRates] upsert", { error, coachId, typeId: type.id });
+      return "更新工作類型時薪失敗";
+    }
+  }
+  return null;
+}
+
 export async function saveStaffWorkTypesAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -85,7 +128,7 @@ export async function saveStaffWorkTypesAction(
     if (typeIds.length > 0) {
       const { data: types, error: typeError } = await supabase
         .from("lesson_types")
-        .select("id")
+        .select("id, pay_mode")
         .in("id", typeIds)
         .eq("active", true);
       if (typeError) {
@@ -94,6 +137,15 @@ export async function saveStaffWorkTypesAction(
       }
       if ((types ?? []).length !== typeIds.length) {
         return { ok: false, error: "只可分配啟用中的工作類型" };
+      }
+      const rateError = await saveHourlyJobRates(
+        supabase,
+        coachId,
+        formData,
+        types ?? [],
+      );
+      if (rateError) {
+        return { ok: false, error: rateError };
       }
     }
 

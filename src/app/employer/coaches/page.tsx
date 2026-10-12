@@ -24,6 +24,48 @@ type CoachRateRow = {
   amount_hkd: number | string;
 };
 
+function ChoiceBox({
+  name,
+  value,
+  defaultChecked,
+  required,
+}: {
+  name: string;
+  value: string;
+  defaultChecked?: boolean;
+  required?: boolean;
+}) {
+  return (
+    <span className="relative grid size-4 shrink-0 place-items-center">
+      <input
+        type="checkbox"
+        name={name}
+        value={value}
+        defaultChecked={defaultChecked}
+        required={required}
+        className="peer col-start-1 row-start-1 size-4 cursor-pointer appearance-none rounded-[4px] border border-stone-400 bg-white checked:border-[#2C2C2C] checked:bg-[#2C2C2C] hover:border-stone-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+      />
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden
+        className="pointer-events-none col-start-1 row-start-1 size-3 text-white opacity-0 peer-checked:opacity-100"
+      >
+        <path
+          d="M3.5 8.2 6.4 11.2 12.5 4.8"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
+const choiceLabelClass =
+  "inline-flex w-fit cursor-pointer items-center gap-2 rounded-md py-0.5 pr-1 text-sm font-medium text-[#2C2C2C] hover:bg-stone-50 has-checked:bg-stone-100";
+
 function amountInputValue(value: number | string | null | undefined): string {
   if (value == null || value === "") {
     return "";
@@ -87,39 +129,47 @@ export default async function CoachesPage() {
     <div className="space-y-6">
       <EmployerSettingsBackLink />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(16rem,22rem)_minmax(0,1fr)]">
-        <div data-tour="employer-coaches">
         <Panel title="新增員工帳號">
           <ActionForm action={createCoachAction} className="space-y-3">
-            <Field label="姓名" name="full_name" required />
-            <SelectField
-              label="職位"
-              name="staff_kind"
-              required
-              defaultValue="coach"
-              options={[
-                { value: "coach", label: "Coach" },
-                { value: "operations", label: "Admin" },
-              ]}
-            />
-            <Field label="電郵" name="email" type="email" required />
-            <Field
-              label="臨時密碼"
-              name="temp_password"
-              type="password"
-              minLength={8}
-              required
-            />
+            <div data-tour="employer-coach-create-name">
+              <Field label="姓名" name="full_name" required />
+            </div>
+            <div data-tour="employer-coach-create-role">
+              <SelectField
+                label="職位"
+                name="staff_kind"
+                required
+                defaultValue="coach"
+                options={[
+                  { value: "coach", label: "Coach" },
+                  { value: "operations", label: "Admin" },
+                ]}
+              />
+            </div>
+            <div data-tour="employer-coach-create-email">
+              <Field label="電郵" name="email" type="email" required />
+            </div>
+            <div data-tour="employer-coach-create-password">
+              <Field
+                label="臨時密碼"
+                name="temp_password"
+                type="password"
+                minLength={8}
+                required
+              />
+            </div>
             <p className="text-xs text-stone-500">
               員工首次登入必須更改密碼。
             </p>
-            <SubmitButton>建立帳號</SubmitButton>
+            <div data-tour="employer-coach-create-submit">
+              <SubmitButton>建立帳號</SubmitButton>
+            </div>
           </ActionForm>
         </Panel>
-        </div>
 
         <Panel title="員工列表">
           <ul className="space-y-3">
-            {(coaches ?? []).map((coach) => {
+            {(coaches ?? []).map((coach, coachIndex) => {
               const hourlyValue =
                 coach.hourly_rate_hkd == null
                   ? amountInputValue(
@@ -134,6 +184,7 @@ export default async function CoachesPage() {
                 coach.pay_ratio == null
                   ? ""
                   : formatPayRatioPercent(Number(coach.pay_ratio));
+              const tour = coachIndex === 0;
               return (
               <li key={coach.id} className="space-y-2 rounded-lg border border-stone-200 p-3">
                 <div className="flex items-center justify-between gap-3">
@@ -155,7 +206,10 @@ export default async function CoachesPage() {
                   className="flex flex-wrap items-end gap-2"
                 >
                   <input type="hidden" name="coach_id" value={coach.id} />
-                  <div className="w-1/4">
+                  <div
+                    className="w-1/4"
+                    data-tour={tour ? "employer-coach-edit-name" : undefined}
+                  >
                     <Field
                       label="姓名"
                       name="full_name"
@@ -163,7 +217,10 @@ export default async function CoachesPage() {
                       required
                     />
                   </div>
-                  <div className="w-44">
+                  <div
+                    className="w-44"
+                    data-tour={tour ? "employer-coach-edit-role" : undefined}
+                  >
                     <SelectField
                       label="職位"
                       name="staff_kind"
@@ -179,7 +236,10 @@ export default async function CoachesPage() {
                       ]}
                     />
                   </div>
-                  <div className="w-36">
+                  <div
+                    className="w-36"
+                    data-tour={tour ? "employer-coach-hourly" : undefined}
+                  >
                     <Field
                       label="時薪"
                       name="hourly_rate_hkd"
@@ -189,17 +249,24 @@ export default async function CoachesPage() {
                       defaultValue={hourlyValue}
                     />
                   </div>
-                  <div className="w-36">
-                    <Field
-                      label="分成 %"
-                      name="pay_ratio_percent"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      defaultValue={ratioValue}
-                    />
+                  {coach.staff_kind === "operations" ? null : (
+                    <div
+                      className="w-36"
+                      data-tour={tour ? "employer-coach-ratio" : undefined}
+                    >
+                      <Field
+                        label="分成 %"
+                        name="pay_ratio_percent"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        defaultValue={ratioValue}
+                      />
+                    </div>
+                  )}
+                  <div data-tour={tour ? "employer-coach-save-profile" : undefined}>
+                    <SubmitButton>更新員工資料</SubmitButton>
                   </div>
-                  <SubmitButton>更新員工資料</SubmitButton>
                 </ActionForm>
                 
                 <ActionForm
@@ -207,35 +274,66 @@ export default async function CoachesPage() {
                   className="space-y-2 rounded-md border border-stone-200 p-3"
                 >
                   <input type="hidden" name="coach_id" value={coach.id} />
-                  <p className="text-sm font-medium text-stone-800">可做的工作類型</p>
-                  <p className="text-xs text-stone-500">
-                    簽到時只可以報勾選的工作類型。
-                  </p>
+                  <p className="text-sm font-medium text-stone-800">工作類型</p>
                   {(lessonTypes ?? []).length === 0 ? (
                     <p className="text-sm text-stone-500">
                       尚未有啟用中的工作類型。請先到「課堂類型」新增。
                     </p>
                   ) : (
-                    <ul className="grid gap-1 sm:grid-cols-2">
-                      {(lessonTypes ?? []).map((type) => (
-                        <li key={type.id}>
-                          <label className="flex items-center gap-2 text-sm text-stone-700">
-                            <input
-                              type="checkbox"
+                    <ul
+                      className="flex flex-wrap gap-1"
+                      data-tour={tour ? "employer-coach-types" : undefined}
+                    >
+                      {(lessonTypes ?? []).map((type) => {
+                        const rateValue = amountInputValue(
+                          (coachRates ?? []).find(
+                            (rate) =>
+                              rate.coach_id === coach.id &&
+                              rate.lesson_type_id === type.id,
+                          )?.amount_hkd,
+                        );
+                        return (
+                        <li
+                          key={type.id}
+                          className={
+                            type.pay_mode === "per_hour"
+                              ? "inline-flex w-fit items-center gap-1.5 px-1.5 py-0.5"
+                              : "inline-flex w-fit items-center"
+                          }
+                        >
+                          <label className={choiceLabelClass}>
+                            <ChoiceBox
                               name="lesson_type_id"
                               value={type.id}
                               defaultChecked={assignedTypes.has(
                                 `${coach.id}:${type.id}`,
                               )}
-                              className="size-4 rounded border-stone-300"
                             />
                             {type.name}
                           </label>
+                          {type.pay_mode === "per_hour" ? (
+                            <input
+                              name={`hourly_rate_${type.id}`}
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              defaultValue={rateValue}
+                              placeholder="時薪"
+                              aria-label={`${type.name} 時薪`}
+                              data-tour={
+                                tour ? "employer-coach-type-rate" : undefined
+                              }
+                              className="h-7 w-20 rounded-md border border-stone-300 bg-white px-2 text-sm text-stone-900 outline-none focus:border-stone-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+                            />
+                          ) : null}
                         </li>
-                      ))}
+                        );
+                      })}
                     </ul>
                   )}
-                  <SubmitButton>儲存工作類型</SubmitButton>
+                  <div data-tour={tour ? "employer-coach-save-types" : undefined}>
+                    <SubmitButton>儲存工作類型</SubmitButton>
+                  </div>
                 </ActionForm>
                 <details className="text-sm">
                   <summary className="cursor-pointer text-stone-600">
@@ -271,13 +369,8 @@ export default async function CoachesPage() {
                       className="space-y-3"
                     >
                       <input type="hidden" name="coach_id" value={coach.id} />
-                      <label className="flex items-center gap-2 text-sm text-stone-700">
-                        <input
-                          type="checkbox"
-                          name="confirm_delete"
-                          value="1"
-                          required
-                        />
+                      <label className={choiceLabelClass}>
+                        <ChoiceBox name="confirm_delete" value="1" required />
                         確認刪除此帳號
                       </label>
                       <p className="text-xs text-stone-500">

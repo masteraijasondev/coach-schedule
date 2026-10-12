@@ -683,6 +683,36 @@ function confirmLessonErrorMessage(message: string): string {
   return "確認簽到失敗";
 }
 
+async function hourlyRateForJobType(
+  supabase: SupabaseServerClient,
+  coachId: string,
+  lessonTypeId: string,
+  profileHourly: number | string | null,
+): Promise<number | { error: string }> {
+  const { data, error } = await supabase
+    .from("coach_rates")
+    .select("amount_hkd")
+    .eq("coach_id", coachId)
+    .eq("lesson_type_id", lessonTypeId)
+    .maybeSingle();
+  if (error) {
+    console.error("[hourlyRateForJobType]", { error, coachId, lessonTypeId });
+    return { error: "讀取工作類型時薪失敗" };
+  }
+  if (data) {
+    const amount = Number(data.amount_hkd);
+    if (!Number.isFinite(amount) || amount < 0) {
+      return { error: "此工作類型的時薪無效" };
+    }
+    return amount;
+  }
+  const fallback = Number(profileHourly);
+  if (Number.isFinite(fallback) && fallback >= 0) {
+    return fallback;
+  }
+  return { error: "尚未設定此工作類型的時薪" };
+}
+
 async function confirmLessonPeriodsForStaff(
   staffId: string,
   formData: FormData,
@@ -730,7 +760,7 @@ async function confirmLessonPeriodsForStaff(
           .maybeSingle(),
         supabase
           .from("lesson_types")
-          .select("id, name, registers_student")
+          .select("id, name, registers_student, pay_mode")
           .eq("id", lessonTypeId)
           .eq("active", true)
           .maybeSingle(),
@@ -809,16 +839,34 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "讀取薪資設定失敗" };
     }
 
+    const payMode = activeType.pay_mode as PayMode;
+    const hourlyByType = payMode === "per_hour";
     const isAdmin =
-      staffProfile.staff_kind === "operations" ||
-      activeType.registers_student !== true;
+      !hourlyByType &&
+      payMode !== "per_student" &&
+      (staffProfile.staff_kind === "operations" ||
+        activeType.registers_student !== true);
     const studentNames = selectedStudentNames(formData);
     let studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
     let tuition: number | null = null;
-    if (isAdmin) {
-      const hourly = Number(staffProfile.hourly_rate_hkd);
-      if (staffProfile.staff_kind === "operations" && (!Number.isFinite(hourly) || hourly < 0)) {
+    if (hourlyByType || isAdmin) {
+      let hourly = Number(staffProfile.hourly_rate_hkd);
+      if (hourlyByType) {
+        const typeRate = await hourlyRateForJobType(
+          supabase,
+          staffId,
+          lessonTypeId,
+          staffProfile.hourly_rate_hkd,
+        );
+        if (typeof typeRate === "object") {
+          return { ok: false, error: typeRate.error };
+        }
+        hourly = typeRate;
+      } else if (
+        staffProfile.staff_kind === "operations" &&
+        (!Number.isFinite(hourly) || hourly < 0)
+      ) {
         return { ok: false, error: "尚未設定 Admin 時薪" };
       }
       sessionAmount = Number.isFinite(hourly) && hourly >= 0 ? hourly : 0;
@@ -894,7 +942,7 @@ async function confirmLessonPeriodsForStaff(
       }
       const durationMinutes =
         (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60_000;
-      const amount = isAdmin
+      const amount = hourlyByType || isAdmin
         ? Math.round((sessionAmount ?? 0) * (durationMinutes / 60) * 100) / 100
         : index === 0
           ? sessionAmount

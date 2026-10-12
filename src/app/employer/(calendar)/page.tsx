@@ -199,6 +199,7 @@ export default async function EmployerHomePage({ searchParams }: Props) {
             payShifts={payShifts.filter(
               (shift) => shift.coachId === selectedCoach.id,
             )}
+            types={types}
           />
         ) : null
       }

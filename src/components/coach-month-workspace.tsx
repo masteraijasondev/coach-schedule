@@ -2,6 +2,7 @@
 
 import { CoachDayPanel, type StaffWorkTypeOption } from "@/components/coach-day-panel";
 import { MonthCalendar } from "@/components/month-calendar";
+import { TeamDaySchedule } from "@/components/team-schedule-list";
 import { Panel } from "@/components/ui";
 import {
   availabilitySegments,
@@ -17,7 +18,11 @@ import {
 } from "@/lib/calendar-history";
 import { coachCalendarHref } from "@/lib/coach-href";
 import { TIMEZONE } from "@/lib/constants";
-import { appendStudentNames, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
+import { checkedInLabel, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
+import {
+  colleagueScheduleBars,
+  type ColleagueSchedule,
+} from "@/lib/team-schedule";
 import type { LessonStatus } from "@/lib/types";
 import { formatInTimeZone } from "date-fns-tz";
 
@@ -58,6 +63,8 @@ export function CoachMonthWorkspace({
   availabilities,
   leaves,
   workTypes,
+  colleagues,
+  lessonTypes,
   staffKind,
 }: {
   month: string;
@@ -68,6 +75,8 @@ export function CoachMonthWorkspace({
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
   workTypes: StaffWorkTypeOption[];
+  colleagues: ColleagueSchedule[];
+  lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
@@ -76,6 +85,7 @@ export function CoachMonthWorkspace({
     slotEnd: null,
   });
   const day = selection.day;
+  const typeNameById = new Map(workTypes.map((type) => [type.id, type.name]));
 
   const lessonsByDay = new Map<
     string,
@@ -84,11 +94,20 @@ export function CoachMonthWorkspace({
   for (const lesson of lessons) {
     const key = lessonDayKey(lesson.starts_at);
     const list = lessonsByDay.get(key) ?? [];
+    const timeLabel = `${formatInTimeZone(lesson.starts_at, TIMEZONE, "HH:mm")}–${formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm")}`;
     list.push({
       id: lesson.id,
-      coachName: "課堂",
+      coachName,
       status: lesson.status,
-      timeLabel: `${formatInTimeZone(lesson.starts_at, TIMEZONE, "HH:mm")}–${formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm")}`,
+      timeLabel:
+        lesson.status === "completed"
+          ? checkedInLabel({
+              time: timeLabel,
+              typeName: typeNameById.get(lesson.lesson_type_id ?? ""),
+              studentNames: lesson.student_names,
+              withStatus: false,
+            })
+          : timeLabel,
     });
     lessonsByDay.set(key, list);
   }
@@ -113,7 +132,7 @@ export function CoachMonthWorkspace({
     const list = availabilityByDay.get(leave.leave_date) ?? [];
     list.push({
       id: leave.id,
-      label: leaveWindowLabel(leave),
+      label: `${coachName} ${leaveWindowLabel(leave)}`,
       coachName,
       timeLabel: isFullDayLeave(leave)
         ? undefined
@@ -150,22 +169,42 @@ export function CoachMonthWorkspace({
       }
       const pending = segment.lesson?.status === "assigned";
       const confirmed = segment.lesson?.status === "completed";
+      const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+      const segmentLabel = confirmed
+        ? checkedInLabel({
+            time: segmentTime,
+            typeName: typeNameById.get(segment.lesson?.lesson_type_id ?? ""),
+            studentNames: segment.lesson?.student_names,
+            withStatus: false,
+          })
+        : segmentTime;
       list.push({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        label: appendStudentNames(
-          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
-          confirmed ? segment.lesson?.student_names : undefined,
-        ),
+        label: segmentLabel,
         coachName,
-        timeLabel: appendStudentNames(
-          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
-          confirmed ? segment.lesson?.student_names : undefined,
-        ),
+        timeLabel: segmentLabel,
         variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
       });
     }
     availabilityByDay.set(availability.available_date, list);
   }
+
+  const colleagueBars = colleagueScheduleBars(
+    colleagues,
+    new Map(lessonTypes.map((type) => [type.id, type.name])),
+  );
+  for (const bar of colleagueBars) {
+    const list = availabilityByDay.get(bar.date) ?? [];
+    list.push({
+      id: bar.id,
+      label: bar.label,
+      coachName: bar.coachName,
+      timeLabel: bar.timeLabel,
+      variant: bar.variant,
+    });
+    availabilityByDay.set(bar.date, list);
+  }
+  const teamDay = colleagueBars.filter((bar) => bar.date === day);
 
   function selectDay(target: string) {
     setSelection({
@@ -188,7 +227,7 @@ export function CoachMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          格內最多顯示兩項。點選日期後，當日詳情、申報與簽到顯示於右側。
+          月曆列出全體同事。格內最多顯示五項。點選日期後，右側仍是你的申報與簽到。
         </p>
         <MonthCalendar
           month={month}
@@ -196,6 +235,7 @@ export function CoachMonthWorkspace({
           basePath="/coach"
           lessonsByDay={lessonsByDay}
           availabilityByDay={availabilityByDay}
+          showNames
           onSelectDay={selectDay}
           todayHref={coachCalendarHref({
             month: today.slice(0, 7),
@@ -224,6 +264,7 @@ export function CoachMonthWorkspace({
           leaves={leaves}
           workTypes={workTypes}
           staffKind={staffKind}
+          teamDay={colleagues.length > 0 ? <TeamDaySchedule bars={teamDay} /> : null}
         />
       </div>
     </div>

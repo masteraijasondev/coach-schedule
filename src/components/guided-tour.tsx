@@ -56,7 +56,6 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
   const [index, setIndex] = useState(0);
   const [helpSlot, setHelpSlot] = useState<HTMLElement | null>(null);
   const [box, setBox] = useState<DOMRect | null>(null);
-  const [nextReady, setNextReady] = useState(false);
   const [noteHeight, setNoteHeight] = useState(180);
   const noteRef = useRef<HTMLDivElement>(null);
 
@@ -91,8 +90,6 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
     function place() {
       const current = visibleTarget(step.id);
       setBox(current ? current.getBoundingClientRect() : null);
-      const next = steps[index + 1];
-      setNextReady(next == null || visibleTarget(next.id) != null);
       if (current && scrolledStep.current !== step.id) {
         scrolledStep.current = step.id;
         current.scrollIntoView({ block: "nearest" });
@@ -111,22 +108,20 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [open, step, index, steps]);
+  }, [open, step, index]);
 
   const last = index === steps.length - 1;
 
   useEffect(() => {
-    if (!open || !step || !box) {
+    if (!open || !step) {
       return;
     }
     if (focusedStep.current === step.id) {
       return;
     }
     focusedStep.current = step.id;
-    if (last || nextReady) {
-      nextRef.current?.focus();
-    }
-  }, [open, step, box, last, nextReady]);
+    nextRef.current?.focus();
+  }, [open, step]);
 
   useEffect(() => {
     if (!open) {
@@ -150,7 +145,7 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
     setNoteHeight((current) =>
       current === note.offsetHeight ? current : note.offsetHeight,
     );
-  }, [open, index, box, nextReady]);
+  }, [open, index, box]);
 
   function close() {
     markSeen(storageKey);
@@ -254,8 +249,7 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
                     <button
                       ref={nextRef}
                       type="button"
-                      className="min-h-11 rounded-md bg-stone-900 px-3 text-sm font-semibold text-white disabled:opacity-40"
-                      disabled={!last && (box == null || !nextReady)}
+                      className="min-h-11 rounded-md bg-stone-900 px-3 text-sm font-semibold text-white"
                       onClick={() => {
                         if (last) {
                           close();

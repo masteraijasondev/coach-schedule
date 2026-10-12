@@ -37,8 +37,8 @@ import {
 import type { PayShift } from "@/lib/expected-pay";
 import { employerCalendarHref, employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import {
-  appendStudentNames,
   calendarAssignmentLabel,
+  checkedInLabel,
   calendarSlotLabel,
   formatAvailabilityTime,
   formatDateTime,
@@ -163,11 +163,20 @@ export function EmployerMonthWorkspace({
       ? (coachMap.get(lesson.coach_id) ?? "—")
       : "—";
     const list = lessonsByDay.get(key) ?? [];
+    const timeLabel = `${formatDateTime(lesson.starts_at).slice(11)}–${formatDateTime(lesson.ends_at).slice(11)}`;
     list.push({
       id: lesson.id,
       coachName,
       status: lesson.status,
-      timeLabel: `${formatDateTime(lesson.starts_at).slice(11)}–${formatDateTime(lesson.ends_at).slice(11)}`,
+      timeLabel:
+        lesson.status === "completed"
+          ? checkedInLabel({
+              time: timeLabel,
+              typeName: typeMap.get(lesson.lesson_type_id),
+              studentNames: lesson.student_names,
+              withStatus: false,
+            })
+          : timeLabel,
     });
     lessonsByDay.set(key, list);
   }
@@ -256,17 +265,21 @@ export function EmployerMonthWorkspace({
       if (!variantVisible(variant, filter.statuses)) {
         continue;
       }
+      const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+      const confirmedLabel =
+        variant === "confirmed"
+          ? checkedInLabel({
+              time: segmentTime,
+              typeName: typeMap.get(segment.lesson?.lesson_type_id ?? ""),
+              studentNames: segment.lesson?.student_names,
+              withStatus: false,
+            })
+          : segmentTime;
       list.push({
         id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        label: appendStudentNames(
-          `${coachName} ${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
-          variant === "confirmed" ? segment.lesson?.student_names : undefined,
-        ),
+        label: `${coachName} ${confirmedLabel}`,
         coachName,
-        timeLabel: appendStudentNames(
-          `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`,
-          variant === "confirmed" ? segment.lesson?.student_names : undefined,
-        ),
+        timeLabel: confirmedLabel,
         variant,
       });
     }
@@ -539,14 +552,14 @@ export function EmployerMonthWorkspace({
             key: `${slot.id}-${segment.startMinute}-${segment.endMinute}`,
             start: segment.startMinute,
             tone: variant,
-            label: appendStudentNames(
-              `${timeLabel} ${
-                overlap.status === "assigned"
-                  ? calendarAssignmentLabel("assigned")
-                  : calendarAssignmentLabel("completed")
-              }${typeMap.get(overlap.lesson_type_id) ? ` · ${typeMap.get(overlap.lesson_type_id)}` : ""}`,
-              overlap.status === "completed" ? overlap.student_names : undefined,
-            ),
+            label:
+              overlap.status === "completed"
+                ? checkedInLabel({
+                    time: timeLabel,
+                    typeName: typeMap.get(overlap.lesson_type_id),
+                    studentNames: overlap.student_names,
+                  })
+                : `${timeLabel} ${calendarAssignmentLabel("assigned")}`,
             body: lessonBody(overlap, slot.start, slot.end),
           });
           continue;
@@ -600,14 +613,13 @@ export function EmployerMonthWorkspace({
       key: lesson.id,
       start: window.startMinute,
       tone: pending ? "pending" : "confirmed",
-      label: appendStudentNames(
-        `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${
-          pending
-            ? calendarAssignmentLabel("assigned")
-            : calendarAssignmentLabel("completed")
-        }`,
-        pending ? undefined : lesson.student_names,
-      ),
+      label: pending
+        ? `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${calendarAssignmentLabel("assigned")}`
+        : checkedInLabel({
+            time: `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)}`,
+            typeName: typeMap.get(lesson.lesson_type_id),
+            studentNames: lesson.student_names,
+          }),
       body: lessonBody(lesson, window.startMinute, window.endMinute),
     });
   }

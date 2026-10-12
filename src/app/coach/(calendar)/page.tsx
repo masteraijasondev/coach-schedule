@@ -13,6 +13,7 @@ import {
   parseMonthParam,
 } from "@/lib/calendar";
 import { nestedStudentId, nestedStudentNames } from "@/lib/format";
+import { loadColleagueSchedules } from "@/lib/load-colleague-schedules";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -42,15 +43,12 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const weekInGrid = days.every(
     (date) => date >= gridRange.start && date <= gridRange.end,
   );
+  const scheduleStart = gridRange.start < days[0] ? gridRange.start : days[0];
+  const scheduleEnd = gridRange.end > days[6] ? gridRange.end : days[6];
+  const teamLessonRange = inclusiveDateRangeBoundsIso(scheduleStart, scheduleEnd);
 
   const supabase = await createClient();
-  const [
-    { data: lessons },
-    { data: availabilities },
-    { data: leaves },
-    { data: workTypeRows },
-    { data: staffProfile },
-  ] = await Promise.all([
+  const ownPromise = Promise.all([
       supabase
         .from("lessons")
         .select("id, starts_at, ends_at, status, lesson_type_id, lesson_students(student_id, students(name))")
@@ -82,6 +80,22 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .eq("id", coach.id)
         .maybeSingle(),
     ]);
+  const [own, team] = await Promise.all([
+    ownPromise,
+    loadColleagueSchedules({
+      lessonStart: teamLessonRange.start,
+      lessonEnd: teamLessonRange.end,
+      gridStart: scheduleStart,
+      gridEnd: scheduleEnd,
+    }),
+  ]);
+  const [
+    { data: lessons },
+    { data: availabilities },
+    { data: leaves },
+    { data: workTypeRows },
+    { data: staffProfile },
+  ] = own;
 
   const workTypes = (workTypeRows ?? [])
     .map((row) => {
@@ -125,6 +139,8 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       availabilities={availabilities ?? []}
       leaves={leaves ?? []}
       workTypes={workTypes}
+      colleagues={team.colleagues}
+      lessonTypes={team.lessonTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
       remoteWeekCalendar={
         !weekInGrid ? (

@@ -129,15 +129,18 @@ export async function updateCoachNameAction(
     }
 
     const hourly = parseHourlyRate(formData);
-    const ratio = parsePayRatio(formData);
     if (hourly && typeof hourly === "object") {
       return { ok: false, error: hourly.error };
     }
-    if (ratio && typeof ratio === "object") {
-      return { ok: false, error: ratio.error };
-    }
     const hourlyRate = hourly;
-    const payRatio = ratio;
+    let payRatio: number | null = null;
+    if (staffKind === "coach") {
+      const ratio = parsePayRatio(formData);
+      if (ratio && typeof ratio === "object") {
+        return { ok: false, error: ratio.error };
+      }
+      payRatio = ratio;
+    }
 
     const supabase = await createClient();
     const { error } = await supabase

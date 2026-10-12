@@ -146,6 +146,7 @@ export function EmployerCalendarShell({
       )
     : [];
   const weekDays = new Set(days);
+  const typeNameById = new Map(types.map((type) => [type.id, type.name]));
   const weekLessons = selectedCoach
     ? lessons
         .filter(
@@ -158,6 +159,8 @@ export function EmployerCalendarShell({
           starts_at: lesson.starts_at,
           ends_at: lesson.ends_at,
           status: lesson.status,
+          lesson_type_name: typeNameById.get(lesson.lesson_type_id),
+          student_names: lesson.student_names,
         }))
     : [];
   const initialSelection =

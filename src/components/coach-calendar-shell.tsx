@@ -8,6 +8,7 @@ import {
   type CoachMonthSlot,
 } from "@/components/coach-month-workspace";
 import { CoachWeekCalendar } from "@/components/coach-week-calendar";
+import { TeamWeekSchedule } from "@/components/team-schedule-list";
 import {
   availabilityWeekDays,
   availabilityWeekStart,
@@ -22,6 +23,10 @@ import {
   useCalendarWeek,
 } from "@/lib/calendar-history";
 import { coachCalendarHref } from "@/lib/coach-href";
+import {
+  colleagueScheduleBars,
+  type ColleagueSchedule,
+} from "@/lib/team-schedule";
 import { type MouseEvent, type ReactNode } from "react";
 
 export function CoachCalendarShell({
@@ -37,6 +42,8 @@ export function CoachCalendarShell({
   availabilities,
   leaves,
   workTypes,
+  colleagues,
+  lessonTypes,
   staffKind,
   remoteWeekCalendar,
 }: {
@@ -52,6 +59,8 @@ export function CoachCalendarShell({
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
   workTypes: { id: string; name: string; registersStudent: boolean }[];
+  colleagues: ColleagueSchedule[];
+  lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
   remoteWeekCalendar: ReactNode;
 }) {
@@ -71,6 +80,10 @@ export function CoachCalendarShell({
   );
   const weekLessons = lessons.filter((lesson) =>
     weekDays.has(lessonDayKey(lesson.starts_at)),
+  );
+  const colleagueBars = colleagueScheduleBars(
+    colleagues,
+    new Map(lessonTypes.map((type) => [type.id, type.name])),
   );
 
   function selectWeek(
@@ -125,11 +138,13 @@ export function CoachCalendarShell({
           availabilities={availabilities}
           leaves={leaves}
           workTypes={workTypes}
+          colleagues={colleagues}
+          lessonTypes={lessonTypes}
           staffKind={staffKind}
         />
       </div>
 
-      <div hidden={view !== "week"}>
+      <div hidden={view !== "week"} className="space-y-4">
         {weekInGrid ? (
           <section id="availability" className="scroll-mt-4">
             <CoachWeekCalendar
@@ -148,6 +163,9 @@ export function CoachCalendarShell({
         ) : (
           remoteWeekCalendar
         )}
+        {colleagues.length > 0 ? (
+          <TeamWeekSchedule days={days} bars={colleagueBars} />
+        ) : null}
       </div>
     </div>
   );
