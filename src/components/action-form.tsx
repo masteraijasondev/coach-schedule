@@ -9,6 +9,7 @@ type Props = {
   action: (prev: FormState, formData: FormData) => Promise<ActionResult>;
   children: React.ReactNode;
   className?: string;
+  encType?: "multipart/form-data";
   onSuccess?: () => void;
   successMessage?: string;
 };
@@ -17,6 +18,7 @@ export function ActionForm({
   action,
   children,
   className,
+  encType,
   onSuccess,
   successMessage = "已儲存",
 }: Props) {
@@ -55,6 +57,7 @@ export function ActionForm({
     <form
       action={formAction}
       className={className}
+      encType={encType}
       aria-busy={pending}
     >
       {children}

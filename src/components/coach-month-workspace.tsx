@@ -16,7 +16,7 @@ import {
   scrollToCalendarDay,
   useCalendarSelection,
 } from "@/lib/calendar-history";
-import { coachCalendarHref } from "@/lib/coach-href";
+import { coachCalendarHref, type CoachScheduleScope } from "@/lib/coach-href";
 import { TIMEZONE } from "@/lib/constants";
 import { checkedInLabel, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
 import {
@@ -66,6 +66,7 @@ export function CoachMonthWorkspace({
   colleagues,
   lessonTypes,
   staffKind,
+  scope,
 }: {
   month: string;
   day: string;
@@ -78,6 +79,7 @@ export function CoachMonthWorkspace({
   colleagues: ColleagueSchedule[];
   lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
+  scope: CoachScheduleScope;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
     day: initialDay,
@@ -217,6 +219,7 @@ export function CoachMonthWorkspace({
         month: target.slice(0, 7),
         day: target,
         week: availabilityWeekStart(target),
+        scope,
         hash: "day",
       }),
     );
@@ -227,7 +230,9 @@ export function CoachMonthWorkspace({
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <Panel title="月曆">
         <p className="mb-3 text-sm text-stone-500">
-          月曆列出全體同事。格內最多顯示五項。點選日期後，右側仍是你的申報與簽到。
+          {scope === "self"
+            ? "月曆只顯示你的行程。格內最多顯示五項。點選日期後，右側是你的申報與簽到。"
+            : "月曆列出全體同事。格內最多顯示五項。點選日期後，右側仍是你的申報與簽到。"}
         </p>
         <MonthCalendar
           month={month}
@@ -241,6 +246,7 @@ export function CoachMonthWorkspace({
             month: today.slice(0, 7),
             day: today,
             week: availabilityWeekStart(today),
+            scope,
             hash: "day",
           })}
           dayHref={(target) =>
@@ -248,10 +254,11 @@ export function CoachMonthWorkspace({
               month: target.slice(0, 7),
               day: target,
               week: availabilityWeekStart(target),
+              scope,
               hash: "day",
             })
           }
-          monthHref={(target) => coachCalendarHref({ month: target })}
+          monthHref={(target) => coachCalendarHref({ month: target, scope })}
           tour="coach-month"
         />
       </Panel>

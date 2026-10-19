@@ -5,6 +5,7 @@ import {
   parseAvailabilityWeekParam,
   type CalendarView,
 } from "@/lib/calendar";
+import type { CoachScheduleScope } from "@/lib/coach-href";
 import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,12 +15,14 @@ export async function CoachAvailabilityCalendar({
   month,
   day,
   view,
+  scope = "all",
 }: {
   coachId: string;
   weekParam?: string;
   month: string;
   day: string;
   view?: CalendarView;
+  scope?: CoachScheduleScope;
 }) {
   const week = parseAvailabilityWeekParam(weekParam);
   const days = availabilityWeekDays(week);
@@ -114,6 +117,7 @@ export async function CoachAvailabilityCalendar({
       }))}
       workTypes={workTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
+      scope={scope}
       loadError={Boolean(error || leavesError)}
     />
   );

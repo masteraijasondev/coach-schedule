@@ -14,10 +14,17 @@ import {
 } from "@/lib/calendar";
 import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { loadColleagueSchedules } from "@/lib/load-colleague-schedules";
+import { parseCoachScheduleScope } from "@/lib/coach-href";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
-  searchParams: Promise<{ month?: string; day?: string; week?: string; view?: string }>;
+  searchParams: Promise<{
+    month?: string;
+    day?: string;
+    week?: string;
+    view?: string;
+    scope?: string;
+  }>;
 };
 
 export async function generateMetadata({}: Props): Promise<Metadata> {
@@ -33,6 +40,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
   const day = parseDayParam(params.day, month);
   const today = hongKongToday();
   const view = parseCalendarView(params.view);
+  const scope = parseCoachScheduleScope(params.scope);
   const week = parseAvailabilityWeekParam(params.week ?? day);
   const gridRange = monthGridDateRange(month);
   const lessonRange = inclusiveDateRangeBoundsIso(
@@ -142,6 +150,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       colleagues={team.colleagues}
       lessonTypes={team.lessonTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
+      scope={scope}
       remoteWeekCalendar={
         !weekInGrid ? (
           <section id="availability" className="scroll-mt-4">
@@ -151,6 +160,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
               month={month}
               day={day}
               view="week"
+              scope={scope}
             />
           </section>
         ) : null

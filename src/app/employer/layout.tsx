@@ -5,6 +5,7 @@ import { requireEmployer } from "@/lib/auth";
 const items = [
   { href: "/employer", label: "日曆" },
   { href: "/employer/salary", label: "薪資" },
+  { href: "/employer/expenses", label: "報銷" },
   {
     href: "/employer/settings",
     label: "設定",

@@ -4,6 +4,7 @@ import { requireCoach } from "@/lib/auth";
 const items = [
   { href: "/coach", label: "日曆" },
   { href: "/coach/salary", label: "薪資" },
+  { href: "/coach/expenses", label: "報銷" },
   { href: "/coach/students", label: "新增學生" },
 ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarViewToggle } from "@/components/calendar-view-toggle";
+import { CoachScheduleScopeToggle } from "@/components/coach-schedule-scope";
 import {
   CoachMonthWorkspace,
   type CoachMonthLeave,
@@ -19,15 +20,22 @@ import {
   isModifiedClick,
   pushCalendarHref,
   readCalendarWeek,
+  replaceCalendarHref,
+  calendarHrefFromLocation,
   useCalendarView,
   useCalendarWeek,
 } from "@/lib/calendar-history";
-import { coachCalendarHref } from "@/lib/coach-href";
+import {
+  COACH_SCHEDULE_SCOPE_EVENT,
+  coachCalendarHref,
+  parseCoachScheduleScope,
+  type CoachScheduleScope,
+} from "@/lib/coach-href";
 import {
   colleagueScheduleBars,
   type ColleagueSchedule,
 } from "@/lib/team-schedule";
-import { type MouseEvent, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 export function CoachCalendarShell({
   initialView,
@@ -45,6 +53,7 @@ export function CoachCalendarShell({
   colleagues,
   lessonTypes,
   staffKind,
+  scope: initialScope,
   remoteWeekCalendar,
 }: {
   initialView: CalendarView;
@@ -62,10 +71,30 @@ export function CoachCalendarShell({
   colleagues: ColleagueSchedule[];
   lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
+  scope: CoachScheduleScope;
   remoteWeekCalendar: ReactNode;
 }) {
   const [view, setView] = useCalendarView(initialView);
   const [week, setWeek] = useCalendarWeek(initialWeek);
+  const [scope, setScope] = useState(initialScope);
+  const showColleagues = scope === "all";
+
+  useEffect(() => {
+    function onPop() {
+      const params = new URLSearchParams(window.location.search);
+      setScope(parseCoachScheduleScope(params.get("scope")));
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  function changeScope(next: CoachScheduleScope) {
+    setScope(next);
+    replaceCalendarHref(
+      calendarHrefFromLocation({ scope: next === "self" ? "self" : "" }),
+    );
+    window.dispatchEvent(new Event(COACH_SCHEDULE_SCOPE_EVENT));
+  }
   const days = availabilityWeekDays(week);
   const weekEnd = days[6];
   const weekInGrid = days.every(
@@ -110,21 +139,25 @@ export function CoachCalendarShell({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-base font-semibold">我的工作日曆</h1>
-        <CalendarViewToggle
-          view={view}
-          monthHref={coachCalendarHref({ month, day, week })}
-          weekHref={coachCalendarHref({
-            month,
-            day,
-            week: availabilityWeekStart(day),
-            view: "week",
-          })}
-          onViewChange={(next) => {
-            setView(next);
-            setWeek(readCalendarWeek(day));
-          }}
-          tour="coach-view"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <CoachScheduleScopeToggle scope={scope} onChange={changeScope} />
+          <CalendarViewToggle
+            view={view}
+            monthHref={coachCalendarHref({ month, day, week, scope })}
+            weekHref={coachCalendarHref({
+              month,
+              day,
+              week: availabilityWeekStart(day),
+              view: "week",
+              scope,
+            })}
+            onViewChange={(next) => {
+              setView(next);
+              setWeek(readCalendarWeek(day));
+            }}
+            tour="coach-view"
+          />
+        </div>
       </div>
 
       <div hidden={view !== "month"}>
@@ -138,9 +171,10 @@ export function CoachCalendarShell({
           availabilities={availabilities}
           leaves={leaves}
           workTypes={workTypes}
-          colleagues={colleagues}
+          colleagues={showColleagues ? colleagues : []}
           lessonTypes={lessonTypes}
           staffKind={staffKind}
+          scope={scope}
         />
       </div>
 
@@ -157,13 +191,14 @@ export function CoachCalendarShell({
               lessons={weekLessons}
               workTypes={workTypes}
               staffKind={staffKind}
+              scope={scope}
               onWeekNavigate={selectWeek}
             />
           </section>
         ) : (
           remoteWeekCalendar
         )}
-        {colleagues.length > 0 ? (
+        {showColleagues && colleagues.length > 0 ? (
           <TeamWeekSchedule days={days} bars={colleagueBars} />
         ) : null}
       </div>

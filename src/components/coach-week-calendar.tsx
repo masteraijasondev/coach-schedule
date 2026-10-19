@@ -38,9 +38,14 @@ import {
 } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { coachCalendarHref } from "@/lib/coach-href";
+import {
+  COACH_SCHEDULE_SCOPE_EVENT,
+  coachCalendarHref,
+  parseCoachScheduleScope,
+  type CoachScheduleScope,
+} from "@/lib/coach-href";
 import Link from "next/link";
-import type { MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
 const MINUTES_PER_DAY = 1440;
@@ -109,13 +114,15 @@ function coachWeekHref(
   week: string,
   month: string,
   day: string,
-  view?: CalendarView,
+  view: CalendarView | undefined,
+  scope: CoachScheduleScope,
 ): string {
   return coachCalendarHref({
     month,
     day,
     week,
     view,
+    scope,
     hash: "availability",
   });
 }
@@ -130,6 +137,7 @@ export function CoachWeekCalendar({
   lessons,
   workTypes,
   staffKind,
+  scope = "all",
   loadError = false,
   onWeekNavigate,
 }: {
@@ -142,6 +150,7 @@ export function CoachWeekCalendar({
   lessons: CoachWeekLesson[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
+  scope?: CoachScheduleScope;
   loadError?: boolean;
   onWeekNavigate?: (
     week: string,
@@ -149,6 +158,22 @@ export function CoachWeekCalendar({
     event: MouseEvent<HTMLAnchorElement>,
   ) => void;
 }) {
+  const [linkedScope, setLinkedScope] = useState(scope);
+  useEffect(() => {
+    setLinkedScope(scope);
+  }, [scope]);
+  useEffect(() => {
+    function syncScope() {
+      const params = new URLSearchParams(window.location.search);
+      setLinkedScope(parseCoachScheduleScope(params.get("scope")));
+    }
+    window.addEventListener("popstate", syncScope);
+    window.addEventListener(COACH_SCHEDULE_SCOPE_EVENT, syncScope);
+    return () => {
+      window.removeEventListener("popstate", syncScope);
+      window.removeEventListener(COACH_SCHEDULE_SCOPE_EVENT, syncScope);
+    };
+  }, []);
   const typeNameById = new Map(workTypes.map((type) => [type.id, type.name]));
   const currentWeek = availabilityWeekStart();
   const prevWeek = shiftAvailabilityWeek(week, -1);
@@ -217,12 +242,12 @@ export function CoachWeekCalendar({
         </p>
             <div className="flex items-center justify-between gap-2">
               <Link
-                href={coachWeekHref(prevWeek, month, day, view)}
+                href={coachWeekHref(prevWeek, month, day, view, linkedScope)}
                 className="text-sm text-stone-600 underline"
                 onClick={(event) =>
                   onWeekNavigate?.(
                     prevWeek,
-                    coachWeekHref(prevWeek, month, day, view),
+                    coachWeekHref(prevWeek, month, day, view, linkedScope),
                     event,
                   )
                 }
@@ -233,12 +258,12 @@ export function CoachWeekCalendar({
                 {week} – {weekEnd}
               </p>
               <Link
-                href={coachWeekHref(nextWeek, month, day, view)}
+                href={coachWeekHref(nextWeek, month, day, view, linkedScope)}
                 className="text-sm text-stone-600 underline"
                 onClick={(event) =>
                   onWeekNavigate?.(
                     nextWeek,
-                    coachWeekHref(nextWeek, month, day, view),
+                    coachWeekHref(nextWeek, month, day, view, linkedScope),
                     event,
                   )
                 }
@@ -248,12 +273,12 @@ export function CoachWeekCalendar({
             </div>
             {week !== currentWeek ? (
               <Link
-                href={coachWeekHref(currentWeek, month, day, view)}
+                href={coachWeekHref(currentWeek, month, day, view, linkedScope)}
                 className="text-sm text-stone-600 underline"
                 onClick={(event) =>
                   onWeekNavigate?.(
                     currentWeek,
-                    coachWeekHref(currentWeek, month, day, view),
+                    coachWeekHref(currentWeek, month, day, view, linkedScope),
                     event,
                   )
                 }
