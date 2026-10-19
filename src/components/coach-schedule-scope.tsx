@@ -3,7 +3,7 @@
 import type { CoachScheduleScope } from "@/lib/coach-href";
 
 const OPTIONS: { value: CoachScheduleScope; label: string }[] = [
-  { value: "self", label: "只看自己" },
+  { value: "self", label: "自己" },
   { value: "all", label: "全體同事" },
 ];
 
