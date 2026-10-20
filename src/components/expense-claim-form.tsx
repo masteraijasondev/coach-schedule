@@ -33,6 +33,7 @@ export function ExpenseClaimForm({
 }) {
   const [amount, setAmount] = useState(initialAmount);
   const [note, setNote] = useState(initialNote);
+  const [receiptName, setReceiptName] = useState("");
   const [draftError, setDraftError] = useState<string | null>(null);
   const canSubmit = amount.trim() !== "" && receipts.length > 0 && driveReady;
 
@@ -126,13 +127,27 @@ export function ExpenseClaimForm({
         <input type="hidden" name="note" value={note} />
         <label className="block min-w-0 flex-1 space-y-1 text-sm">
           <span className="text-stone-700">收據（JPEG、PNG、HEIC 或 PDF，10MB 內）</span>
-          <input
-            name="receipt"
-            type="file"
-            required
-            accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.jpg,.jpeg,.png,.heic,.heif,.pdf"
-            className="block w-full text-sm text-stone-700"
-          />
+          <span className="flex flex-wrap items-center gap-3">
+            <input
+              name="receipt"
+              type="file"
+              required
+              accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.jpg,.jpeg,.png,.heic,.heif,.pdf"
+              aria-label="選擇收據"
+              className="peer sr-only"
+              onChange={(event) => {
+                setReceiptName(event.currentTarget.files?.[0]?.name ?? "");
+              }}
+            />
+            <span
+              className={`${buttonTone.primary} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-stone-900`}
+            >
+              選擇檔案
+            </span>
+            <span className="min-w-0 truncate text-sm font-medium text-stone-900">
+              {receiptName || "尚未選擇"}
+            </span>
+          </span>
         </label>
         <SubmitButton>加入收據</SubmitButton>
       </ActionForm>
