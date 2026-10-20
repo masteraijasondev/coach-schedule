@@ -10,6 +10,7 @@ import { ActionForm } from "@/components/action-form";
 import { buttonTone } from "@/components/button-styles";
 import { ServerActionButton } from "@/components/server-action-button";
 import { SubmitButton } from "@/components/ui";
+import { formatMoneyOrPending } from "@/lib/format";
 import { useRef, useState } from "react";
 
 export type ExpenseReceipt = {
@@ -17,6 +18,91 @@ export type ExpenseReceipt = {
   fileName: string;
   previewUrl: string | null;
 };
+
+export function SubmittedExpenseClaim({
+  period,
+  claimId,
+  amount,
+  note,
+  receipts,
+  driveReady,
+  driveFolderUrl,
+}: {
+  period: string;
+  claimId: string;
+  amount: string;
+  note: string;
+  receipts: ExpenseReceipt[];
+  driveReady: boolean;
+  driveFolderUrl: string | null;
+}) {
+  const [editing, setEditing] = useState(false);
+  const amountLabel = amount.trim() === "" ? formatMoneyOrPending(null) : formatMoneyOrPending(Number(amount));
+
+  return (
+    <div className="border-t border-stone-100 pt-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{amountLabel}</p>
+          {note.trim() !== "" ? <p className="mt-1 text-sm text-stone-600">{note}</p> : null}
+          {receipts.length > 0 ? (
+            <ul className="mt-1">
+              {receipts.map((receipt) => (
+                <li key={receipt.id} className="truncate text-sm">
+                  {receipt.previewUrl ? (
+                    <a
+                      href={receipt.previewUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium underline"
+                    >
+                      {receipt.fileName}
+                    </a>
+                  ) : (
+                    <span className="font-medium">{receipt.fileName}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-stone-500">沒有收據</p>
+          )}
+          {driveFolderUrl ? (
+            <a
+              href={driveFolderUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 inline-block text-sm font-medium underline"
+            >
+              開啟 Google Drive 資料夾
+            </a>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          className={buttonTone.secondary}
+          onClick={() => setEditing((current) => !current)}
+        >
+          {editing ? "收起" : "修改"}
+        </button>
+      </div>
+      {editing ? (
+        <div className="mt-4">
+          <ExpenseClaimForm
+            period={period}
+            claimId={claimId}
+            submitted
+            initialAmount={amount}
+            initialNote={note}
+            receipts={receipts}
+            driveReady={driveReady}
+            driveFolderUrl={driveFolderUrl}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function ExpenseClaimForm({
   period,

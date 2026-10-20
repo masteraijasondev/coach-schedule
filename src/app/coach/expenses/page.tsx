@@ -1,4 +1,4 @@
-import { ExpenseClaimForm } from "@/components/expense-claim-form";
+import { ExpenseClaimForm, SubmittedExpenseClaim } from "@/components/expense-claim-form";
 import { ExpensePeriodNav } from "@/components/expense-period-nav";
 import { Panel } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
@@ -99,25 +99,20 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
             {submitted.map((claim) => {
               const claimReceipts = receipts.filter((receipt) => receipt.claimId === claim.id);
               return (
-                <div key={claim.id} className="border-t border-stone-100 pt-4">
-                  <ExpenseClaimForm
-                    key={`${claim.id}:${claimReceipts.map((receipt) => receipt.id).join(",")}`}
-                    period={period}
-                    claimId={claim.id}
-                    submitted
-                    initialAmount={
-                      claim.amount_hkd == null ? "" : String(Number(claim.amount_hkd))
-                    }
-                    initialNote={claim.note ?? ""}
-                    receipts={claimReceipts}
-                    driveReady={googleDriveConfigured()}
-                    driveFolderUrl={claim.drive_folder_url}
-                  />
-                </div>
+                <SubmittedExpenseClaim
+                  key={`${claim.id}:${claimReceipts.map((receipt) => receipt.id).join(",")}`}
+                  period={period}
+                  claimId={claim.id}
+                  amount={claim.amount_hkd == null ? "" : String(Number(claim.amount_hkd))}
+                  note={claim.note ?? ""}
+                  receipts={claimReceipts}
+                  driveReady={googleDriveConfigured()}
+                  driveFolderUrl={claim.drive_folder_url}
+                />
               );
             })}
             {submitted.length > 0 ? (
-              <p className="border-t border-stone-100 pt-3 text-sm font-medium">另一張報銷</p>
+              <p className="border-t border-stone-100 pt-3 text-sm font-medium">新報銷</p>
             ) : null}
             <ExpenseClaimForm
               key={`${period}:${draft?.id ?? "new"}:${draftReceipts.length}`}
