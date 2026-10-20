@@ -50,7 +50,7 @@ export function ExpenseClaimForm({
   return (
     <div className="space-y-4">
       <p className="text-sm text-stone-500">
-        輸入金額並加入收據後才可以提交。提交後會上傳到 Google Drive，此結算期不能再改。
+        輸入金額並加入收據後才可以提交。提交後這張報銷不能再改，同一結算期可以再交另一張。
       </p>
       {!driveReady ? (
         <p className="text-sm text-amber-800" role="status">

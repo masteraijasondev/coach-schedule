@@ -68,13 +68,11 @@ async function ownDraft(
     .select("id, coach_id, period, amount_hkd, note, status, drive_folder_id")
     .eq("coach_id", coachId)
     .eq("period", period)
+    .eq("status", "draft")
     .maybeSingle();
   if (error) {
     console.error("[expenseClaim] load", { error, coachId, period });
     return { ok: false, error: "讀取報銷失敗" };
-  }
-  if (data?.status === "submitted") {
-    return { ok: false, error: "此結算期已提交，不能再修改" };
   }
   return { ok: true, claim: (data as ClaimRow | null) ?? null };
 }
@@ -252,7 +250,7 @@ export async function removeExpenseReceiptAction(fileId: string): Promise<Action
       return { ok: false, error: "找不到收據" };
     }
     if (claim.status !== "draft") {
-      return { ok: false, error: "此結算期已提交，不能再修改" };
+      return { ok: false, error: "這張報銷已提交，不能再修改" };
     }
     if (file.storage_path) {
       const { error: storageError } = await admin.storage
