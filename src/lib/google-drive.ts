@@ -146,6 +146,28 @@ export async function uploadDriveFile(input: {
   return payload.id;
 }
 
+export async function deleteDriveFile(token: string, fileId: string): Promise<void> {
+  const response = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (response.status === 204 || response.status === 404) {
+    return;
+  }
+  let detail = "";
+  try {
+    const payload = (await response.json()) as { error?: { message: string } };
+    detail = payload.error?.message ?? "";
+  } catch (error) {
+    console.error("[googleDrive] delete parse", { error, fileId });
+  }
+  console.error("[googleDrive] delete", { status: response.status, fileId, detail });
+  throw new Error("移除 Google Drive 收據失敗");
+}
+
 export async function driveAccessToken(): Promise<
   { ok: true; token: string; rootFolderId: string } | { ok: false; error: string }
 > {
@@ -164,4 +186,8 @@ export async function driveAccessToken(): Promise<
 
 export function driveFolderUrl(folderId: string): string {
   return `https://drive.google.com/drive/folders/${folderId}`;
+}
+
+export function driveFileUrl(fileId: string): string {
+  return `https://drive.google.com/file/d/${fileId}/view`;
 }

@@ -20,16 +20,22 @@ export type ExpenseReceipt = {
 
 export function ExpenseClaimForm({
   period,
+  claimId = null,
+  submitted = false,
   initialAmount,
   initialNote,
   receipts,
   driveReady,
+  driveFolderUrl = null,
 }: {
   period: string;
+  claimId?: string | null;
+  submitted?: boolean;
   initialAmount: string;
   initialNote: string;
   receipts: ExpenseReceipt[];
   driveReady: boolean;
+  driveFolderUrl?: string | null;
 }) {
   const [amount, setAmount] = useState(initialAmount);
   const [note, setNote] = useState(initialNote);
@@ -43,18 +49,36 @@ export function ExpenseClaimForm({
     formData.set("period", period);
     formData.set("amount_hkd", amount);
     formData.set("note", note);
+    if (claimId) {
+      formData.set("claim_id", claimId);
+    }
     const result = await saveExpenseDraftAction(null, formData);
     setDraftError(result.ok ? null : result.error);
   }
 
   return (
     <div className="space-y-4">
+      {submitted ? <p className="text-sm font-medium">已提交</p> : null}
       <p className="text-sm text-stone-500">
-        輸入金額並加入收據後才可以提交。提交後這張報銷不能再改，同一結算期可以再交另一張。
+        {submitted
+          ? "可以修改金額和備註。上傳新收據會取代這張報銷在 Google Drive 的全部舊收據。"
+          : "輸入金額並加入收據後才可以提交。同一結算期可以再交另一張。"}
       </p>
+      {driveFolderUrl ? (
+        <a
+          href={driveFolderUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block text-sm font-medium underline"
+        >
+          開啟 Google Drive 資料夾
+        </a>
+      ) : null}
       {!driveReady ? (
         <p className="text-sm text-amber-800" role="status">
-          尚未設定 Google Drive，可以先儲存收據，但暫時未能提交。
+          {submitted
+            ? "尚未設定 Google Drive，暫時未能更換收據。"
+            : "尚未設定 Google Drive，可以先儲存收據，但暫時未能提交。"}
         </p>
       ) : null}
       <label className="block space-y-1 text-sm">
@@ -108,6 +132,8 @@ export function ExpenseClaimForm({
             <ServerActionButton
               action={() => removeExpenseReceiptAction(receipt.id)}
               className={buttonTone.secondary}
+              confirmMessage={submitted ? "這會從 Google Drive 移除這張收據。" : undefined}
+              confirmLabel="移除"
             >
               移除
             </ServerActionButton>
@@ -121,9 +147,10 @@ export function ExpenseClaimForm({
         action={addExpenseReceiptAction}
         encType="multipart/form-data"
         className="flex flex-wrap items-end gap-3"
-        successMessage="已加入收據"
+        successMessage={submitted ? "已更換 Google Drive 收據" : "已加入收據"}
       >
         <input type="hidden" name="period" value={period} />
+        {claimId ? <input type="hidden" name="claim_id" value={claimId} /> : null}
         <input type="hidden" name="amount_hkd" value={amount} />
         <input type="hidden" name="note" value={note} />
         <label className="block min-w-0 flex-1 space-y-1 text-sm">
@@ -152,14 +179,18 @@ export function ExpenseClaimForm({
             </span>
           </span>
         </label>
-        <SubmitButton>加入收據</SubmitButton>
+        <SubmitButton disabled={submitted && !driveReady}>
+          {submitted ? "更換收據" : "加入收據"}
+        </SubmitButton>
       </ActionForm>
-      <ActionForm action={submitExpenseClaimAction} className="space-y-3" successMessage="已提交到 Google Drive">
-        <input type="hidden" name="period" value={period} />
-        <input type="hidden" name="amount_hkd" value={amount} />
-        <input type="hidden" name="note" value={note} />
-        <SubmitButton disabled={!canSubmit}>提交到 Google Drive</SubmitButton>
-      </ActionForm>
+      {submitted ? null : (
+        <ActionForm action={submitExpenseClaimAction} className="space-y-3" successMessage="已提交到 Google Drive">
+          <input type="hidden" name="period" value={period} />
+          <input type="hidden" name="amount_hkd" value={amount} />
+          <input type="hidden" name="note" value={note} />
+          <SubmitButton disabled={!canSubmit}>提交到 Google Drive</SubmitButton>
+        </ActionForm>
+      )}
     </div>
   );
 }

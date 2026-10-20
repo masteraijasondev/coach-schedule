@@ -3,8 +3,7 @@ import { ExpensePeriodNav } from "@/components/expense-period-nav";
 import { Panel } from "@/components/ui";
 import { requireCoach } from "@/lib/auth";
 import { parsePayrollPeriodParam, payrollPeriodLabel } from "@/lib/calendar";
-import { googleDriveConfigured } from "@/lib/google-drive";
-import { formatMoney } from "@/lib/format";
+import { driveFileUrl, googleDriveConfigured } from "@/lib/google-drive";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,6 +24,7 @@ type FileRow = {
   claim_id: string;
   file_name: string;
   storage_path: string | null;
+  drive_file_id: string | null;
 };
 
 export default async function CoachExpensesPage({ searchParams }: Props) {
@@ -46,7 +46,7 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
   const { data: files, error: filesError } = claimIds.length
     ? await supabase
         .from("expense_claim_files")
-        .select("id, claim_id, file_name, storage_path")
+        .select("id, claim_id, file_name, storage_path, drive_file_id")
         .in("claim_id", claimIds)
         .order("created_at", { ascending: true })
     : { data: [], error: null };
@@ -69,6 +69,8 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
         } else {
           previewUrl = data.signedUrl;
         }
+      } else if (file.drive_file_id) {
+        previewUrl = driveFileUrl(file.drive_file_id);
       }
       return {
         id: file.id,
@@ -85,7 +87,8 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
       <Panel title={`報銷 · ${period}`}>
         <ExpensePeriodNav basePath="/coach/expenses" period={period} />
         <p className="text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)}。已提交的報銷不能再改，同一結算期可以再交另一張。
+          結算期：{payrollPeriodLabel(period)}。已提交的報銷可以修改，上傳新收據會取代 Google Drive
+          的舊檔。同一結算期可以再交另一張。
         </p>
         {claimsError ? (
           <p className="text-sm text-red-700" role="alert">
@@ -93,32 +96,26 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
           </p>
         ) : (
           <>
-            {submitted.map((claim) => (
-              <div key={claim.id} className="space-y-2 border-t border-stone-100 pt-3 text-sm">
-                <p className="font-medium">已提交，不能再修改。</p>
-                <p>金額：{formatMoney(Number(claim.amount_hkd ?? 0))}</p>
-                {claim.note ? <p>備註：{claim.note}</p> : null}
-                {claim.drive_folder_url ? (
-                  <a
-                    href={claim.drive_folder_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium underline"
-                  >
-                    開啟 Google Drive 資料夾
-                  </a>
-                ) : null}
-                {receipts.some((receipt) => receipt.claimId === claim.id) ? (
-                  <ul className="list-disc pl-5 text-stone-600">
-                    {receipts
-                      .filter((receipt) => receipt.claimId === claim.id)
-                      .map((receipt) => (
-                        <li key={receipt.id}>{receipt.fileName}</li>
-                      ))}
-                  </ul>
-                ) : null}
-              </div>
-            ))}
+            {submitted.map((claim) => {
+              const claimReceipts = receipts.filter((receipt) => receipt.claimId === claim.id);
+              return (
+                <div key={claim.id} className="border-t border-stone-100 pt-4">
+                  <ExpenseClaimForm
+                    key={`${claim.id}:${claimReceipts.map((receipt) => receipt.id).join(",")}`}
+                    period={period}
+                    claimId={claim.id}
+                    submitted
+                    initialAmount={
+                      claim.amount_hkd == null ? "" : String(Number(claim.amount_hkd))
+                    }
+                    initialNote={claim.note ?? ""}
+                    receipts={claimReceipts}
+                    driveReady={googleDriveConfigured()}
+                    driveFolderUrl={claim.drive_folder_url}
+                  />
+                </div>
+              );
+            })}
             {submitted.length > 0 ? (
               <p className="border-t border-stone-100 pt-3 text-sm font-medium">另一張報銷</p>
             ) : null}
