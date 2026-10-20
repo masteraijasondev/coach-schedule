@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/action-form";
 import { buttonTone } from "@/components/button-styles";
 import { ServerActionButton } from "@/components/server-action-button";
 import { SubmitButton } from "@/components/ui";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 export type ExpenseReceipt = {
   id: string;
@@ -35,6 +35,7 @@ export function ExpenseClaimForm({
   const [note, setNote] = useState(initialNote);
   const [receiptName, setReceiptName] = useState("");
   const [draftError, setDraftError] = useState<string | null>(null);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
   const canSubmit = amount.trim() !== "" && receipts.length > 0 && driveReady;
 
   async function saveDraft() {
@@ -127,23 +128,25 @@ export function ExpenseClaimForm({
         <input type="hidden" name="note" value={note} />
         <label className="block min-w-0 flex-1 space-y-1 text-sm">
           <span className="text-stone-700">收據（JPEG、PNG、HEIC 或 PDF，10MB 內）</span>
-          <span className="flex flex-wrap items-center gap-3">
+          <span className="relative flex flex-wrap items-center gap-3">
             <input
+              ref={receiptInputRef}
               name="receipt"
               type="file"
               required
               accept="image/jpeg,image/png,image/heic,image/heif,application/pdf,.jpg,.jpeg,.png,.heic,.heif,.pdf"
-              aria-label="選擇收據"
-              className="peer sr-only"
+              className="absolute h-px w-px overflow-hidden opacity-0"
               onChange={(event) => {
                 setReceiptName(event.currentTarget.files?.[0]?.name ?? "");
               }}
             />
-            <span
-              className={`${buttonTone.primary} peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-stone-900`}
+            <button
+              type="button"
+              className={buttonTone.primary}
+              onClick={() => receiptInputRef.current?.click()}
             >
               選擇檔案
-            </span>
+            </button>
             <span className="min-w-0 truncate text-sm font-medium text-stone-900">
               {receiptName || "尚未選擇"}
             </span>
