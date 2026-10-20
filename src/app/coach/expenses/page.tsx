@@ -17,6 +17,7 @@ type ClaimRow = {
   note: string | null;
   status: string;
   drive_folder_url: string | null;
+  submitted_at: string | null;
 };
 
 type FileRow = {
@@ -34,7 +35,7 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
   const supabase = await createClient();
   const { data: claims, error: claimsError } = await supabase
     .from("expense_claims")
-    .select("id, amount_hkd, note, status, drive_folder_url")
+    .select("id, amount_hkd, note, status, drive_folder_url, submitted_at")
     .eq("coach_id", coach.id)
     .eq("period", period)
     .order("created_at", { ascending: true });
@@ -108,6 +109,7 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
                   receipts={claimReceipts}
                   driveReady={googleDriveConfigured()}
                   driveFolderUrl={claim.drive_folder_url}
+                  submittedAt={claim.submitted_at}
                 />
               );
             })}

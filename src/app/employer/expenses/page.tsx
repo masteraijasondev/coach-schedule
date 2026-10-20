@@ -2,7 +2,7 @@ import { ExpensePeriodNav } from "@/components/expense-period-nav";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { parsePayrollPeriodParam, payrollPeriodLabel } from "@/lib/calendar";
-import { formatMoney } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -23,7 +23,7 @@ export default async function EmployerExpensesPage({ searchParams }: Props) {
       .order("full_name"),
     supabase
       .from("expense_claims")
-      .select("id, coach_id, amount_hkd, note, drive_folder_url")
+      .select("id, coach_id, amount_hkd, note, drive_folder_url, submitted_at")
       .eq("period", period)
       .eq("status", "submitted")
       .order("submitted_at", { ascending: true }),
@@ -55,6 +55,11 @@ export default async function EmployerExpensesPage({ searchParams }: Props) {
                     {personClaims.map((claim) => (
                       <li key={claim.id} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
+                          {claim.submitted_at ? (
+                            <p className="text-sm text-stone-500">
+                              提交時間：{formatDateTime(claim.submitted_at)}
+                            </p>
+                          ) : null}
                           {claim.note ? (
                             <p className="text-sm text-stone-600">{claim.note}</p>
                           ) : null}

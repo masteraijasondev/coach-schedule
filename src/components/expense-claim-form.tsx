@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/action-form";
 import { buttonTone } from "@/components/button-styles";
 import { ServerActionButton } from "@/components/server-action-button";
 import { SubmitButton } from "@/components/ui";
-import { formatMoneyOrPending } from "@/lib/format";
+import { formatDateTime, formatMoneyOrPending } from "@/lib/format";
 import { useRef, useState } from "react";
 
 export type ExpenseReceipt = {
@@ -27,6 +27,7 @@ export function SubmittedExpenseClaim({
   receipts,
   driveReady,
   driveFolderUrl,
+  submittedAt,
 }: {
   period: string;
   claimId: string;
@@ -35,6 +36,7 @@ export function SubmittedExpenseClaim({
   receipts: ExpenseReceipt[];
   driveReady: boolean;
   driveFolderUrl: string | null;
+  submittedAt: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const amountLabel = amount.trim() === "" ? formatMoneyOrPending(null) : formatMoneyOrPending(Number(amount));
@@ -44,6 +46,9 @@ export function SubmittedExpenseClaim({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium">{amountLabel}</p>
+          {submittedAt ? (
+            <p className="mt-1 text-sm text-stone-500">提交時間：{formatDateTime(submittedAt)}</p>
+          ) : null}
           {note.trim() !== "" ? <p className="mt-1 text-sm text-stone-600">{note}</p> : null}
           {receipts.length > 0 ? (
             <ul className="mt-1">
