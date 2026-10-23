@@ -8,7 +8,7 @@ import { formatAvailabilityTime } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
-const TIME_STEP_MINUTES = 30;
+const TIME_STEP_MINUTES = 15;
 const DEFAULT_START_MINUTE = 10 * 60;
 const DEFAULT_END_MINUTE = 18 * 60;
 
@@ -131,6 +131,7 @@ export function EmployerDirectAssignForm({
             <AvailabilityTimeFields
               defaultStartMinute={DEFAULT_START_MINUTE}
               defaultEndMinute={DEFAULT_END_MINUTE}
+              stepMinutes={TIME_STEP_MINUTES}
               startValue={startMinute}
               endValue={endMinute}
               onStartChange={(next) => {

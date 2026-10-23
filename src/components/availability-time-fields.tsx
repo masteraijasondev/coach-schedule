@@ -1,16 +1,20 @@
 import { formatAvailabilityTime } from "@/lib/format";
 
-const TIME_STEP_MINUTES = 30;
 const MINUTES_PER_DAY = 1440;
 
-const startOptions = Array.from(
-  { length: MINUTES_PER_DAY / TIME_STEP_MINUTES },
-  (_, index) => index * TIME_STEP_MINUTES,
-);
-const endOptions = Array.from(
-  { length: MINUTES_PER_DAY / TIME_STEP_MINUTES },
-  (_, index) => (index + 1) * TIME_STEP_MINUTES,
-);
+function minuteOptions(stepMinutes: number, kind: "start" | "end"): number[] {
+  const count = MINUTES_PER_DAY / stepMinutes;
+  return Array.from({ length: count }, (_, index) =>
+    kind === "start" ? index * stepMinutes : (index + 1) * stepMinutes,
+  );
+}
+
+function withCurrent(options: number[], current: number): number[] {
+  if (options.includes(current)) {
+    return options;
+  }
+  return [...options, current].sort((left, right) => left - right);
+}
 
 const SELECT_CHEVRON = {
   default:
@@ -110,6 +114,7 @@ export function AvailabilityTimeFields({
   onEndChange,
   tone = "default",
   compact = false,
+  stepMinutes = 30,
 }: {
   defaultStartMinute: number;
   defaultEndMinute: number;
@@ -123,18 +128,27 @@ export function AvailabilityTimeFields({
   onEndChange?: (minutes: number) => void;
   tone?: keyof typeof SELECT_CHEVRON;
   compact?: boolean;
+  stepMinutes?: number;
 }) {
-  const starts = startOptions.filter(
-    (minutes) =>
-      minutes >= minMinute &&
-      minutes < maxMinute &&
-      (endValue == null || minutes < endValue),
+  const selectedStart = startValue ?? defaultStartMinute;
+  const selectedEnd = endValue ?? defaultEndMinute;
+  const starts = withCurrent(
+    minuteOptions(stepMinutes, "start").filter(
+      (minutes) =>
+        minutes >= minMinute &&
+        minutes < maxMinute &&
+        (endValue == null || minutes < endValue),
+    ),
+    selectedStart,
   );
-  const ends = endOptions.filter(
-    (minutes) =>
-      minutes > minMinute &&
-      minutes <= maxMinute &&
-      (startValue == null || minutes > startValue),
+  const ends = withCurrent(
+    minuteOptions(stepMinutes, "end").filter(
+      (minutes) =>
+        minutes > minMinute &&
+        minutes <= maxMinute &&
+        (startValue == null || minutes > startValue),
+    ),
+    selectedEnd,
   );
 
   return (
@@ -143,7 +157,7 @@ export function AvailabilityTimeFields({
         label="開始"
         name={startName}
         options={starts}
-        current={startValue ?? defaultStartMinute}
+        current={selectedStart}
         onChange={onStartChange}
         tone={tone}
         compact={compact}
@@ -152,7 +166,7 @@ export function AvailabilityTimeFields({
         label="結束"
         name={endName}
         options={ends}
-        current={endValue ?? defaultEndMinute}
+        current={selectedEnd}
         onChange={onEndChange}
         tone={tone}
         compact={compact}

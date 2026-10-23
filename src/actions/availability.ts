@@ -9,7 +9,8 @@ import { fromZonedTime } from "date-fns-tz";
 import { revalidatePath } from "next/cache";
 
 const MINUTES_PER_DAY = 1440;
-const TIME_STEP_MINUTES = 30;
+const LEAVE_STEP_MINUTES = 30;
+const SHIFT_STEP_MINUTES = 15;
 
 function revalidateAvailabilityPages() {
   revalidatePath("/coach");
@@ -27,8 +28,13 @@ function validateAvailabilityInput(
   date: string,
   startMinute: number | null,
   endMinute: number | null,
-  options?: { allowStarted?: boolean; allowPast?: boolean },
+  options?: {
+    allowStarted?: boolean;
+    allowPast?: boolean;
+    stepMinutes?: number;
+  },
 ): string | null {
+  const stepMinutes = options?.stepMinutes ?? LEAVE_STEP_MINUTES;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return "日期無效";
   }
@@ -39,8 +45,8 @@ function validateAvailabilityInput(
     startMinute >= MINUTES_PER_DAY ||
     endMinute <= 0 ||
     endMinute > MINUTES_PER_DAY ||
-    startMinute % TIME_STEP_MINUTES !== 0 ||
-    endMinute % TIME_STEP_MINUTES !== 0 ||
+    startMinute % stepMinutes !== 0 ||
+    endMinute % stepMinutes !== 0 ||
     endMinute <= startMinute
   ) {
     return "請選擇有效的開始及結束時間";
@@ -303,7 +309,7 @@ export async function saveAvailabilityAction(
       date,
       startMinute,
       endMinute,
-      { allowPast: true },
+      { allowPast: true, stepMinutes: SHIFT_STEP_MINUTES },
     );
     if (validationError) {
       return { ok: false, error: validationError };
@@ -396,8 +402,8 @@ export async function releaseAvailabilityAction(
       startMinute >= MINUTES_PER_DAY ||
       endMinute <= 0 ||
       endMinute > MINUTES_PER_DAY ||
-      startMinute % TIME_STEP_MINUTES !== 0 ||
-      endMinute % TIME_STEP_MINUTES !== 0 ||
+      startMinute % SHIFT_STEP_MINUTES !== 0 ||
+      endMinute % SHIFT_STEP_MINUTES !== 0 ||
       endMinute <= startMinute
     ) {
       return { ok: false, error: "請選擇有效的開始及結束時間" };

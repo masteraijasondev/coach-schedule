@@ -16,7 +16,7 @@ import { formatAvailabilityTime, formatMoney } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const TIME_STEP_MINUTES = 30;
+const TIME_STEP_MINUTES = 15;
 
 export function EmployerAssignForm({
   coachId,
@@ -109,6 +109,7 @@ export function EmployerAssignForm({
             defaultEndMinute={slotEndMinute}
             minMinute={startMinute}
             maxMinute={slotEndMinute}
+            stepMinutes={TIME_STEP_MINUTES}
             startValue={assignStart}
             endValue={assignEnd}
             onStartChange={(next) => {
@@ -170,6 +171,7 @@ export function EmployerAssignForm({
             defaultEndMinute={slotEndMinute}
             minMinute={startMinute}
             maxMinute={slotEndMinute}
+            stepMinutes={TIME_STEP_MINUTES}
             startValue={releaseStart}
             endValue={releaseEnd}
             onStartChange={(next) => {

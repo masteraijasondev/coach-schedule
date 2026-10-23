@@ -19,6 +19,8 @@ import { revalidatePath } from "next/cache";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
+const SHIFT_STEP_MINUTES = 15;
+
 async function assertCoachAvailabilityCovers(
   coachId: string,
   startsAt: string,
@@ -407,7 +409,9 @@ export async function createLessonAction(
         !Number.isInteger(endMinute) ||
         startMinute < 0 ||
         endMinute > 1440 ||
-        endMinute <= startMinute
+        endMinute <= startMinute ||
+        startMinute % SHIFT_STEP_MINUTES !== 0 ||
+        endMinute % SHIFT_STEP_MINUTES !== 0
       ) {
         return { ok: false, error: "請選擇有效的派更時段" };
       }
