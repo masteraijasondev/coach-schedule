@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
+const SHIFT_STEP_MINUTES = 15;
 const MINUTES_PER_DAY = 1440;
 
 export type CoachDayLesson = {
@@ -370,6 +371,7 @@ export function CoachDayPanel({
                           value={day}
                         />
                         <AvailabilityTimeFields
+                          stepMinutes={SHIFT_STEP_MINUTES}
                           defaultStartMinute={slot.start_minute}
                           defaultEndMinute={slot.end_minute}
                         />

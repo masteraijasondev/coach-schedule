@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 const DEFAULT_DURATION_MINUTES = 60;
+const SHIFT_STEP_MINUTES = 15;
 const MINUTES_PER_DAY = 1440;
 
 function Chevron({ up = false }: { up?: boolean }) {
@@ -131,6 +132,7 @@ export function StaffShiftComposer({
               <input type="hidden" name="available_date" value={date} />
               <AvailabilityTimeFields
                 compact={compact}
+                stepMinutes={SHIFT_STEP_MINUTES}
                 defaultStartMinute={suggestedStart}
                 defaultEndMinute={Math.min(
                   suggestedStart + DEFAULT_DURATION_MINUTES,

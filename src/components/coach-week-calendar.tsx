@@ -48,6 +48,7 @@ import Link from "next/link";
 import { useEffect, useState, type MouseEvent } from "react";
 
 const DEFAULT_START_MINUTE = 9 * 60;
+const SHIFT_STEP_MINUTES = 15;
 const MINUTES_PER_DAY = 1440;
 
 export type CoachWeekSlot = {
@@ -237,8 +238,8 @@ export function CoachWeekCalendar({
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
         <p className="text-sm text-stone-500">
-          選擇指定日期及時段申報可返工，或申報 Short Break、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。時間以
-          30 分鐘為單位。
+          選擇指定日期及時段申報可返工，或申報 Short Break、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。可返工時間以
+          15 分鐘為單位；放假、病假同簽到仍然以 30 分鐘為單位。
         </p>
             <div className="flex items-center justify-between gap-2">
               <Link
@@ -629,6 +630,7 @@ export function CoachWeekCalendar({
                             value={date}
                           />
                           <AvailabilityTimeFields
+                            stepMinutes={SHIFT_STEP_MINUTES}
                             defaultStartMinute={availability.start_minute}
                             defaultEndMinute={availability.end_minute}
                           />
