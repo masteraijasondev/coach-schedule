@@ -6,7 +6,27 @@ import { SubmitButton } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
+
+function subscribeNoop() {
+  return () => {};
+}
+
+type HashSession = { accessToken: string; refreshToken: string };
+
+let capturedHashSession: HashSession | null | undefined;
+
+function readHashSession(): HashSession | null {
+  if (capturedHashSession !== undefined) {
+    return capturedHashSession;
+  }
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  capturedHashSession =
+    accessToken && refreshToken ? { accessToken, refreshToken } : null;
+  return capturedHashSession;
+}
 
 function ConfirmRecovery() {
   const searchParams = useSearchParams();
@@ -14,24 +34,21 @@ function ConfirmRecovery() {
   const tokenHash = searchParams.get("token_hash") ?? "";
   const type = searchParams.get("type") ?? "recovery";
   const providerError = searchParams.get("error");
-  const [hashSession, setHashSession] = useState<{
-    accessToken: string;
-    refreshToken: string;
-  } | null>(null);
-  const [ready, setReady] = useState(false);
+  const ready = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const hashSession = ready ? readHashSession() : null;
   const [hashError, setHashError] = useState<string | null>(null);
   const [hashPending, setHashPending] = useState(false);
 
   useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    const accessToken = hash.get("access_token");
-    const refreshToken = hash.get("refresh_token");
-    if (accessToken && refreshToken) {
-      setHashSession({ accessToken, refreshToken });
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (!hashSession) {
+      return;
     }
-    setReady(true);
-  }, []);
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
+  }, [hashSession]);
 
   async function continueFromHash() {
     if (!hashSession) {

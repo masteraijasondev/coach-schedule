@@ -67,7 +67,13 @@ export function CoachCalendarShell({
   lessons: CoachMonthLesson[];
   availabilities: CoachMonthSlot[];
   leaves: CoachMonthLeave[];
-  workTypes: { id: string; name: string; registersStudent: boolean }[];
+  workTypes: {
+    id: string;
+    name: string;
+    registersStudent: boolean;
+    payMode?: string;
+    hourlyRate?: number | null;
+  }[];
   colleagues: ColleagueSchedule[];
   lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
@@ -138,7 +144,7 @@ export function CoachCalendarShell({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-base font-semibold">我的工作日曆</h1>
+        <h1 className="text-xl font-semibold tracking-tight">我的工作日曆</h1>
         <div className="flex flex-wrap items-center gap-2">
           <CoachScheduleScopeToggle scope={scope} onChange={changeScope} />
           <CalendarViewToggle

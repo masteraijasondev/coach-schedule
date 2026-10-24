@@ -123,7 +123,13 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <Panel title={`薪資 · ${period} 結算期 : (${payrollPeriodLabel(period)})`}>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">薪資</h1>
+        <p className="mt-1 text-sm text-[#525252]">
+          {period} 結算期（{payrollPeriodLabel(period)}）
+        </p>
+      </div>
+      <Panel title="本結算期">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/coach/salary?month=${prev}`}
@@ -152,11 +158,11 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">已派更，待簽到</p>
-                  <p className="italic text-stone-950">
+                  <p className="font-bold italic text-stone-950">
                     <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                   </p>
                 </div>
-                <p className="text-sm font-medium">
+                <p className="text-sm tabular-nums text-stone-600">
                   {hourlyRate == null
                     ? "未設定時薪"
                     : formatMoney(
@@ -185,7 +191,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="font-medium">
                   {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
                 </p>
-                <p className=" italic text-stone-950">
+                <p className="font-bold italic text-stone-950">
                   <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                 </p>
                 {payMode === "per_student" ? (
@@ -203,8 +209,8 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               <p
                 className={
                   lesson.earned_amount_hkd == null
-                    ? "text-sm font-medium text-amber-700"
-                    : "font-bold italic text-stone-950"
+                    ? "text-sm text-amber-700"
+                    : "text-sm tabular-nums text-stone-700"
                 }
               >
                 {formatMoneyOrPending(lesson.earned_amount_hkd)}

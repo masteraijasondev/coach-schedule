@@ -56,6 +56,8 @@ export type StaffWorkTypeOption = {
   id: string;
   name: string;
   registersStudent: boolean;
+  payMode?: string;
+  hourlyRate?: number | null;
 };
 
 export type CoachDaySlot = {
@@ -177,6 +179,18 @@ export function CoachDayPanel({
               date={day}
               suggestedStart={suggestedStart}
               canTakeFullDay={!hasAssigned}
+              pendingShiftLabels={dayLessons.flatMap((lesson) => {
+                if (lesson.status !== "assigned") {
+                  return [];
+                }
+                const window = lessonMinutesInHongKong(
+                  lesson.starts_at,
+                  lesson.ends_at,
+                );
+                return [
+                  `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)}`,
+                ];
+              })}
             />
           ) : null}
           {shortBreaks.map((leave) => {
@@ -186,7 +200,7 @@ export function CoachDayPanel({
               <StaffShiftChip
                 key={leave.id}
                 label={
-                  leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`
+                  leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} 小休`
                 }
                 tone={leave.kind === "sick" ? "sick" : "leave"}
               >

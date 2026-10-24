@@ -36,8 +36,11 @@ export function StudentDirectoryProvider({
     students: [],
   });
   const directoryRef = useRef(directory);
-  directoryRef.current = directory;
   const inFlight = useRef<Promise<void> | null>(null);
+
+  useEffect(() => {
+    directoryRef.current = directory;
+  }, [directory]);
 
   const ensureStudents = useCallback(async () => {
     if (directoryRef.current.status === "success") {

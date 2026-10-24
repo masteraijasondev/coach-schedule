@@ -86,7 +86,7 @@ function availabilityDatabaseError(message: string): string {
     return "找不到此時段，請重新整理後再試";
   }
   if (message.includes("leave day")) {
-    return "此時段已申報放假或 Short Break";
+    return "此時段已申報放假或小休";
   }
   if (message.includes("locked by an assigned lesson")) {
     return "此時段已有派更，不可修改或刪除可返工時間";
@@ -225,7 +225,7 @@ export async function saveShortBreakAction(
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[saveShortBreakAction] unexpected", { error });
-    return { ok: false, error: "報 Short Break 時發生錯誤" };
+    return { ok: false, error: "報小休時發生錯誤" };
   }
 }
 

@@ -14,7 +14,7 @@ import {
 } from "@/lib/expected-pay";
 import { formatAvailabilityTime, formatMoney } from "@/lib/format";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const TIME_STEP_MINUTES = 15;
 
@@ -43,14 +43,18 @@ export function EmployerAssignForm({
   const [releaseStart, setReleaseStart] = useState(startMinute);
   const [releaseEnd, setReleaseEnd] = useState(slotEndMinute);
   const [releaseRemainder, setReleaseRemainder] = useState(true);
-
-  useEffect(() => {
+  const [slotKey, setSlotKey] = useState({ startMinute, slotEndMinute });
+  if (
+    slotKey.startMinute !== startMinute ||
+    slotKey.slotEndMinute !== slotEndMinute
+  ) {
+    setSlotKey({ startMinute, slotEndMinute });
     setAssignStart(startMinute);
     setAssignEnd(slotEndMinute);
     setReleaseStart(startMinute);
     setReleaseEnd(slotEndMinute);
     setReleaseRemainder(true);
-  }, [startMinute, slotEndMinute]);
+  }
 
   const hasRemainder =
     assignStart > startMinute || assignEnd < slotEndMinute;

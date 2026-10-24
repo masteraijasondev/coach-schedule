@@ -117,7 +117,7 @@ export async function loadEmployerCalendarData(range: {
     }),
     supabase
       .from("staff_work_types")
-      .select("coach_id, lesson_type_id, lesson_types(id, name, active, registers_student)"),
+      .select("coach_id, lesson_type_id, lesson_types(id, name, active, registers_student, pay_mode)"),
   ]);
 
   if (lessonsResult.error) {
@@ -199,6 +199,7 @@ export async function loadEmployerCalendarData(range: {
         id: type.id,
         name: type.name,
         registersStudent: type.registers_student === true,
+        payMode: type.pay_mode,
       };
     })
     .filter(
@@ -209,6 +210,7 @@ export async function loadEmployerCalendarData(range: {
         id: string;
         name: string;
         registersStudent: boolean;
+        payMode: string;
       } => type != null,
     );
   const types = (typesResult.data ?? []).map((type) => ({

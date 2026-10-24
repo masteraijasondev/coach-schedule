@@ -14,7 +14,8 @@ import {
   type CheckInPeriod,
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
-import { formatAvailabilityTime } from "@/lib/format";
+import { expectedHourlyAmount } from "@/lib/expected-pay";
+import { formatAvailabilityTime, formatMoney } from "@/lib/format";
 import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -85,6 +86,7 @@ function LessonCheckInFields({
   workTypes,
   initialLessonTypeId,
   staffKind = "coach",
+  fallbackHourlyRate = null,
   action = confirmLessonPeriodsAction,
   nowMs,
 }: {
@@ -95,7 +97,14 @@ function LessonCheckInFields({
   initialPeriods?: CheckInPeriod[];
   initialStudentNames?: string[];
   submitLabel?: string;
-  workTypes: { id: string; name: string; registersStudent: boolean }[];
+  workTypes: {
+    id: string;
+    name: string;
+    registersStudent: boolean;
+    payMode?: string;
+    hourlyRate?: number | null;
+  }[];
+  fallbackHourlyRate?: number | null;
   initialLessonTypeId?: string;
   staffKind?: "coach" | "operations";
   action?: typeof confirmLessonPeriodsAction;
@@ -118,7 +127,14 @@ function LessonCheckInFields({
   const [draftEnd, setDraftEnd] = useState(
     defaultEnd(initialStart, pastEnd ?? windowEnd),
   );
-  const [periods, setPeriods] = useState<CheckInPeriod[]>(initialPeriods);
+  const [periods, setPeriods] = useState<CheckInPeriod[]>(() =>
+    initialPeriods.map((period) => ({
+      ...period,
+      lessonTypeId: period.lessonTypeId ?? initialLessonTypeId,
+      studentNames: period.studentNames ?? initialStudentNames,
+    })),
+  );
+  const [draftDirty, setDraftDirty] = useState(false);
   const [lessonTypeId, setLessonTypeId] = useState(
     workTypes.some((type) => type.id === initialLessonTypeId)
       ? initialLessonTypeId ?? ""
@@ -127,7 +143,6 @@ function LessonCheckInFields({
   const [selectedNames, setSelectedNames] = useState<string[]>(initialStudentNames);
   const [studentQuery, setStudentQuery] = useState("");
   const [studentDirectory, setStudentDirectory] = useState<string[] | null>(null);
-  const [directoryLoading, setDirectoryLoading] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const registered = initialPeriods.length > 0;
@@ -145,12 +160,14 @@ function LessonCheckInFields({
     [studentDirectory, studentQuery],
   );
 
+  const directoryLoading =
+    asksStudent && studentDirectory === null && searchError === null;
+
   useEffect(() => {
     if (!asksStudent || studentDirectory) {
       return;
     }
     let cancelled = false;
-    setDirectoryLoading(true);
     listAirtableStudentNamesAction()
       .then((result) => {
         if (cancelled) {
@@ -167,11 +184,6 @@ function LessonCheckInFields({
         console.error("[LessonCheckInFields] student directory", { error });
         if (!cancelled) {
           setSearchError("無法搜尋 Airtable 學生");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setDirectoryLoading(false);
         }
       });
     return () => {
@@ -217,10 +229,82 @@ function LessonCheckInFields({
       setAddError("簽到時段不可重疊");
       return;
     }
+    if (!lessonTypeId) {
+      setAddError("請選擇實際工作類型");
+      return;
+    }
+    if (asksStudent && selectedNames.length === 0) {
+      setAddError("請選擇教了哪位學生");
+      return;
+    }
     setAddError(null);
+    setDraftDirty(false);
     setPeriods(
-      [...periods, next].sort((a, b) => a.startMinute - b.startMinute),
+      [
+        ...periods,
+        {
+          ...next,
+          lessonTypeId,
+          studentNames: asksStudent ? [...selectedNames] : [],
+          locked: true,
+        },
+      ].sort((a, b) => a.startMinute - b.startMinute),
     );
+  }
+
+  function resolvedPeriods():
+    | { ok: true; periods: CheckInPeriod[] }
+    | { ok: false; error: string } {
+    const listed = periods.map((period) =>
+      period.locked && period.lessonTypeId
+        ? period
+        : {
+            ...period,
+            lessonTypeId,
+            studentNames: asksStudent ? [...selectedNames] : [],
+          },
+    );
+    const duplicate = listed.some(
+      (period) =>
+        period.startMinute === draftStart && period.endMinute === draftEnd,
+    );
+    if (!draftDirty || duplicate) {
+      return { ok: true, periods: listed };
+    }
+    const extra = {
+      startMinute: draftStart,
+      endMinute: draftEnd,
+      lessonTypeId,
+      studentNames: asksStudent ? [...selectedNames] : [],
+      locked: true,
+    };
+    if (!lessonTypeId) {
+      return { ok: false, error: "請選擇實際工作類型" };
+    }
+    if (extra.endMinute <= extra.startMinute) {
+      return { ok: false, error: "結束時間必須晚於開始時間" };
+    }
+    if (
+      extra.startMinute < 0 ||
+      extra.endMinute > 1440 ||
+      extra.startMinute > windowEnd ||
+      extra.endMinute < windowStart
+    ) {
+      return { ok: false, error: "簽到時間需要覆蓋或緊貼原本派更" };
+    }
+    if (extra.endMinute > latestPastEnd) {
+      return { ok: false, error: "只可簽到已經結束的時段" };
+    }
+    if (listed.some((period) => periodsOverlap(period, extra))) {
+      return { ok: false, error: "簽到時段不可重疊" };
+    }
+    if (asksStudent && selectedNames.length === 0) {
+      return { ok: false, error: "請選擇教了哪位學生" };
+    }
+    return {
+      ok: true,
+      periods: [...listed, extra].sort((a, b) => a.startMinute - b.startMinute),
+    };
   }
 
   function startingLessonTypeId() {
@@ -229,10 +313,77 @@ function LessonCheckInFields({
       : workTypes[0]?.id ?? "";
   }
 
+  function checkInPayNote(): string {
+    const built = resolvedPeriods();
+    const rows = built.ok ? built.periods : periods;
+    if (rows.length === 0) {
+      return "請先加入時段。確認前不計入已確認薪金。";
+    }
+    let hourlyTotal = 0;
+    let hourlyKnown = true;
+    let usedFallback = false;
+    let hasHourly = false;
+    let hasStudent = false;
+    let hasLater = false;
+    for (const row of rows) {
+      const typeId = row.lessonTypeId || lessonTypeId;
+      const type = workTypes.find((item) => item.id === typeId);
+      const minutes = row.endMinute - row.startMinute;
+      const mode = type?.payMode;
+      const studentPay =
+        mode === "per_student" ||
+        (mode == null && type?.registersStudent === true && staffKind === "coach");
+      if (studentPay) {
+        hasStudent = true;
+        continue;
+      }
+      if (mode === "per_head" || mode === "per_session") {
+        hasLater = true;
+        continue;
+      }
+      hasHourly = true;
+      const specific = type?.hourlyRate;
+      const rate = specific ?? fallbackHourlyRate;
+      if (rate == null || minutes <= 0) {
+        hourlyKnown = false;
+        continue;
+      }
+      if (specific == null) {
+        usedFallback = true;
+      }
+      hourlyTotal += expectedHourlyAmount(minutes, rate);
+    }
+    const parts: string[] = [];
+    if (hasHourly && hourlyKnown) {
+      parts.push(
+        `${usedFallback ? "按預設時薪估計 " : ""}${formatMoney(hourlyTotal)}`,
+      );
+    } else if (hasHourly && !hourlyKnown) {
+      parts.push("時薪尚未設定，現在不計入");
+    }
+    if (hasStudent) {
+      parts.push("學生分成於簽到後計入，現在不計入");
+    }
+    if (hasLater) {
+      parts.push("人頭或堂數於簽到後計入，現在不計入");
+    }
+    if (parts.length === 0) {
+      return "確認前不計入已確認薪金。";
+    }
+    return `確認簽到後：${parts.join("。")}。`;
+  }
+
   function cancelEdit() {
     setDraftStart(initialStart);
     setDraftEnd(defaultEnd(initialStart, pastEnd ?? windowEnd));
-    setPeriods(initialPeriods);
+    setDraftDirty(false);
+    setPeriods(
+      initialPeriods.map((period) => ({
+        ...period,
+        lessonTypeId: period.lessonTypeId ?? initialLessonTypeId,
+        studentNames: period.studentNames ?? initialStudentNames,
+      })),
+    );
     setLessonTypeId(startingLessonTypeId());
     setSelectedNames(initialStudentNames);
     setStudentQuery("");
@@ -265,7 +416,21 @@ function LessonCheckInFields({
           <select
             required
             value={lessonTypeId}
-            onChange={(event) => setLessonTypeId(event.target.value)}
+            onChange={(event) => {
+              const nextTypeId = event.target.value;
+              setLessonTypeId(nextTypeId);
+              setPeriods((current) =>
+                current.map((period) =>
+                  period.locked
+                    ? period
+                    : {
+                        ...period,
+                        lessonTypeId: nextTypeId,
+                        studentNames: [],
+                      },
+                ),
+              );
+            }}
             className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
           >
             <option value="" disabled>
@@ -337,8 +502,14 @@ function LessonCheckInFields({
         endName="check_in_end"
         startValue={draftStart}
         endValue={draftEnd}
-        onStartChange={setDraftStart}
-        onEndChange={setDraftEnd}
+        onStartChange={(minute) => {
+          setDraftStart(minute);
+          setDraftDirty(true);
+        }}
+        onEndChange={(minute) => {
+          setDraftEnd(minute);
+          setDraftDirty(true);
+        }}
       />
       <button
         type="button"
@@ -360,8 +531,13 @@ function LessonCheckInFields({
               className="flex items-center justify-between gap-1 text-xs tabular-nums"
             >
               <span>
-                {formatAvailabilityTime(period.startMinute)}–
-                {formatAvailabilityTime(period.endMinute)}
+                {[
+                  `${formatAvailabilityTime(period.startMinute)}–${formatAvailabilityTime(period.endMinute)}`,
+                  workTypes.find((type) => type.id === period.lessonTypeId)?.name,
+                  (period.studentNames ?? []).join("、"),
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               </span>
               <button
                 type="button"
@@ -387,6 +563,26 @@ function LessonCheckInFields({
       <ActionForm
         action={action}
         className="space-y-2"
+        beforeSubmit={(formData) => {
+          const built = resolvedPeriods();
+          if (!built.ok) {
+            setAddError(built.error);
+            return built;
+          }
+          setAddError(null);
+          formData.set(
+            "periods",
+            JSON.stringify(
+              built.periods.map((period) => ({
+                startMinute: period.startMinute,
+                endMinute: period.endMinute,
+                lessonTypeId: period.lessonTypeId,
+                studentNames: period.studentNames ?? [],
+              })),
+            ),
+          );
+          return null;
+        }}
         onSuccess={() => {
           setEditing(false);
           router.refresh();
@@ -396,6 +592,7 @@ function LessonCheckInFields({
         <input type="hidden" name="periods" value={payload} />
         <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
         <input type="hidden" name="student_names" value={studentNamesPayload} />
+        <p className="text-sm text-[#2C2C2C]">{checkInPayNote()}</p>
         <div className="flex gap-2">
           {registered ? (
             <button

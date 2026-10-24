@@ -47,9 +47,9 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="w-full max-w-md space-y-6 rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+    <div className="w-full max-w-md space-y-6 border-t-4 border-[#FF6B00] bg-white p-6 shadow-sm">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">忘記密碼</h1>
+        <h1 className="text-xl font-semibold tracking-tight">忘記密碼</h1>
         <p className="mt-1 text-sm text-stone-500">
           輸入帳號電郵，我們會寄出重設密碼連結（如該電郵已註冊）。請用這個瀏覽器開啟連結。
         </p>
@@ -90,7 +90,7 @@ function ForgotPasswordForm() {
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex min-h-full flex-1 items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen flex-1 items-center justify-center bg-white px-4 py-12 text-[#2C2C2C] [font-family:var(--font-barlow),var(--font-noto-sans-tc),sans-serif]">
       <Suspense
         fallback={
           <div className="w-full max-w-md rounded-lg border border-stone-200 bg-white p-6 text-sm text-stone-500 shadow-sm">

@@ -12,6 +12,7 @@ import {
   parseDayParam,
   parseMonthParam,
 } from "@/lib/calendar";
+import { hourlyRateOrNull } from "@/lib/expected-pay";
 import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { loadColleagueSchedules } from "@/lib/load-colleague-schedules";
 import { parseCoachScheduleScope } from "@/lib/coach-href";
@@ -80,13 +81,17 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .lte("leave_date", gridRange.end),
       supabase
         .from("staff_work_types")
-        .select("lesson_type_id, lesson_types(id, name, active, registers_student)")
+        .select("lesson_type_id, lesson_types(id, name, active, registers_student, pay_mode)")
         .eq("coach_id", coach.id),
       supabase
         .from("profiles")
-        .select("staff_kind")
+        .select("staff_kind, hourly_rate_hkd")
         .eq("id", coach.id)
         .maybeSingle(),
+      supabase
+        .from("coach_rates")
+        .select("lesson_type_id, amount_hkd")
+        .eq("coach_id", coach.id),
     ]);
   const [own, team] = await Promise.all([
     ownPromise,
@@ -103,8 +108,16 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     { data: leaves },
     { data: workTypeRows },
     { data: staffProfile },
+    { data: rateRows },
   ] = own;
 
+  const fallbackHourlyRate = hourlyRateOrNull(staffProfile?.hourly_rate_hkd);
+  const rateByType = new Map(
+    (rateRows ?? []).map((row) => [
+      row.lesson_type_id,
+      hourlyRateOrNull(row.amount_hkd),
+    ]),
+  );
   const workTypes = (workTypeRows ?? [])
     .map((row) => {
       const type = Array.isArray(row.lesson_types)
@@ -117,11 +130,20 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         id: type.id,
         name: type.name,
         registersStudent: type.registers_student === true,
+        payMode: type.pay_mode,
+        hourlyRate: rateByType.get(type.id) ?? fallbackHourlyRate,
       };
     })
     .filter(
-      (type): type is { id: string; name: string; registersStudent: boolean } =>
-        type != null,
+      (
+        type,
+      ): type is {
+        id: string;
+        name: string;
+        registersStudent: boolean;
+        payMode: string;
+        hourlyRate: number | null;
+      } => type != null,
     )
     .sort((a, b) => a.name.localeCompare(b.name, "zh-Hant"));
 

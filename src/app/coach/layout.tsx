@@ -20,6 +20,7 @@ export default async function CoachLayout({
       title="員工工作台"
       name={profile.full_name}
       items={items}
+      tone="ops"
       tourRole="coach"
     >
       {children}

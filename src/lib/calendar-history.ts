@@ -113,10 +113,11 @@ export function useCalendarWeek(
   initialWeek: string,
 ): [string, (week: string) => void] {
   const [week, setWeek] = useState(initialWeek);
-
-  useEffect(() => {
+  const [weekFromProps, setWeekFromProps] = useState(initialWeek);
+  if (initialWeek !== weekFromProps) {
+    setWeekFromProps(initialWeek);
     setWeek(initialWeek);
-  }, [initialWeek]);
+  }
 
   useEffect(() => {
     function onPop() {

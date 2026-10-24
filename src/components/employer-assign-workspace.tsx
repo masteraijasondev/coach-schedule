@@ -238,7 +238,7 @@ export function EmployerAssignWorkspace({
         </Link>
       ) : null}
       <p className="text-sm text-slate-700">
-        請先點選可返工色塊派更或標為暫無需要。放假或 Short Break 以灰色顯示，病假以紅色顯示。
+        請先點選可返工色塊派更或標為暫無需要。放假或小休以灰色顯示，病假以紅色顯示。
       </p>
       <CalendarLegend items={EMPLOYER_CALENDAR_LEGEND} />
       <WeekTimeGrid
@@ -277,12 +277,12 @@ export function EmployerAssignWorkspace({
               return (
                 <div
                   key={leave.id ?? `${date}-${start}`}
-                  title={`${label} Short Break`}
+                  title={`${label} 小休`}
                   className="absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border border-stone-400 bg-stone-300 px-1 py-0.5 text-left text-xs font-medium text-stone-800"
                   style={{ top, height }}
                 >
                   <span className="tabular-nums">{label}</span>
-                  <span className="mt-0.5 block truncate">Short Break</span>
+                  <span className="mt-0.5 block truncate">小休</span>
                 </div>
               );
             });

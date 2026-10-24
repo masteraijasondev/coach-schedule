@@ -17,7 +17,7 @@ export function ExpectedPaySummary({
 }) {
   const confirmedClass = compact
     ? "text-sm font-medium"
-    : "text-lg font-semibold";
+    : "text-2xl font-semibold tabular-nums tracking-tight";
   const expectedClass = compact
     ? "text-sm text-stone-600"
     : "text-sm font-medium text-stone-700";

@@ -160,9 +160,11 @@ export function CoachWeekCalendar({
   ) => void;
 }) {
   const [linkedScope, setLinkedScope] = useState(scope);
-  useEffect(() => {
+  const [scopeFromProps, setScopeFromProps] = useState(scope);
+  if (scope !== scopeFromProps) {
+    setScopeFromProps(scope);
     setLinkedScope(scope);
-  }, [scope]);
+  }
   useEffect(() => {
     function syncScope() {
       const params = new URLSearchParams(window.location.search);
@@ -238,7 +240,7 @@ export function CoachWeekCalendar({
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
         <p className="text-sm text-stone-500">
-          選擇指定日期及時段申報可返工，或申報 Short Break、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。可返工時間以
+          選擇指定日期及時段申報可返工，或申報小休、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。可返工時間以
           15 分鐘為單位；放假、病假同簽到仍然以 30 分鐘為單位。
         </p>
             <div className="flex items-center justify-between gap-2">
@@ -329,6 +331,21 @@ export function CoachWeekCalendar({
                     suggestedStart={suggestedStart}
                     canTakeFullDay={!hasAssigned}
                     compact
+                    pendingShiftLabels={assignedLessons.flatMap((lesson) => {
+                      if (lesson.status !== "assigned") {
+                        return [];
+                      }
+                      const window = lessonMinutesInHongKong(
+                        lesson.starts_at,
+                        lesson.ends_at,
+                      );
+                      if (window.date !== date) {
+                        return [];
+                      }
+                      return [
+                        `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)}`,
+                      ];
+                    })}
                   />
                 );
               }}
@@ -363,7 +380,7 @@ export function CoachWeekCalendar({
                           style={{ top, height }}
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
-                          <p>{leave.kind === "sick" ? "病假" : "Short Break"}</p>
+                          <p>{leave.kind === "sick" ? "病假" : "小休"}</p>
                         </div>
                       );
                     }
@@ -375,7 +392,7 @@ export function CoachWeekCalendar({
                           style={{ top, height }}
                         >
                           <p className="font-medium tabular-nums">{timeLabel}</p>
-                          <p>{leave.kind === "sick" ? "病假" : "Short Break"}</p>
+                          <p>{leave.kind === "sick" ? "病假" : "小休"}</p>
                           <ServerActionButton
                             action={cancelLeaveByIdAction.bind(null, leave.id)}
                             confirmMessage={
@@ -407,7 +424,7 @@ export function CoachWeekCalendar({
                         style={{ top, height }}
                       >
                         <summary className="cursor-pointer list-none font-medium tabular-nums">
-                          {leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} Short Break`}
+                          {leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} 小休`}
                         </summary>
                         <div className="min-w-0 space-y-2 border-t border-stone-200 bg-white p-2 text-stone-900">
                           <ActionForm

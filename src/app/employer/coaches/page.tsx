@@ -141,8 +141,8 @@ export default async function CoachesPage() {
                 required
                 defaultValue="coach"
                 options={[
-                  { value: "coach", label: "Coach" },
-                  { value: "operations", label: "Admin" },
+                  { value: "coach", label: "教練" },
+                  { value: "operations", label: "營運" },
                 ]}
               />
             </div>
@@ -231,8 +231,8 @@ export default async function CoachesPage() {
                           : "coach"
                       }
                       options={[
-                        { value: "coach", label: "Coach" },
-                        { value: "operations", label: "Admin" },
+                        { value: "coach", label: "教練" },
+                        { value: "operations", label: "營運" },
                       ]}
                     />
                   </div>

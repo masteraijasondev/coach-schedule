@@ -12,6 +12,7 @@ type Props = {
   encType?: "multipart/form-data";
   onSuccess?: () => void;
   successMessage?: string;
+  beforeSubmit?: (formData: FormData) => ActionResult | null;
 };
 
 export function ActionForm({
@@ -21,10 +22,15 @@ export function ActionForm({
   encType,
   onSuccess,
   successMessage = "已儲存",
+  beforeSubmit,
 }: Props) {
   const [state, formAction, pending] = useActionState(
     async (prev: FormState, formData: FormData): Promise<FormState> => {
       try {
+        const blocked = beforeSubmit?.(formData);
+        if (blocked) {
+          return blocked;
+        }
         const result = await action(prev, formData);
         if (result.ok) {
           onSuccess?.();

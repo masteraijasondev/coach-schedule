@@ -127,7 +127,13 @@ export default async function EmployerCoachSalaryPage({
 
   return (
     <div className="space-y-6">
-      <Panel title={`薪資 · ${coach.full_name} · ${period} 結算期`}>
+      <div>
+        <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">薪資</h1>
+        <p className="mt-1 text-sm text-[#525252]">
+          {coach.full_name} · {period} 結算期（{payrollPeriodLabel(period)}）
+        </p>
+      </div>
+      <Panel title="本結算期">
         <div className="mb-4 flex items-center justify-between gap-3">
           <Link
             href={`/employer/salary/${coachId}?month=${prev}`}

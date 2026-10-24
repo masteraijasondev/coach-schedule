@@ -72,7 +72,7 @@ async function assertCoachNotOnLeave(
       leave.start_minute < endMinute &&
       (leave.end_minute ?? 0) > startMinute
     ) {
-      return "派更時段與放假或 Short Break 重疊";
+      return "派更時段與放假或小休重疊";
     }
   }
   return null;
@@ -717,6 +717,90 @@ async function hourlyRateForJobType(
   return { error: "尚未設定此工作類型的時薪" };
 }
 
+type CheckInStaffProfile = {
+  staff_kind: string | null;
+  hourly_rate_hkd: number | string | null;
+  pay_ratio: number | string | null;
+};
+
+type CheckInLessonType = {
+  id: string;
+  pay_mode: PayMode;
+  registers_student: boolean;
+};
+
+async function quoteCheckInPeriod(
+  supabase: SupabaseServerClient,
+  staffId: string,
+  profile: CheckInStaffProfile,
+  lessonType: CheckInLessonType,
+  studentNames: string[],
+  durationMinutes: number,
+): Promise<
+  | { earned: number | null; studentFee: number | null; studentIds: string[] }
+  | { error: string }
+> {
+  const hourlyByType = lessonType.pay_mode === "per_hour";
+  const skipsStudents =
+    hourlyByType ||
+    (lessonType.pay_mode !== "per_student" &&
+      (profile.staff_kind === "operations" || lessonType.registers_student !== true));
+  if (skipsStudents) {
+    let hourly = Number(profile.hourly_rate_hkd);
+    if (hourlyByType) {
+      const typeRate = await hourlyRateForJobType(
+        supabase,
+        staffId,
+        lessonType.id,
+        profile.hourly_rate_hkd,
+      );
+      if (typeof typeRate === "object") {
+        return typeRate;
+      }
+      hourly = typeRate;
+    } else if (profile.staff_kind === "operations" && (!Number.isFinite(hourly) || hourly < 0)) {
+      return { error: "尚未設定 Admin 時薪" };
+    }
+    const rate = Number.isFinite(hourly) && hourly >= 0 ? hourly : 0;
+    return {
+      earned: Math.round(rate * (durationMinutes / 60) * 100) / 100,
+      studentFee: null,
+      studentIds: [],
+    };
+  }
+
+  if (studentNames.length === 0) {
+    return { error: "請選擇教了哪位學生" };
+  }
+  const ratio = Number(profile.pay_ratio);
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    return { error: "尚未設定 Coach 分成比例" };
+  }
+  const ensured = await ensureStudentIds(studentNames);
+  if (!ensured) {
+    return { error: "找不到學生" };
+  }
+  let pay = 0;
+  let fee = 0;
+  for (const [index, name] of studentNames.entries()) {
+    try {
+      const listed = await lookupAirtableTuition(name);
+      if (listed != null) {
+        fee += listed;
+        pay += coachPayFromFeeRatio(listed, ratio);
+      }
+    } catch (lookupError) {
+      console.error("[quoteCheckInPeriod] tuition", { error: lookupError, studentId: ensured[index] });
+      return { error: "讀取學生學費失敗" };
+    }
+  }
+  return {
+    earned: pay,
+    studentFee: fee > 0 ? fee : null,
+    studentIds: ensured,
+  };
+}
+
 async function confirmLessonPeriodsForStaff(
   staffId: string,
   formData: FormData,
@@ -735,12 +819,21 @@ async function confirmLessonPeriodsForStaff(
     if (!parsed.ok) {
       return { ok: false, error: parsed.error };
     }
+    const typedPeriods = [...parsed.periods]
+      .map((period) => ({
+        startMinute: period.startMinute,
+        endMinute: period.endMinute,
+        lessonTypeId: period.lessonTypeId || lessonTypeId,
+        studentNames: period.studentNames ?? selectedStudentNames(formData),
+      }))
+      .sort((a, b) => a.startMinute - b.startMinute);
+    const typeIds = [...new Set(typedPeriods.map((period) => period.lessonTypeId))];
 
     const supabase = await createClient();
     const { data: lesson, error: lessonError } = await supabase
       .from("lessons")
       .select(
-        "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount",
+        "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount, notes",
       )
       .eq("id", lessonId)
       .eq("coach_id", staffId)
@@ -754,20 +847,18 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "僅已派更或已簽到的時段可以確認或修改簽到" };
     }
 
-    const [{ data: allowedType, error: allowedError }, { data: activeType, error: typeError }] =
+    const [{ data: allowedTypes, error: allowedError }, { data: activeTypes, error: typeError }] =
       await Promise.all([
         supabase
           .from("staff_work_types")
           .select("lesson_type_id")
           .eq("coach_id", staffId)
-          .eq("lesson_type_id", lessonTypeId)
-          .maybeSingle(),
+          .in("lesson_type_id", typeIds),
         supabase
           .from("lesson_types")
           .select("id, name, registers_student, pay_mode")
-          .eq("id", lessonTypeId)
-          .eq("active", true)
-          .maybeSingle(),
+          .in("id", typeIds)
+          .eq("active", true),
       ]);
     if (allowedError || typeError) {
       console.error("[confirmLessonPeriodsAction] work type", {
@@ -776,7 +867,18 @@ async function confirmLessonPeriodsForStaff(
       });
       return { ok: false, error: "讀取工作類型失敗" };
     }
-    if (!allowedType || !activeType) {
+    const allowedIds = new Set((allowedTypes ?? []).map((type) => type.lesson_type_id));
+    const typeById = new Map(
+      (activeTypes ?? []).map((type) => [
+        type.id,
+        {
+          id: type.id,
+          pay_mode: type.pay_mode as PayMode,
+          registers_student: type.registers_student === true,
+        },
+      ]),
+    );
+    if (typeIds.some((typeId) => !allowedIds.has(typeId) || !typeById.has(typeId))) {
       return {
         ok: false,
         error:
@@ -784,6 +886,10 @@ async function confirmLessonPeriodsForStaff(
             ? "此工作類型未分配給這位同事"
             : "此工作類型未分配給你",
       };
+    }
+    const activeType = typeById.get(typedPeriods[0].lessonTypeId);
+    if (!activeType) {
+      return { ok: false, error: "請選擇實際工作類型" };
     }
 
     const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
@@ -843,6 +949,126 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "讀取薪資設定失敗" };
     }
 
+    if (typeIds.length > 1) {
+      const prepared: {
+        startMinute: number;
+        endMinute: number;
+        lessonTypeId: string;
+        earned: number | null;
+        studentFee: number | null;
+        studentIds: string[];
+      }[] = [];
+      for (const period of typedPeriods) {
+        const lessonType = typeById.get(period.lessonTypeId);
+        if (!lessonType) {
+          return { ok: false, error: "請選擇實際工作類型" };
+        }
+        const startsAt = parseHongKongDateTime(
+          window.date,
+          minutesToClock(period.startMinute),
+        );
+        const endsAt = parseHongKongDateTime(
+          window.date,
+          minutesToClock(period.endMinute),
+        );
+        if (endsAt > now) {
+          return { ok: false, error: "只可簽到已經結束的時段" };
+        }
+        const durationMinutes = (endsAt.getTime() - startsAt.getTime()) / 60_000;
+        const quote = await quoteCheckInPeriod(
+          supabase,
+          staffId,
+          staffProfile,
+          lessonType,
+          period.studentNames,
+          durationMinutes,
+        );
+        if ("error" in quote) {
+          return { ok: false, error: quote.error };
+        }
+        prepared.push({
+          startMinute: period.startMinute,
+          endMinute: period.endMinute,
+          lessonTypeId: period.lessonTypeId,
+          earned: quote.earned,
+          studentFee: quote.studentFee,
+          studentIds: quote.studentIds,
+        });
+      }
+
+      const first = prepared[0];
+      const { error: firstError } = await supabase.rpc("confirm_staff_lesson_periods", {
+        p_id: lessonId,
+        p_periods: [
+          {
+            start_minute: first.startMinute,
+            end_minute: first.endMinute,
+            earned_amount_hkd: first.earned,
+          },
+        ],
+        p_lesson_type_id: first.lessonTypeId,
+      });
+      if (firstError) {
+        console.error("[confirmLessonPeriodsAction] mixed first", { error: firstError, lessonId });
+        return { ok: false, error: confirmLessonErrorMessage(firstError.message) };
+      }
+      const linked = await linkLessonStudents(lessonId, first.studentIds);
+      if (!linked.ok) {
+        return linked;
+      }
+      const admin = createAdminClient();
+      const { error: feeError } = await admin
+        .from("lessons")
+        .update({ student_fee_hkd: first.studentFee })
+        .eq("id", lessonId)
+        .eq("coach_id", staffId);
+      if (feeError) {
+        console.error("[confirmLessonPeriodsAction] mixed fee", { error: feeError, lessonId });
+      }
+
+      for (const period of prepared.slice(1)) {
+        const startsAt = parseHongKongDateTime(
+          window.date,
+          minutesToClock(period.startMinute),
+        ).toISOString();
+        const endsAt = parseHongKongDateTime(
+          window.date,
+          minutesToClock(period.endMinute),
+        ).toISOString();
+        const { data: created, error: insertError } = await admin
+          .from("lessons")
+          .insert({
+            lesson_type_id: period.lessonTypeId,
+            starts_at: startsAt,
+            ends_at: endsAt,
+            status: "completed",
+            coach_id: staffId,
+            earned_amount_hkd: period.earned,
+            student_fee_hkd: period.studentFee,
+            headcount: lesson.headcount,
+            expected_headcount: lesson.expected_headcount,
+            notes: lesson.notes,
+            split_from_lesson_id: lessonId,
+          })
+          .select("id")
+          .single();
+        if (insertError || !created) {
+          console.error("[confirmLessonPeriodsAction] mixed insert", {
+            error: insertError,
+            lessonId,
+          });
+          return { ok: false, error: "其餘時段未能簽到" };
+        }
+        const linkedExtra = await linkLessonStudents(created.id, period.studentIds);
+        if (!linkedExtra.ok) {
+          return linkedExtra;
+        }
+      }
+
+      revalidateSchedules();
+      return { ok: true, data: undefined };
+    }
+
     const payMode = activeType.pay_mode as PayMode;
     const hourlyByType = payMode === "per_hour";
     const isAdmin =
@@ -850,7 +1076,10 @@ async function confirmLessonPeriodsForStaff(
       payMode !== "per_student" &&
       (staffProfile.staff_kind === "operations" ||
         activeType.registers_student !== true);
-    const studentNames = selectedStudentNames(formData);
+    const studentNames =
+      typedPeriods.length === 1
+        ? typedPeriods[0].studentNames
+        : selectedStudentNames(formData);
     let studentIds = selectedStudentIds(formData);
     let sessionAmount: number | null = null;
     let tuition: number | null = null;
@@ -860,7 +1089,7 @@ async function confirmLessonPeriodsForStaff(
         const typeRate = await hourlyRateForJobType(
           supabase,
           staffId,
-          lessonTypeId,
+          activeType.id,
           staffProfile.hourly_rate_hkd,
         );
         if (typeof typeRate === "object") {
@@ -964,7 +1193,7 @@ async function confirmLessonPeriodsForStaff(
     const { error } = await supabase.rpc("confirm_staff_lesson_periods", {
       p_id: lessonId,
       p_periods: periodsWithPay,
-      p_lesson_type_id: lessonTypeId,
+      p_lesson_type_id: activeType.id,
     });
 
     if (error) {

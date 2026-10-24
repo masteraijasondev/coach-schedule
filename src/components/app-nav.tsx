@@ -4,7 +4,7 @@ import { logoutAction } from "@/actions/auth";
 import { buttonTone } from "@/components/button-styles";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export type NavItem = {
   href: string;
@@ -36,11 +36,12 @@ export function AppHeader({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const ops = tone === "ops";
-
-  useEffect(() => {
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
     setOpen(false);
-  }, [pathname]);
+  }
+  const ops = tone === "ops";
 
   return (
     <header
@@ -55,13 +56,21 @@ export function AppHeader({
           <p
             className={
               ops
-                ? "text-sm font-semibold tracking-wide text-[#525252] sm:text-lg"
-                : "text-sm font-medium text-stone-700 sm:text-lg sm:font-semibold sm:tracking-tight sm:text-stone-900"
+                ? "text-lg font-semibold tracking-tight text-[#2C2C2C]"
+                : "text-lg font-semibold tracking-tight text-stone-900"
             }
           >
             {title}
           </p>
-          <p className="truncate text-lg font-bold sm:text-2xl">{name}</p>
+          <p
+            className={
+              ops
+                ? "truncate text-sm font-medium text-[#525252]"
+                : "truncate text-sm font-medium text-stone-600"
+            }
+          >
+            {name}
+          </p>
         </div>
         <nav
           id="app-nav-menu"

@@ -16,7 +16,9 @@ import { Panel } from "@/components/ui";
 import {
   availabilityWeekDays,
   availabilityWeekStart,
+  isFullDayLeave,
   lessonDayKey,
+  lessonMinutesInHongKong,
   shiftAvailabilityWeek,
   type CalendarView,
 } from "@/lib/calendar";
@@ -36,10 +38,140 @@ import {
   type CalendarFilter,
 } from "@/lib/calendar-filter";
 import type { PayShift } from "@/lib/expected-pay";
+import { formatAvailabilityTime } from "@/lib/format";
 import { TIMEZONE } from "@/lib/constants";
 import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
 import { formatInTimeZone } from "date-fns-tz";
 import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+
+function rangesOverlap(
+  startA: number,
+  endA: number,
+  startB: number,
+  endB: number,
+): boolean {
+  return startA < endB && startB < endA;
+}
+
+function TodayRoster({
+  today,
+  coaches,
+  lessons,
+  availabilities,
+  leaves,
+  filter,
+}: {
+  today: string;
+  coaches: EmployerMonthCoach[];
+  lessons: EmployerMonthLesson[];
+  availabilities: EmployerMonthSlot[];
+  leaves: EmployerMonthLeave[];
+  filter: CalendarFilter;
+}) {
+  const ids = new Set(filter.staffIds);
+  const nameOf = (id: string) =>
+    coaches.find((coach) => coach.id === id)?.full_name ?? "員工";
+  const show = (status: CalendarFilter["statuses"][number]) =>
+    filter.statuses.includes(status);
+
+  const open = show("available")
+    ? availabilities.flatMap((slot) => {
+        if (
+          slot.available_date !== today ||
+          slot.released ||
+          !ids.has(slot.coach_id)
+        ) {
+          return [];
+        }
+        const covered = lessons.some((lesson) => {
+          if (
+            lesson.coach_id !== slot.coach_id ||
+            lessonDayKey(lesson.starts_at) !== today
+          ) {
+            return false;
+          }
+          if (lesson.status !== "assigned" && lesson.status !== "completed") {
+            return false;
+          }
+          const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+          return rangesOverlap(
+            slot.start_minute,
+            slot.end_minute,
+            window.startMinute,
+            window.endMinute,
+          );
+        });
+        if (covered) {
+          return [];
+        }
+        return [
+          `${nameOf(slot.coach_id)} ${formatAvailabilityTime(slot.start_minute)}–${formatAvailabilityTime(slot.end_minute)}`,
+        ];
+      })
+    : [];
+
+  const waiting = show("assigned")
+    ? lessons.flatMap((lesson) => {
+        if (
+          !lesson.coach_id ||
+          lesson.status !== "assigned" ||
+          lessonDayKey(lesson.starts_at) !== today ||
+          !ids.has(lesson.coach_id)
+        ) {
+          return [];
+        }
+        const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+        return [
+          `${nameOf(lesson.coach_id)} ${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)}`,
+        ];
+      })
+    : [];
+
+  const off = show("leave")
+    ? leaves.flatMap((leave) => {
+        if (leave.leave_date !== today || !ids.has(leave.coach_id)) {
+          return [];
+        }
+        const sick = leave.kind === "sick";
+        const label = isFullDayLeave(leave)
+          ? sick
+            ? "全日病假"
+            : "放假"
+          : sick
+            ? "病假"
+            : "小休";
+        return [`${nameOf(leave.coach_id)} ${label}`];
+      })
+    : [];
+
+  return (
+    <section aria-label="今日" className="rounded-2xl border border-stone-200 bg-white p-4">
+      <h2 className="text-sm font-semibold text-[#525252]">今日 {today}</h2>
+      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+        <RosterChunk title="待派更" items={open} />
+        <RosterChunk title="已派更，待簽到" items={waiting} />
+        <RosterChunk title="放假 / 病假" items={off} />
+      </div>
+    </section>
+  );
+}
+
+function RosterChunk({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-[#2C2C2C]">{title}</h3>
+      {items.length === 0 ? (
+        <p className="mt-1 text-sm text-[#525252]">沒有</p>
+      ) : (
+        <ul className="mt-1 space-y-1 text-sm text-[#2C2C2C]">
+          {items.map((item, index) => (
+            <li key={`${item}-${index}`}>{item}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 export function EmployerCalendarShell({
   initialView,
@@ -77,7 +209,13 @@ export function EmployerCalendarShell({
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
-  workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
+  workTypes: {
+    coachId: string;
+    id: string;
+    name: string;
+    registersStudent: boolean;
+    payMode?: string;
+  }[];
   remoteWeekPanel: ReactNode;
   payShifts: PayShift[];
   initialFilter: CalendarFilter;
@@ -198,9 +336,9 @@ export function EmployerCalendarShell({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-950">全體員工日曆</h1>
+          <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">全體員工日曆</h1>
           <p className="mt-1 text-sm text-[#525252]">
-            請先選擇員工及狀態，再點選日期查看或派更。
+            今日的待派更、待簽到同放假。點選日期查看或派更。
           </p>
         </div>
         <CalendarViewToggle
@@ -222,6 +360,15 @@ export function EmployerCalendarShell({
           tour="employer-view"
         />
       </div>
+
+      <TodayRoster
+        today={today}
+        coaches={coaches}
+        lessons={lessons}
+        availabilities={availabilities}
+        leaves={leaves}
+        filter={filter}
+      />
 
       <CalendarFilterBar
         staff={coaches}

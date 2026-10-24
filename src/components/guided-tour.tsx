@@ -60,15 +60,25 @@ export function GuidedTour({ role }: { role: "employer" | "coach" }) {
   const noteRef = useRef<HTMLDivElement>(null);
 
   const step = steps[index];
-
-  useEffect(() => {
-    setHelpSlot(document.getElementById(HELP_SLOT_ID));
+  const [tourPath, setTourPath] = useState(pathname);
+  if (pathname !== tourPath) {
+    setTourPath(pathname);
     setIndex(0);
     setBox(null);
+    setOpen(false);
+  }
+
+  useEffect(() => {
     focusedStep.current = null;
     scrolledStep.current = null;
-    setOpen(tour != null && !readSeen(tour.storageKey));
-    setReady(true);
+    const slot = document.getElementById(HELP_SLOT_ID);
+    const shouldOpen = tour != null && !readSeen(tour.storageKey);
+    const frame = window.requestAnimationFrame(() => {
+      setHelpSlot(slot);
+      setOpen(shouldOpen);
+      setReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname, tour]);
 
   useEffect(() => {

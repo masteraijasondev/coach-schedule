@@ -6,7 +6,7 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { SubmitButton } from "@/components/ui";
 import { formatAvailabilityTime } from "@/lib/format";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 const TIME_STEP_MINUTES = 15;
 const DEFAULT_START_MINUTE = 10 * 60;
@@ -34,20 +34,26 @@ export function EmployerDirectAssignForm({
   const [endMinute, setEndMinute] = useState(DEFAULT_END_MINUTE);
   const [open, setOpen] = useState(false);
   const panelId = useId();
-
-  useEffect(() => {
+  const [dateFromProps, setDateFromProps] = useState(date);
+  if (date !== dateFromProps) {
+    setDateFromProps(date);
     setAssignDate(date);
-  }, [date]);
-
-  useEffect(() => {
+  }
+  const [coachFromProps, setCoachFromProps] = useState(selectedCoachId);
+  if (selectedCoachId !== coachFromProps) {
+    setCoachFromProps(selectedCoachId);
     if (selectedCoachId) {
       setCoachId(selectedCoachId);
-      return;
     }
-    if (!coaches.some((coach) => coach.id === coachId)) {
-      setCoachId(coaches[0]?.id ?? "");
+  } else if (
+    !selectedCoachId &&
+    !coaches.some((coach) => coach.id === coachId)
+  ) {
+    const fallback = coaches[0]?.id ?? "";
+    if (fallback !== coachId) {
+      setCoachId(fallback);
     }
-  }, [selectedCoachId, coaches, coachId]);
+  }
 
   if (coaches.length === 0) {
     return null;

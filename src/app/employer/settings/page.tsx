@@ -4,7 +4,7 @@ import { requireEmployer } from "@/lib/auth";
 import Link from "next/link";
 
 const LINKS = [
-  { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、Admin / PT / MIIT；時薪或分成" },
+  { href: "/employer/coaches", label: "同事與工作類型", hint: "帳號、教練或營運；時薪或分成" },
   { href: "/employer/lesson-types", label: "課堂類型", hint: "PT / MIIT / PTA" },
   { href: "/employer/students", label: "新增學生", hint: "寫入 Airtable：姓名、電話、電郵、性別" },
 ];
@@ -15,12 +15,13 @@ export default async function EmployerSettingsPage() {
   return (
     <Panel title="設定">
       <p className="mb-4 text-sm text-stone-500">管理同事與課堂類型。</p>
-      <ul data-tour="employer-settings" className="flex flex-wrap gap-2">
+      <ul data-tour="employer-settings" className="space-y-3">
         {LINKS.map((link) => (
           <li key={link.href}>
-            <Link href={link.href} title={link.hint} className={buttonTone.secondary}>
+            <Link href={link.href} className={buttonTone.secondary}>
               {link.label}
             </Link>
+            <p className="mt-1 text-sm text-[#525252]">{link.hint}</p>
           </li>
         ))}
       </ul>

@@ -129,7 +129,7 @@ export function leaveWindowLabel(leave: {
     return sick ? "全日病假" : "放假";
   }
   const time = `${formatAvailabilityTime(leave.start_minute)}–${formatAvailabilityTime(leave.end_minute)}`;
-  return sick ? `${time} 病假` : `${time} Short Break`;
+  return sick ? `${time} 病假` : `${time} 小休`;
 }
 
 export function calendarAssignmentLabel(status: string): string {

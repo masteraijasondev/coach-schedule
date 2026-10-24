@@ -19,15 +19,22 @@ export function LeaveReportForm({
   suggestedStart,
   canTakeFullDay,
   compact = false,
+  pendingShiftLabels = [],
   onSuccess,
 }: {
   date: string;
   suggestedStart: number;
   canTakeFullDay: boolean;
   compact?: boolean;
+  pendingShiftLabels?: string[];
   onSuccess?: () => void;
 }) {
   const panel = compact ? "p-1.5" : "p-3";
+  const namedShifts = pendingShiftLabels.filter((label) => label.length > 0);
+  const sickConfirm =
+    namedShifts.length > 0
+      ? `確定當日全日病假？未簽到的派更會取消：${namedShifts.join("、")}。已簽到的時段不能改為病假。`
+      : "確定當日全日病假？未簽到的派更會一併取消。已簽到的時段不能改為病假。";
 
   return (
     <div className="flex flex-col gap-3">
@@ -52,7 +59,7 @@ export function LeaveReportForm({
             )}
           />
           <SubmitButton variant="leave" className="w-full min-w-0">
-            報此時段放假
+            報此時段小休
           </SubmitButton>
         </ActionForm>
         {canTakeFullDay ? (
@@ -96,13 +103,20 @@ export function LeaveReportForm({
             報此時段病假
           </SubmitButton>
         </ActionForm>
-        <ActionForm action={saveSickLeaveAction} onSuccess={onSuccess}>
-          <input type="hidden" name="leave_date" value={date} />
-          <input type="hidden" name="full_day" value="1" />
-          <SubmitButton variant="sick" className="w-full min-w-0">
-            全日病假
-          </SubmitButton>
-        </ActionForm>
+        <ServerActionButton
+          action={async () => {
+            const formData = new FormData();
+            formData.set("leave_date", date);
+            formData.set("full_day", "1");
+            return saveSickLeaveAction(null, formData);
+          }}
+          confirmMessage={sickConfirm}
+          confirmLabel="確定全日病假"
+          confirmVariant="sick"
+          className="w-full min-h-11 rounded-md border border-red-200 bg-red-100 px-2 py-1 text-sm font-medium text-red-900 hover:bg-red-200 disabled:opacity-60"
+        >
+          全日病假
+        </ServerActionButton>
         <p className="text-center text-xs text-red-800">
           未簽到的派更會一併取消。已簽到的時段不能改為病假。
         </p>

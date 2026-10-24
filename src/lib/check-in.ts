@@ -4,6 +4,9 @@ const MINUTES_PER_DAY = 1440;
 export type CheckInPeriod = {
   startMinute: number;
   endMinute: number;
+  lessonTypeId?: string;
+  studentNames?: string[];
+  locked?: boolean;
 };
 
 export function parseCheckInPeriods(
@@ -38,7 +41,18 @@ export function parseCheckInPeriods(
     if (!Number.isInteger(startMinute) || !Number.isInteger(endMinute)) {
       return { ok: false, error: "簽到時段格式無效" };
     }
-    periods.push({ startMinute, endMinute });
+    const record = item as {
+      lessonTypeId?: unknown;
+      studentNames?: unknown;
+    };
+    const lessonTypeId =
+      typeof record.lessonTypeId === "string" && record.lessonTypeId.trim() !== ""
+        ? record.lessonTypeId.trim()
+        : undefined;
+    const studentNames = Array.isArray(record.studentNames)
+      ? record.studentNames.map((name) => String(name).trim()).filter((name) => name !== "")
+      : undefined;
+    periods.push({ startMinute, endMinute, lessonTypeId, studentNames });
   }
   return { ok: true, periods };
 }

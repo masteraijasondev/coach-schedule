@@ -6,7 +6,7 @@ import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { LeaveReportForm } from "@/components/leave-report-form";
 import { SubmitButton } from "@/components/ui";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 const DEFAULT_DURATION_MINUTES = 60;
 const SHIFT_STEP_MINUTES = 15;
@@ -52,12 +52,13 @@ export function StaffShiftChip({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-
-  useEffect(() => {
+  const [openFromProps, setOpenFromProps] = useState(defaultOpen);
+  if (defaultOpen !== openFromProps) {
+    setOpenFromProps(defaultOpen);
     if (defaultOpen) {
       setOpen(true);
     }
-  }, [defaultOpen]);
+  }
 
   if (!children) {
     return (
@@ -94,11 +95,13 @@ export function StaffShiftComposer({
   suggestedStart,
   canTakeFullDay,
   compact = false,
+  pendingShiftLabels = [],
 }: {
   date: string;
   suggestedStart: number;
   canTakeFullDay: boolean;
   compact?: boolean;
+  pendingShiftLabels?: string[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -148,6 +151,7 @@ export function StaffShiftComposer({
               suggestedStart={suggestedStart}
               canTakeFullDay={canTakeFullDay}
               compact={compact}
+              pendingShiftLabels={pendingShiftLabels}
               onSuccess={closeAndRefresh}
             />
           </div>

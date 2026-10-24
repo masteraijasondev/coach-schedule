@@ -30,7 +30,7 @@ export function Field({
         step={step}
         min={min}
         minLength={minLength}
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
       />
     </label>
   );
@@ -69,7 +69,7 @@ export function SelectField({
         disabled={disabled}
         aria-busy={busy}
         onChange={onChange}
-        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500 disabled:cursor-not-allowed disabled:opacity-70"
+        className="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none focus:border-stone-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] disabled:cursor-not-allowed disabled:opacity-70"
       >
         {allowEmpty ? <option value="">{emptyLabel}</option> : null}
         {options.map((opt) => (

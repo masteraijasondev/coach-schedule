@@ -123,7 +123,13 @@ export function EmployerMonthWorkspace({
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
-  workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
+  workTypes: {
+    coachId: string;
+    id: string;
+    name: string;
+    registersStudent: boolean;
+    payMode?: string;
+  }[];
   payShifts: PayShift[];
   filter: CalendarFilter;
 }) {
@@ -440,6 +446,7 @@ export function EmployerMonthWorkspace({
         initialStudentNames={lesson.student_names}
         initialLessonTypeId={lesson.lesson_type_id}
         workTypes={coachWorkTypes}
+        fallbackHourlyRate={coach?.hourly_rate_hkd ?? null}
         staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
         action={employerEditCheckInAction}
         submitLabel="儲存修改"

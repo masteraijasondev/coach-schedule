@@ -18,7 +18,7 @@ export const STAFF_KIND_LABELS: Record<StaffKind, string> = {
 export const CALENDAR_STATUS_LABELS: Record<CalendarStatus, string> = {
   available: "待公司派更",
   assigned: "已派更，待簽到",
-  leave: "放假或 Short Break",
+  leave: "放假或小休",
   checked_in: "已簽到",
   released: "暫無需要",
 };

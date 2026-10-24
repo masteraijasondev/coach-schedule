@@ -118,14 +118,21 @@ export function CalendarFilterBar({
   const statusHint = `${filter.statuses.length}/${CALENDAR_STATUSES.length}`;
 
   return (
-    <div className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-stone-900">篩選月曆</p>
-          <p className="mt-0.5 text-xs text-stone-500">
-            點選即可顯示或隱藏。員工按組別區分，狀態以顏色及勾號表示。
-          </p>
-        </div>
+    <details className="group rounded-2xl border border-stone-200 bg-white shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] [&::-webkit-details-marker]:hidden">
+        <span>
+          <span className="text-sm font-medium text-[#2C2C2C]">篩選月曆</span>
+          <span className="mt-0.5 block text-xs text-[#525252]">
+            {isDefault
+              ? "預設顯示全部員工及全部狀態。"
+              : "已篩選。點開可更改顯示的員工或狀態。"}
+          </span>
+        </span>
+        <span className="text-sm text-[#525252] group-open:hidden">展開</span>
+        <span className="hidden text-sm text-[#525252] group-open:inline">收起</span>
+      </summary>
+      <div className="space-y-4 border-t border-stone-200 p-4">
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={reset}
@@ -220,7 +227,8 @@ export function CalendarFilterBar({
           );
         })}
       </FilterSection>
-    </div>
+      </div>
+    </details>
   );
 }
 
