@@ -10,6 +10,7 @@ import {
   availabilityWeekStart,
   isFullDayLeave,
   lessonDayKey,
+  lessonMinutesInHongKong,
 } from "@/lib/calendar";
 import {
   pushCalendarHref,
@@ -17,14 +18,12 @@ import {
   useCalendarSelection,
 } from "@/lib/calendar-history";
 import { coachCalendarHref, type CoachScheduleScope } from "@/lib/coach-href";
-import { TIMEZONE } from "@/lib/constants";
 import { checkedInLabel, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
 import {
   colleagueScheduleBars,
   type ColleagueSchedule,
 } from "@/lib/team-schedule";
 import type { LessonStatus } from "@/lib/types";
-import { formatInTimeZone } from "date-fns-tz";
 
 export type CoachMonthLesson = {
   id: string;
@@ -96,7 +95,8 @@ export function CoachMonthWorkspace({
   for (const lesson of lessons) {
     const key = lessonDayKey(lesson.starts_at);
     const list = lessonsByDay.get(key) ?? [];
-    const timeLabel = `${formatInTimeZone(lesson.starts_at, TIMEZONE, "HH:mm")}–${formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm")}`;
+    const lessonWindow = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const timeLabel = `${formatAvailabilityTime(lessonWindow.startMinute)}–${formatAvailabilityTime(lessonWindow.endMinute)}`;
     list.push({
       id: lesson.id,
       coachName,

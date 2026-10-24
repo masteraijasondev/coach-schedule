@@ -127,9 +127,14 @@ export function lessonMinutesInHongKong(
   const startMinute =
     Number(formatInTimeZone(startsAt, TIMEZONE, "H")) * 60 +
     Number(formatInTimeZone(startsAt, TIMEZONE, "m"));
-  const endMinute =
+  let endMinute =
     Number(formatInTimeZone(endsAt, TIMEZONE, "H")) * 60 +
     Number(formatInTimeZone(endsAt, TIMEZONE, "m"));
+  const endDate = formatInTimeZone(endsAt, TIMEZONE, "yyyy-MM-dd");
+  // 24:00 is stored as 00:00 on the next calendar day.
+  if (endDate === addDaysToYmd(date, 1) && endMinute === 0) {
+    endMinute = 1440;
+  }
   return { date, startMinute, endMinute };
 }
 

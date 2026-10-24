@@ -8,6 +8,7 @@ import {
 } from "@/actions/availability";
 import { undoCheckInAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
+import { Alert } from "@/components/alert";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { CalendarLegend } from "@/components/calendar-legend";
@@ -161,6 +162,18 @@ export function CoachWeekCalendar({
 }) {
   const [linkedScope, setLinkedScope] = useState(scope);
   const [scopeFromProps, setScopeFromProps] = useState(scope);
+  const [openCheckIn, setOpenCheckIn] = useState<{
+    lessonId: string;
+    date: string;
+    windowStart: number;
+    windowEnd: number;
+    timeLabel: string;
+    registered: boolean;
+    initialStart: number;
+    initialEnd: number;
+    initialStudentNames: string[];
+    initialLessonTypeId?: string;
+  } | null>(null);
   if (scope !== scopeFromProps) {
     setScopeFromProps(scope);
     setLinkedScope(scope);
@@ -177,6 +190,12 @@ export function CoachWeekCalendar({
       window.removeEventListener(COACH_SCHEDULE_SCOPE_EVENT, syncScope);
     };
   }, []);
+  useEffect(() => {
+    if (!openCheckIn) {
+      return;
+    }
+    document.getElementById("week-check-in")?.scrollIntoView({ block: "nearest" });
+  }, [openCheckIn]);
   const typeNameById = new Map(workTypes.map((type) => [type.id, type.name]));
   const currentWeek = availabilityWeekStart();
   const prevWeek = shiftAvailabilityWeek(week, -1);
@@ -232,15 +251,15 @@ export function CoachWeekCalendar({
     <div className="space-y-6">
       {loadError ? (
         <Panel title="未能載入">
-          <p className="text-sm text-red-700">
+          <Alert variant="filled" severity="error">
             無法讀取可返工時間，請稍後再試。
-          </p>
+          </Alert>
         </Panel>
       ) : (
         <Panel title="可返工時間週曆">
           <div className="space-y-3">
         <p className="text-sm text-stone-500">
-          選擇指定日期及時段申報可返工，或申報小休、放假、病假。已派更、待簽到的時段請加入實際上班時間後確認簽到；未加入的時段不計入薪資。每次新增、修改或刪除都會即時儲存。可返工時間以
+          選擇指定日期及時段申報可返工，或申報小休、放假、病假。已派更、待簽到的時段請按色塊上的簽到，在週曆下方確認。每次新增、修改或刪除都會即時儲存。可返工時間以
           15 分鐘為單位；放假、病假同簽到仍然以 30 分鐘為單位。
         </p>
             <div className="flex items-center justify-between gap-2">
@@ -452,7 +471,8 @@ export function CoachWeekCalendar({
                             confirmMessage="確定撤銷此時段放假？可返工時間會恢復。"
                             confirmLabel="確定撤銷放假"
                             confirmVariant="leaveQuiet"
-                            className="min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+                            variant="leaveQuiet"
+                            className="w-full"
                           >
                             撤銷放假
                           </ServerActionButton>
@@ -523,30 +543,32 @@ export function CoachWeekCalendar({
                       segment.lesson.starts_at,
                       segment.lesson.ends_at,
                     );
+                    const lesson = segment.lesson;
                     return (
-                      <div
+                      <button
                         key={key}
-                        className={`${shell} border-dashed border-emerald-400 bg-emerald-100 text-emerald-950`}
+                        type="button"
+                        className={`${shell} cursor-pointer border-dashed border-emerald-400 bg-emerald-100 text-emerald-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]`}
                         style={{ top, height }}
+                        aria-expanded={openCheckIn?.lessonId === lesson.id}
+                        aria-controls="week-check-in"
+                        onClick={() =>
+                          setOpenCheckIn({
+                            lessonId: lesson.id,
+                            date: lessonWindow.date,
+                            windowStart: lessonWindow.startMinute,
+                            windowEnd: lessonWindow.endMinute,
+                            timeLabel,
+                            registered: false,
+                            initialStart: lessonWindow.startMinute,
+                            initialEnd: lessonWindow.endMinute,
+                            initialStudentNames: [],
+                          })
+                        }
                       >
-                        <p className="font-medium tabular-nums">{timeLabel}</p>
+                        <p className="font-medium tabular-nums">{timeLabel} 簽到</p>
                         <p>{calendarAssignmentLabel("assigned")}</p>
-                        <details className="mt-1 rounded-sm border border-dashed border-emerald-300 bg-white text-stone-900">
-                          <summary className="cursor-pointer list-none px-1 py-0.5 text-center font-medium">
-                            簽到
-                          </summary>
-                          <div className="min-w-0 border-t border-emerald-100 p-2">
-                            <LessonCheckInForm
-                              lessonId={segment.lesson.id}
-                              date={lessonWindow.date}
-                              windowStart={lessonWindow.startMinute}
-                              windowEnd={lessonWindow.endMinute}
-                              workTypes={workTypes}
-                              staffKind={staffKind}
-                            />
-                          </div>
-                        </details>
-                      </div>
+                      </button>
                     );
                   }
 
@@ -555,53 +577,38 @@ export function CoachWeekCalendar({
                       segment.lesson.starts_at,
                       segment.lesson.ends_at,
                     );
+                    const lesson = segment.lesson;
                     return (
-                      <details
+                      <button
                         key={key}
-                        className={`${shell} border-sky-400 bg-sky-100 text-sky-950`}
+                        type="button"
+                        className={`${shell} cursor-pointer border-sky-400 bg-sky-100 text-sky-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]`}
                         style={{ top, height }}
+                        aria-expanded={openCheckIn?.lessonId === lesson.id}
+                        aria-controls="week-check-in"
+                        onClick={() =>
+                          setOpenCheckIn({
+                            lessonId: lesson.id,
+                            date: lessonWindow.date,
+                            windowStart: availability.start_minute,
+                            windowEnd: availability.end_minute,
+                            timeLabel,
+                            registered: true,
+                            initialStart: lessonWindow.startMinute,
+                            initialEnd: lessonWindow.endMinute,
+                            initialStudentNames: lesson.student_names ?? [],
+                            initialLessonTypeId: lesson.lesson_type_id,
+                          })
+                        }
                       >
-                        <summary className="cursor-pointer list-none">
-                          <p className="font-medium tabular-nums">{timeLabel}</p>
-                          <p>
-                            {checkedInLabel({
-                              typeName: typeNameById.get(
-                                segment.lesson.lesson_type_id ?? "",
-                              ),
-                              studentNames: segment.lesson.student_names,
-                            })}{" "}
-                            修改
-                          </p>
-                        </summary>
-                        <div className="min-w-0 border-t border-sky-100 bg-white p-2 text-stone-900">
-                          <LessonCheckInForm
-                            lessonId={segment.lesson.id}
-                            date={lessonWindow.date}
-                            windowStart={availability.start_minute}
-                            windowEnd={availability.end_minute}
-                            initialPeriods={[
-                              {
-                                startMinute: lessonWindow.startMinute,
-                                endMinute: lessonWindow.endMinute,
-                              },
-                            ]}
-                            initialStudentNames={segment.lesson.student_names}
-                            initialLessonTypeId={segment.lesson.lesson_type_id}
-                            workTypes={workTypes}
-                            staffKind={staffKind}
-                            submitLabel="儲存修改"
-                          />
-                          <ServerActionButton
-                            action={undoCheckInAction.bind(null, segment.lesson.id)}
-                            confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
-                            confirmLabel="確定撤銷簽到"
-                            confirmVariant="confirmedQuiet"
-                            className="mt-2 min-h-11 w-full rounded-md border border-sky-200 px-2 py-1 text-xs text-sky-900 disabled:opacity-60"
-                          >
-                            撤銷簽到
-                          </ServerActionButton>
-                        </div>
-                      </details>
+                        <p className="font-medium tabular-nums">{timeLabel} 修改</p>
+                        <p>
+                          {checkedInLabel({
+                            typeName: typeNameById.get(lesson.lesson_type_id ?? ""),
+                            studentNames: lesson.student_names,
+                          })}
+                        </p>
+                      </button>
                     );
                   }
 
@@ -661,7 +668,8 @@ export function CoachWeekCalendar({
                           confirmMessage="確定刪除此可返工時段？"
                           confirmLabel="確定刪除"
                           confirmVariant="danger"
-                          className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
+                          variant="danger"
+                          className="w-full"
                         >
                           刪除
                         </ServerActionButton>
@@ -674,6 +682,63 @@ export function CoachWeekCalendar({
                 return [...breakBlocks, ...availabilityBlocks];
               }}
             />
+            {openCheckIn ? (
+              <div
+                id="week-check-in"
+                className="scroll-mt-4 rounded-md border border-stone-200 bg-white p-3"
+              >
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-[#2C2C2C]">
+                    <span className="tabular-nums">{openCheckIn.timeLabel}</span>{" "}
+                    {openCheckIn.registered ? "已簽到" : "簽到"}
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex min-h-11 cursor-pointer items-center rounded-md px-3 text-sm font-semibold text-[#2C2C2C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+                    onClick={() => setOpenCheckIn(null)}
+                  >
+                    關閉
+                  </button>
+                </div>
+                <LessonCheckInForm
+                  key={openCheckIn.lessonId}
+                  lessonId={openCheckIn.lessonId}
+                  date={openCheckIn.date}
+                  windowStart={openCheckIn.windowStart}
+                  windowEnd={openCheckIn.windowEnd}
+                  initialPeriods={
+                    openCheckIn.registered
+                      ? [
+                          {
+                            startMinute: openCheckIn.initialStart,
+                            endMinute: openCheckIn.initialEnd,
+                          },
+                        ]
+                      : []
+                  }
+                  initialStudentNames={openCheckIn.initialStudentNames}
+                  initialLessonTypeId={openCheckIn.initialLessonTypeId}
+                  workTypes={workTypes}
+                  staffKind={staffKind}
+                  submitLabel={openCheckIn.registered ? "儲存修改" : "確認簽到"}
+                  initiallyEditing={openCheckIn.registered}
+                  sideAction={
+                    openCheckIn.registered ? (
+                      <ServerActionButton
+                        action={undoCheckInAction.bind(null, openCheckIn.lessonId)}
+                        confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                        confirmLabel="確定撤銷簽到"
+                        confirmVariant="confirmedQuiet"
+                        variant="confirmedQuiet"
+                        className="w-full"
+                      >
+                        撤銷簽到
+                      </ServerActionButton>
+                    ) : null
+                  }
+                />
+              </div>
+            ) : null}
             <p className="mt-2 text-sm text-stone-500">
               請於頂列申報放假或新增時段。色塊對齊整點；紅線表示現在時間。
             </p>

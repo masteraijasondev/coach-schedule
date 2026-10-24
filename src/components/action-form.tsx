@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/alert";
 import { useActionState } from "react";
 import type { ActionResult } from "@/lib/types";
 
@@ -73,12 +74,14 @@ export function ActionForm({
         </p>
       ) : null}
       {state && !state.ok ? (
-        <p className="text-sm text-red-700" role="alert">
+        <Alert variant="filled" severity="error">
           {state.error}
-        </p>
+        </Alert>
       ) : null}
       {state && state.ok ? (
-        <p className="text-sm text-emerald-700">{successMessage}</p>
+        <Alert variant="filled" severity="success">
+          {successMessage}
+        </Alert>
       ) : null}
     </form>
   );

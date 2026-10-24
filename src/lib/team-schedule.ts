@@ -2,12 +2,11 @@ import {
   availabilitySegments,
   isFullDayLeave,
   lessonDayKey,
+  lessonMinutesInHongKong,
   takeCompletedLessonOnce,
 } from "@/lib/calendar";
-import { TIMEZONE } from "@/lib/constants";
 import { checkedInLabel, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
 import type { LessonStatus } from "@/lib/types";
-import { formatInTimeZone } from "date-fns-tz";
 
 export type ColleagueSchedule = {
   id: string;
@@ -155,7 +154,8 @@ function barsForPerson(
       continue;
     }
     const date = lessonDayKey(lesson.starts_at);
-    const timeLabel = `${formatInTimeZone(lesson.starts_at, TIMEZONE, "HH:mm")}–${formatInTimeZone(lesson.ends_at, TIMEZONE, "HH:mm")}`;
+    const lessonWindow = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const timeLabel = `${formatAvailabilityTime(lessonWindow.startMinute)}–${formatAvailabilityTime(lessonWindow.endMinute)}`;
     const confirmed = lesson.status === "completed";
     const label = confirmed
       ? checkedInLabel({

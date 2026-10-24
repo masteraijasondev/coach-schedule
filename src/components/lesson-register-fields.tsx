@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/alert";
 import { buttonTone } from "@/components/button-styles";
 import { Field, SelectField } from "@/components/ui";
 import type { PayMode } from "@/lib/types";
@@ -118,9 +119,7 @@ export function LessonRegisterFields({
             />
             {studentsError ? (
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm text-red-700" role="alert">
-                  {studentsError}
-                </p>
+                <Alert variant="filled" severity="error">{studentsError}</Alert>
                 {onRetryStudents ? (
                   <button
                     type="button"

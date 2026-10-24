@@ -583,6 +583,138 @@ function minutesToClock(minutes: number): string {
   return `${hour}:${minute}`;
 }
 
+function uncoveredAssignmentMinutes(
+  assignStart: number,
+  assignEnd: number,
+  periods: { startMinute: number; endMinute: number }[],
+): { startMinute: number; endMinute: number }[] {
+  const sorted = [...periods].sort((left, right) => left.startMinute - right.startMinute);
+  const gaps: { startMinute: number; endMinute: number }[] = [];
+  let cursor = assignStart;
+  for (const period of sorted) {
+    const start = Math.max(period.startMinute, assignStart);
+    const end = Math.min(period.endMinute, assignEnd);
+    if (start > cursor) {
+      gaps.push({ startMinute: cursor, endMinute: start });
+    }
+    if (end > cursor) {
+      cursor = end;
+    }
+  }
+  if (cursor < assignEnd) {
+    gaps.push({ startMinute: cursor, endMinute: assignEnd });
+  }
+  return gaps;
+}
+
+async function keepUnregisteredAssignment(input: {
+  lessonId: string;
+  coachId: string;
+  date: string;
+  assignStart: number;
+  assignEnd: number;
+  periods: { startMinute: number; endMinute: number }[];
+  lessonTypeId: string | null;
+  headcount: number | null;
+  expectedHeadcount: number | null;
+  notes: string | null;
+}): Promise<string | null> {
+  const gaps = uncoveredAssignmentMinutes(
+    input.assignStart,
+    input.assignEnd,
+    input.periods,
+  );
+  if (gaps.length === 0) {
+    return null;
+  }
+  const admin = createAdminClient();
+  const { data: existing, error: existingError } = await admin
+    .from("lessons")
+    .select("starts_at, ends_at, status")
+    .eq("coach_id", input.coachId)
+    .in("status", ["assigned", "completed"]);
+  if (existingError) {
+    console.error("[keepUnregisteredAssignment] existing", {
+      error: existingError,
+      lessonId: input.lessonId,
+    });
+    return "餘下時段未能保留為待簽到";
+  }
+  const covered = (existing ?? []).map((lesson) =>
+    lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at),
+  );
+  const { data: studentLinks, error: studentError } = await admin
+    .from("lesson_students")
+    .select("student_id")
+    .eq("lesson_id", input.lessonId);
+  if (studentError) {
+    console.error("[keepUnregisteredAssignment] students", {
+      error: studentError,
+      lessonId: input.lessonId,
+    });
+    return "餘下時段未能保留為待簽到";
+  }
+  const studentIds = (studentLinks ?? []).map((link) => link.student_id);
+  for (const gap of gaps) {
+    const alreadyCovered = covered.some(
+      (range) =>
+        range.date === input.date &&
+        range.startMinute <= gap.startMinute &&
+        range.endMinute >= gap.endMinute,
+    );
+    if (alreadyCovered) {
+      continue;
+    }
+    const startsAt = parseHongKongDateTime(
+      input.date,
+      minutesToClock(gap.startMinute),
+    ).toISOString();
+    const endsAt = parseHongKongDateTime(
+      input.date,
+      minutesToClock(gap.endMinute),
+    ).toISOString();
+    const { data: created, error: insertError } = await admin
+      .from("lessons")
+      .insert({
+        lesson_type_id: input.lessonTypeId,
+        starts_at: startsAt,
+        ends_at: endsAt,
+        status: "assigned",
+        coach_id: input.coachId,
+        earned_amount_hkd: null,
+        headcount: input.headcount,
+        expected_headcount: input.expectedHeadcount,
+        notes: input.notes,
+        split_from_lesson_id: input.lessonId,
+      })
+      .select("id")
+      .single();
+    if (insertError || !created) {
+      console.error("[keepUnregisteredAssignment] insert", {
+        error: insertError,
+        lessonId: input.lessonId,
+      });
+      return "餘下時段未能保留為待簽到";
+    }
+    if (studentIds.length > 0) {
+      const { error: linkError } = await admin.from("lesson_students").insert(
+        studentIds.map((studentId) => ({
+          lesson_id: created.id,
+          student_id: studentId,
+        })),
+      );
+      if (linkError) {
+        console.error("[keepUnregisteredAssignment] link", {
+          error: linkError,
+          lessonId: input.lessonId,
+        });
+        return "餘下時段未能保留為待簽到";
+      }
+    }
+  }
+  return null;
+}
+
 function selectedStudentNames(formData: FormData): string[] {
   const raw = String(formData.get("student_names") ?? "").trim();
   if (!raw) {
@@ -651,6 +783,44 @@ function selectedStudentIds(formData: FormData): string[] {
   }
   const studentId = String(formData.get("student_id") ?? "").trim();
   return studentId ? [studentId] : [];
+}
+
+async function showFullDayEndToDatabase(
+  lessonId: string,
+  coachId: string,
+  date: string,
+  endMinute: number,
+): Promise<ActionResult | null> {
+  if (endMinute !== 1440) {
+    return null;
+  }
+  const { error } = await createAdminClient()
+    .from("lessons")
+    .update({
+      ends_at: parseHongKongDateTime(date, "23:59").toISOString(),
+    })
+    .eq("id", lessonId)
+    .eq("coach_id", coachId);
+  if (error) {
+    console.error("[showFullDayEndToDatabase]", { error, lessonId });
+    return { ok: false, error: "無法核對全日派更" };
+  }
+  return null;
+}
+
+async function restoreLessonEnd(
+  lessonId: string,
+  coachId: string,
+  endsAt: string,
+): Promise<void> {
+  const { error } = await createAdminClient()
+    .from("lessons")
+    .update({ ends_at: endsAt })
+    .eq("id", lessonId)
+    .eq("coach_id", coachId);
+  if (error) {
+    console.error("[restoreLessonEnd]", { error, lessonId });
+  }
 }
 
 function confirmLessonErrorMessage(message: string): string {
@@ -997,6 +1167,15 @@ async function confirmLessonPeriodsForStaff(
       }
 
       const first = prepared[0];
+      const fullDayEnd = await showFullDayEndToDatabase(
+        lessonId,
+        staffId,
+        window.date,
+        window.endMinute,
+      );
+      if (fullDayEnd) {
+        return fullDayEnd;
+      }
       const { error: firstError } = await supabase.rpc("confirm_staff_lesson_periods", {
         p_id: lessonId,
         p_periods: [
@@ -1009,6 +1188,9 @@ async function confirmLessonPeriodsForStaff(
         p_lesson_type_id: first.lessonTypeId,
       });
       if (firstError) {
+        if (window.endMinute === 1440) {
+          await restoreLessonEnd(lessonId, staffId, lesson.ends_at);
+        }
         console.error("[confirmLessonPeriodsAction] mixed first", { error: firstError, lessonId });
         return { ok: false, error: confirmLessonErrorMessage(firstError.message) };
       }
@@ -1062,6 +1244,24 @@ async function confirmLessonPeriodsForStaff(
         const linkedExtra = await linkLessonStudents(created.id, period.studentIds);
         if (!linkedExtra.ok) {
           return linkedExtra;
+        }
+      }
+
+      if (lesson.status === "assigned") {
+        const remainderError = await keepUnregisteredAssignment({
+          lessonId,
+          coachId: staffId,
+          date: window.date,
+          assignStart: window.startMinute,
+          assignEnd: window.endMinute,
+          periods: prepared,
+          lessonTypeId: lesson.lesson_type_id,
+          headcount: lesson.headcount,
+          expectedHeadcount: lesson.expected_headcount,
+          notes: lesson.notes,
+        });
+        if (remainderError) {
+          return { ok: false, error: remainderError };
         }
       }
 
@@ -1190,6 +1390,15 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "只可簽到已經結束的時段" };
     }
 
+    const fullDayEnd = await showFullDayEndToDatabase(
+      lessonId,
+      staffId,
+      window.date,
+      window.endMinute,
+    );
+    if (fullDayEnd) {
+      return fullDayEnd;
+    }
     const { error } = await supabase.rpc("confirm_staff_lesson_periods", {
       p_id: lessonId,
       p_periods: periodsWithPay,
@@ -1197,6 +1406,9 @@ async function confirmLessonPeriodsForStaff(
     });
 
     if (error) {
+      if (window.endMinute === 1440) {
+        await restoreLessonEnd(lessonId, staffId, lesson.ends_at);
+      }
       console.error("[confirmLessonPeriodsAction]", { error, lessonId });
       return { ok: false, error: confirmLessonErrorMessage(error.message) };
     }
@@ -1209,6 +1421,24 @@ async function confirmLessonPeriodsForStaff(
         .eq("coach_id", staffId);
       if (feeError) {
         console.error("[confirmLessonPeriodsAction] student fee", { error: feeError, lessonId });
+      }
+    }
+
+    if (lesson.status === "assigned") {
+      const remainderError = await keepUnregisteredAssignment({
+        lessonId,
+        coachId: staffId,
+        date: window.date,
+        assignStart: window.startMinute,
+        assignEnd: window.endMinute,
+        periods: sortedPeriods,
+        lessonTypeId: lesson.lesson_type_id,
+        headcount: lesson.headcount,
+        expectedHeadcount: lesson.expected_headcount,
+        notes: lesson.notes,
+      });
+      if (remainderError) {
+        return { ok: false, error: remainderError };
       }
     }
 

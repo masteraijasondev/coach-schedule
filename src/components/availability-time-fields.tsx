@@ -133,12 +133,17 @@ export function AvailabilityTimeFields({
   const selectedStart = startValue ?? defaultStartMinute;
   const selectedEnd = endValue ?? defaultEndMinute;
   const starts = withCurrent(
-    minuteOptions(stepMinutes, "start").filter(
-      (minutes) =>
-        minutes >= minMinute &&
-        minutes < maxMinute &&
-        (endValue == null || minutes < endValue),
-    ),
+    minuteOptions(stepMinutes, "start").filter((minutes) => {
+      if (minutes < minMinute || minutes >= maxMinute) {
+        return false;
+      }
+      // A controlled end must not hide later starts. The one-hour default
+      // otherwise leaves only 00:00 and 00:30 on a shift that begins at midnight.
+      if (onStartChange) {
+        return true;
+      }
+      return endValue == null || minutes < endValue;
+    }),
     selectedStart,
   );
   const ends = withCurrent(
@@ -151,6 +156,17 @@ export function AvailabilityTimeFields({
     selectedEnd,
   );
 
+  function changeStart(minutes: number) {
+    onStartChange?.(minutes);
+    if (!onEndChange || minutes < selectedEnd) {
+      return;
+    }
+    const nextEnd = Math.min(minutes + stepMinutes, maxMinute);
+    if (nextEnd > minutes) {
+      onEndChange(nextEnd);
+    }
+  }
+
   return (
     <div className={`grid grid-cols-1 gap-2 ${compact ? "min-w-0" : "min-w-[8.5rem]"}`}>
       <TimeSelect
@@ -158,7 +174,7 @@ export function AvailabilityTimeFields({
         name={startName}
         options={starts}
         current={selectedStart}
-        onChange={onStartChange}
+        onChange={onStartChange ? changeStart : undefined}
         tone={tone}
         compact={compact}
       />

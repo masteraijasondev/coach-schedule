@@ -1,3 +1,4 @@
+import { Alert } from "@/components/alert";
 import { EmployerAssignWorkspace } from "@/components/employer-assign-workspace";
 import { Panel } from "@/components/ui";
 import { availabilityWeekBoundsIso } from "@/lib/calendar";
@@ -169,9 +170,7 @@ export async function EmployerAssignPanel({
   return (
     <Panel title={`${coachName} 本週可返工`}>
       {availabilityError || leavesError ? (
-        <p className="text-sm text-red-700" role="alert">
-          無法載入可返工資料
-        </p>
+        <Alert variant="filled" severity="error">無法載入可返工資料</Alert>
       ) : (
         <EmployerAssignWorkspace
           key={`${coachId}-${week}`}

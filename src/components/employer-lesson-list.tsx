@@ -1,4 +1,5 @@
 import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
+import { Alert } from "@/components/alert";
 import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
 import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
@@ -128,9 +129,7 @@ export async function EmployerLessonList({
         ) : null}
       </div>
       {error ? (
-        <p className="text-sm text-red-700" role="alert">
-          無法載入派更列表
-        </p>
+        <Alert variant="filled" severity="error">無法載入派更列表</Alert>
       ) : (
         <ul className="divide-y divide-stone-100">
           {coachLessons.map((lesson) => {
@@ -189,7 +188,7 @@ export async function EmployerLessonList({
                       confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
                       confirmLabel="確定撤銷派更"
                       confirmVariant="slot"
-                      className="rounded-md border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-50 disabled:opacity-60"
+                      variant="slot"
                     >
                       撤銷派更
                     </ServerActionButton>
@@ -200,7 +199,7 @@ export async function EmployerLessonList({
                       confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
                       confirmLabel="確定撤銷簽到"
                       confirmVariant="confirmedQuiet"
-                      className="rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 hover:bg-sky-50 disabled:opacity-60"
+                      variant="confirmedQuiet"
                     >
                       撤銷簽到
                     </ServerActionButton>

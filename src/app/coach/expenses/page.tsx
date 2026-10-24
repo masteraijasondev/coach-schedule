@@ -1,3 +1,4 @@
+import { Alert } from "@/components/alert";
 import { ExpenseClaimForm, SubmittedExpenseClaim } from "@/components/expense-claim-form";
 import { ExpensePeriodNav } from "@/components/expense-period-nav";
 import { Panel } from "@/components/ui";
@@ -92,9 +93,7 @@ export default async function CoachExpensesPage({ searchParams }: Props) {
           的舊檔。同一結算期可以再交另一張。
         </p>
         {claimsError ? (
-          <p className="text-sm text-red-700" role="alert">
-            讀取報銷失敗
-          </p>
+          <Alert variant="filled" severity="error">讀取報銷失敗</Alert>
         ) : (
           <>
             {submitted.map((claim) => {

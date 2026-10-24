@@ -4,6 +4,7 @@ import { confirmLessonPeriodsAction } from "@/actions/lessons";
 import { listAirtableStudentNamesAction } from "@/actions/students";
 import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
+import { Alert } from "@/components/alert";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { buttonTone } from "@/components/button-styles";
 import { SubmitButton } from "@/components/ui";
@@ -14,15 +15,41 @@ import {
   type CheckInPeriod,
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
-import { expectedHourlyAmount } from "@/lib/expected-pay";
-import { formatAvailabilityTime, formatMoney } from "@/lib/format";
+import { formatAvailabilityTime } from "@/lib/format";
 import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 const DEFAULT_DURATION_MINUTES = 60;
 const TIME_STEP_MINUTES = 30;
 const MAX_STUDENT_MATCHES = 8;
+
+function RemoveButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md text-[#2C2C2C] hover:bg-stone-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] active:bg-stone-300"
+      aria-label={label}
+      onClick={onClick}
+    >
+      <svg viewBox="0 0 16 16" aria-hidden className="size-3.5">
+        <path
+          d="M4.5 4.5 11.5 11.5M11.5 4.5 4.5 11.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </svg>
+    </button>
+  );
+}
 
 function matchingStudentNames(names: string[], query: string): string[] {
   const needle = query.trim().toLowerCase();
@@ -58,7 +85,9 @@ export function LessonCheckInForm(
   if (error) {
     return (
       <div className="space-y-2">
-        <p className="text-sm text-amber-800">{error}</p>
+        <Alert variant="filled" severity="warning">
+          {error}
+        </Alert>
         <button
           type="button"
           className={buttonTone.secondary}
@@ -83,11 +112,13 @@ function LessonCheckInFields({
   initialPeriods = [],
   initialStudentNames = [],
   submitLabel = "確認簽到",
+  initiallyEditing = false,
   workTypes,
   initialLessonTypeId,
   staffKind = "coach",
   fallbackHourlyRate = null,
   action = confirmLessonPeriodsAction,
+  sideAction,
   nowMs,
 }: {
   lessonId: string;
@@ -97,6 +128,7 @@ function LessonCheckInFields({
   initialPeriods?: CheckInPeriod[];
   initialStudentNames?: string[];
   submitLabel?: string;
+  initiallyEditing?: boolean;
   workTypes: {
     id: string;
     name: string;
@@ -108,6 +140,7 @@ function LessonCheckInFields({
   initialLessonTypeId?: string;
   staffKind?: "coach" | "operations";
   action?: typeof confirmLessonPeriodsAction;
+  sideAction?: ReactNode;
   nowMs: number;
 }) {
   const router = useRouter();
@@ -134,19 +167,20 @@ function LessonCheckInFields({
       studentNames: period.studentNames ?? initialStudentNames,
     })),
   );
-  const [draftDirty, setDraftDirty] = useState(false);
   const [lessonTypeId, setLessonTypeId] = useState(
     workTypes.some((type) => type.id === initialLessonTypeId)
       ? initialLessonTypeId ?? ""
-      : workTypes[0]?.id ?? "",
+      : "",
   );
   const [selectedNames, setSelectedNames] = useState<string[]>(initialStudentNames);
   const [studentQuery, setStudentQuery] = useState("");
   const [studentDirectory, setStudentDirectory] = useState<string[] | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
+  const [addingAnother, setAddingAnother] = useState(false);
+  const [savedReceipt, setSavedReceipt] = useState<string | null>(null);
   const registered = initialPeriods.length > 0;
-  const [editing, setEditing] = useState(!registered);
+  const [editing, setEditing] = useState(initiallyEditing || !registered);
   const payload = useMemo(() => JSON.stringify(periods), [periods]);
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
@@ -174,7 +208,7 @@ function LessonCheckInFields({
           return;
         }
         if (!result.ok) {
-          setSearchError(result.error);
+          setSearchError("無法載入學生名單");
           return;
         }
         setStudentDirectory(result.data);
@@ -183,7 +217,7 @@ function LessonCheckInFields({
       .catch((error: unknown) => {
         console.error("[LessonCheckInFields] student directory", { error });
         if (!cancelled) {
-          setSearchError("無法搜尋 Airtable 學生");
+          setSearchError("無法載入學生名單");
         }
       });
     return () => {
@@ -201,10 +235,25 @@ function LessonCheckInFields({
 
   if (pastEnd == null) {
     return (
-      <p className="text-sm text-amber-800">只可簽到已經結束的時段</p>
+      <Alert variant="filled" severity="warning">
+        只可簽到已經結束的時段
+      </Alert>
     );
   }
   const latestPastEnd = pastEnd;
+  const showDraft = periods.length === 0 || addingAnother;
+
+  function revealAnother() {
+    const nextStart = periods.reduce(
+      (max, period) => Math.max(max, period.endMinute),
+      0,
+    );
+    const start = Math.min(Math.max(nextStart, 0), latestPastEnd);
+    setDraftStart(start);
+    setDraftEnd(defaultEnd(start, latestPastEnd));
+    setAddingAnother(true);
+    setAddError(null);
+  }
 
   function addPeriod() {
     const next = { startMinute: draftStart, endMinute: draftEnd };
@@ -230,7 +279,7 @@ function LessonCheckInFields({
       return;
     }
     if (!lessonTypeId) {
-      setAddError("請選擇實際工作類型");
+      setAddError("請選擇工作類型");
       return;
     }
     if (asksStudent && selectedNames.length === 0) {
@@ -238,7 +287,10 @@ function LessonCheckInFields({
       return;
     }
     setAddError(null);
-    setDraftDirty(false);
+    setAddingAnother(false);
+    const followingStart = next.endMinute;
+    setDraftStart(followingStart);
+    setDraftEnd(defaultEnd(followingStart, latestPastEnd));
     setPeriods(
       [
         ...periods,
@@ -250,6 +302,41 @@ function LessonCheckInFields({
         },
       ].sort((a, b) => a.startMinute - b.startMinute),
     );
+  }
+
+  function draftPeriod():
+    | { ok: true; period: CheckInPeriod }
+    | { ok: false; error: string } {
+    if (!lessonTypeId) {
+      return { ok: false, error: "請選擇工作類型" };
+    }
+    if (draftEnd <= draftStart) {
+      return { ok: false, error: "結束時間必須晚於開始時間" };
+    }
+    if (
+      draftStart < 0 ||
+      draftEnd > 1440 ||
+      draftStart > windowEnd ||
+      draftEnd < windowStart
+    ) {
+      return { ok: false, error: "簽到時間需要覆蓋或緊貼原本派更" };
+    }
+    if (draftEnd > latestPastEnd) {
+      return { ok: false, error: "只可簽到已經結束的時段" };
+    }
+    if (asksStudent && selectedNames.length === 0) {
+      return { ok: false, error: "請選擇教了哪位學生" };
+    }
+    return {
+      ok: true,
+      period: {
+        startMinute: draftStart,
+        endMinute: draftEnd,
+        lessonTypeId,
+        studentNames: asksStudent ? [...selectedNames] : [],
+        locked: true,
+      },
+    };
   }
 
   function resolvedPeriods():
@@ -264,119 +351,51 @@ function LessonCheckInFields({
             studentNames: asksStudent ? [...selectedNames] : [],
           },
     );
-    const duplicate = listed.some(
-      (period) =>
-        period.startMinute === draftStart && period.endMinute === draftEnd,
-    );
-    if (!draftDirty || duplicate) {
+    if (listed.length > 0) {
+      if (listed.some((period) => !period.lessonTypeId)) {
+        return { ok: false, error: "請選擇工作類型" };
+      }
+      const missingStudent = listed.some((period) => {
+        const type = workTypes.find(
+          (item) => item.id === period.lessonTypeId,
+        );
+        return (
+          staffKind === "coach" &&
+          type?.registersStudent === true &&
+          (period.studentNames ?? []).length === 0
+        );
+      });
+      if (missingStudent) {
+        return { ok: false, error: "請選擇教了哪位學生" };
+      }
       return { ok: true, periods: listed };
     }
-    const extra = {
-      startMinute: draftStart,
-      endMinute: draftEnd,
-      lessonTypeId,
-      studentNames: asksStudent ? [...selectedNames] : [],
-      locked: true,
-    };
-    if (!lessonTypeId) {
-      return { ok: false, error: "請選擇實際工作類型" };
+    const draft = draftPeriod();
+    if (!draft.ok) {
+      return draft;
     }
-    if (extra.endMinute <= extra.startMinute) {
-      return { ok: false, error: "結束時間必須晚於開始時間" };
-    }
-    if (
-      extra.startMinute < 0 ||
-      extra.endMinute > 1440 ||
-      extra.startMinute > windowEnd ||
-      extra.endMinute < windowStart
-    ) {
-      return { ok: false, error: "簽到時間需要覆蓋或緊貼原本派更" };
-    }
-    if (extra.endMinute > latestPastEnd) {
-      return { ok: false, error: "只可簽到已經結束的時段" };
-    }
-    if (listed.some((period) => periodsOverlap(period, extra))) {
-      return { ok: false, error: "簽到時段不可重疊" };
-    }
-    if (asksStudent && selectedNames.length === 0) {
-      return { ok: false, error: "請選擇教了哪位學生" };
-    }
-    return {
-      ok: true,
-      periods: [...listed, extra].sort((a, b) => a.startMinute - b.startMinute),
-    };
+    return { ok: true, periods: [draft.period] };
   }
 
   function startingLessonTypeId() {
     return workTypes.some((type) => type.id === initialLessonTypeId)
       ? initialLessonTypeId ?? ""
-      : workTypes[0]?.id ?? "";
+      : "";
   }
 
-  function checkInPayNote(): string {
-    const built = resolvedPeriods();
-    const rows = built.ok ? built.periods : periods;
-    if (rows.length === 0) {
-      return "請先加入時段。確認前不計入已確認薪金。";
-    }
-    let hourlyTotal = 0;
-    let hourlyKnown = true;
-    let usedFallback = false;
-    let hasHourly = false;
-    let hasStudent = false;
-    let hasLater = false;
-    for (const row of rows) {
-      const typeId = row.lessonTypeId || lessonTypeId;
-      const type = workTypes.find((item) => item.id === typeId);
-      const minutes = row.endMinute - row.startMinute;
-      const mode = type?.payMode;
-      const studentPay =
-        mode === "per_student" ||
-        (mode == null && type?.registersStudent === true && staffKind === "coach");
-      if (studentPay) {
-        hasStudent = true;
-        continue;
-      }
-      if (mode === "per_head" || mode === "per_session") {
-        hasLater = true;
-        continue;
-      }
-      hasHourly = true;
-      const specific = type?.hourlyRate;
-      const rate = specific ?? fallbackHourlyRate;
-      if (rate == null || minutes <= 0) {
-        hourlyKnown = false;
-        continue;
-      }
-      if (specific == null) {
-        usedFallback = true;
-      }
-      hourlyTotal += expectedHourlyAmount(minutes, rate);
-    }
-    const parts: string[] = [];
-    if (hasHourly && hourlyKnown) {
-      parts.push(
-        `${usedFallback ? "按預設時薪估計 " : ""}${formatMoney(hourlyTotal)}`,
-      );
-    } else if (hasHourly && !hourlyKnown) {
-      parts.push("時薪尚未設定，現在不計入");
-    }
-    if (hasStudent) {
-      parts.push("學生分成於簽到後計入，現在不計入");
-    }
-    if (hasLater) {
-      parts.push("人頭或堂數於簽到後計入，現在不計入");
-    }
-    if (parts.length === 0) {
-      return "確認前不計入已確認薪金。";
-    }
-    return `確認簽到後：${parts.join("。")}。`;
+  function rowLabel(row: CheckInPeriod): string {
+    return [
+      `${formatAvailabilityTime(row.startMinute)}–${formatAvailabilityTime(row.endMinute)}`,
+      workTypes.find((type) => type.id === row.lessonTypeId)?.name,
+      (row.studentNames ?? []).join("、"),
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   function cancelEdit() {
     setDraftStart(initialStart);
     setDraftEnd(defaultEnd(initialStart, pastEnd ?? windowEnd));
-    setDraftDirty(false);
     setPeriods(
       initialPeriods.map((period) => ({
         ...period,
@@ -392,33 +411,56 @@ function LessonCheckInFields({
     setEditing(false);
   }
 
+  const submission = resolvedPeriods();
+  const receiptWhen = submission.ok
+    ? submission.periods.map((period) => rowLabel(period)).join("；")
+    : "";
+  const savedLine = receiptWhen;
+  const timeMin = 0;
+  const timeMax = latestPastEnd;
+
   if (registered && !editing) {
     return (
-      <button
-        type="button"
-        className="min-h-11 w-full cursor-pointer rounded-md border border-stone-300 bg-white px-2 py-1 text-sm text-stone-800"
-        onClick={() => setEditing(true)}
-      >
-        修改
-      </button>
+      <div className="space-y-2">
+        {savedReceipt ? (
+          <Alert variant="filled" severity="success">
+            已簽到。{savedReceipt}
+          </Alert>
+        ) : null}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={`${buttonTone.secondary} min-w-0 flex-1`}
+            onClick={() => setEditing(true)}
+          >
+            修改簽到
+          </button>
+          {sideAction ? (
+            <div className="min-w-0 flex-1 has-[[role=alert]]:basis-full [&_button]:w-full">
+              {sideAction}
+            </div>
+          ) : null}
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-[12px] leading-snug text-amber-800">
-        實際上下班可以早或遲於派更，以 30 分鐘為單位。只可簽到已經結束的時間；未完成簽到時段不計入薪資。
-      </p>
+    <div className="space-y-3">
       {workTypes.length === 0 ? (
-        <p className="text-sm text-amber-800">尚未獲分配工作類型，請聯絡公司。</p>
+        <Alert variant="filled" severity="warning">
+          尚未獲分配工作類型，請聯絡公司。
+        </Alert>
       ) : (
         <label className="block space-y-1 text-sm">
+          <span className="text-stone-700">工作類型</span>
           <select
             required
             value={lessonTypeId}
             onChange={(event) => {
               const nextTypeId = event.target.value;
               setLessonTypeId(nextTypeId);
+              setAddError(null);
               setPeriods((current) =>
                 current.map((period) =>
                   period.locked
@@ -431,10 +473,10 @@ function LessonCheckInFields({
                 ),
               );
             }}
-            className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900"
+            className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm text-stone-900 outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
           >
             <option value="" disabled>
-              請選擇實際工作類型
+              請選擇工作類型
             </option>
             {workTypes.map((type) => (
               <option key={type.id} value={type.id}>
@@ -456,11 +498,23 @@ function LessonCheckInFields({
               value={studentQuery}
               onChange={(event) => setStudentQuery(event.target.value)}
               placeholder="輸入學生姓名"
-              className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm"
+              className="w-full rounded-md border border-stone-300 bg-white px-2 py-2 text-sm outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
             />
           </label>
           {searchError ? (
-            <p className="text-xs text-amber-800">{searchError}</p>
+            <Alert variant="filled" severity="warning">
+              {searchError}{" "}
+              <button
+                type="button"
+                className="cursor-pointer underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                onClick={() => {
+                  setSearchError(null);
+                  setStudentDirectory(null);
+                }}
+              >
+                再試一次
+              </button>
+            </Alert>
           ) : null}
           {directoryLoading ? (
             <p className="text-xs text-stone-500">載入學生名單…</p>
@@ -477,7 +531,10 @@ function LessonCheckInFields({
               <button
                 key={name}
                 type="button"
-                className={`block w-full rounded-md px-2 py-1 text-left text-xs ${
+                aria-pressed={selectedNames.some(
+                  (item) => item.toLowerCase() === name.toLowerCase(),
+                )}
+                className={`block min-h-11 w-full rounded-md px-2 py-2 text-left text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] ${
                   selectedNames.some((item) => item.toLowerCase() === name.toLowerCase())
                     ? "bg-stone-900 text-white"
                     : "bg-stone-50 text-stone-800"
@@ -489,80 +546,82 @@ function LessonCheckInFields({
             ))}
           </div>
           {selectedNames.length > 0 ? (
-            <p className="text-xs text-stone-600">學生：{selectedNames.join("、")}</p>
+            <ul className="flex flex-wrap gap-1">
+              {selectedNames.map((name) => (
+                <li
+                  key={name}
+                  className="inline-flex items-center gap-1 rounded-md bg-stone-100 py-0.5 pr-0.5 pl-2 text-xs text-stone-800"
+                >
+                  <span>{name}</span>
+                  <RemoveButton
+                    label={`移除${name}`}
+                    onClick={() => toggleStudent(name)}
+                  />
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
       ) : null}
-      <AvailabilityTimeFields
-        defaultStartMinute={initialStart}
-        defaultEndMinute={defaultEnd(initialStart, pastEnd)}
-        minMinute={0}
-        maxMinute={pastEnd}
-        startName="check_in_start"
-        endName="check_in_end"
-        startValue={draftStart}
-        endValue={draftEnd}
-        onStartChange={(minute) => {
-          setDraftStart(minute);
-          setDraftDirty(true);
-        }}
-        onEndChange={(minute) => {
-          setDraftEnd(minute);
-          setDraftDirty(true);
-        }}
-      />
-      <button
-        type="button"
-        className={`${buttonTone.secondary} min-h-11 w-full`}
-        onClick={addPeriod}
-      >
-        加入此時段
-      </button>
-      {addError ? (
-        <p className="text-xs text-red-700" role="alert">
-          {addError}
-        </p>
-      ) : null}
+      <div className="space-y-2">
+        {showDraft && periods.length > 0 ? (
+          <p className="text-sm text-stone-700">另一時段</p>
+        ) : null}
+        {showDraft ? (
+          <>
+            <AvailabilityTimeFields
+              defaultStartMinute={initialStart}
+              defaultEndMinute={defaultEnd(initialStart, pastEnd)}
+              minMinute={timeMin}
+              maxMinute={timeMax}
+              startName="check_in_start"
+              endName="check_in_end"
+              startValue={draftStart}
+              endValue={draftEnd}
+              onStartChange={(minute) => {
+                setDraftStart(minute);
+              }}
+              onEndChange={(minute) => {
+                setDraftEnd(minute);
+              }}
+            />
+          </>
+        ) : null}
+      </div>
       {periods.length > 0 ? (
         <ul className="space-y-1">
-          {periods.map((period) => (
-            <li
-              key={`${period.startMinute}-${period.endMinute}`}
-              className="flex items-center justify-between gap-1 text-xs tabular-nums"
-            >
-              <span>
-                {[
-                  `${formatAvailabilityTime(period.startMinute)}–${formatAvailabilityTime(period.endMinute)}`,
-                  workTypes.find((type) => type.id === period.lessonTypeId)?.name,
-                  (period.studentNames ?? []).join("、"),
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              </span>
-              <button
-                type="button"
-                className="min-h-11 cursor-pointer rounded-md px-2 text-stone-600"
-                onClick={() =>
-                  setPeriods(
-                    periods.filter(
-                      (item) =>
-                        item.startMinute !== period.startMinute ||
-                        item.endMinute !== period.endMinute,
-                    ),
-                  )
-                }
+          {periods.map((period) => {
+            const label = rowLabel(period);
+            return (
+              <li
+                key={`${period.startMinute}-${period.endMinute}`}
+                className="flex items-center justify-between gap-1 text-sm tabular-nums"
               >
-                移除
-              </button>
-            </li>
-          ))}
+                <span>{label}</span>
+                <RemoveButton
+                  label={`移除${label}`}
+                  onClick={() =>
+                    setPeriods(
+                      periods.filter(
+                        (item) =>
+                          item.startMinute !== period.startMinute ||
+                          item.endMinute !== period.endMinute,
+                      ),
+                    )
+                  }
+                />
+              </li>
+            );
+          })}
         </ul>
-      ) : (
-        <p className="text-[10px] text-stone-500">尚未加入簽到時段</p>
-      )}
+      ) : null}
+      {addError ? (
+        <Alert variant="filled" severity="error">{addError}</Alert>
+      ) : null}
       <ActionForm
         action={action}
         className="space-y-2"
+        successMessage={savedLine ? `已簽到。${savedLine}` : "已簽到"}
         beforeSubmit={(formData) => {
           const built = resolvedPeriods();
           if (!built.ok) {
@@ -584,6 +643,7 @@ function LessonCheckInFields({
           return null;
         }}
         onSuccess={() => {
+          setSavedReceipt(savedLine);
           setEditing(false);
           router.refresh();
         }}
@@ -592,12 +652,11 @@ function LessonCheckInFields({
         <input type="hidden" name="periods" value={payload} />
         <input type="hidden" name="lesson_type_id" value={lessonTypeId} />
         <input type="hidden" name="student_names" value={studentNamesPayload} />
-        <p className="text-sm text-[#2C2C2C]">{checkInPayNote()}</p>
         <div className="flex gap-2">
           {registered ? (
             <button
               type="button"
-              className={`${buttonTone.secondary} min-h-11 flex-1`}
+              className={`${buttonTone.secondary} min-w-0 flex-1`}
               onClick={cancelEdit}
             >
               取消
@@ -605,15 +664,27 @@ function LessonCheckInFields({
           ) : null}
           <SubmitButton
             variant={registered ? "confirmed" : "checkIn"}
-            disabled={
-              periods.length === 0 ||
-              workTypes.length === 0 ||
-              (asksStudent && selectedNames.length === 0)
-            }
+            className="min-w-0 flex-1"
           >
             {submitLabel}
           </SubmitButton>
         </div>
+        <button
+          type="button"
+          className="cursor-pointer self-start text-sm text-[#2C2C2C] underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+          onClick={() => {
+            if (periods.length > 0 && !addingAnother) {
+              revealAnother();
+              return;
+            }
+            addPeriod();
+          }}
+        >
+          加入另一時段
+        </button>
+        {registered && sideAction ? (
+          <div className="[&_button]:w-full">{sideAction}</div>
+        ) : null}
       </ActionForm>
     </div>
   );

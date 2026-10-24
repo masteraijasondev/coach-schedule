@@ -1,130 +1,7 @@
 "use client";
 
-import {
-  cancelLeaveAction,
-  saveLeaveAction,
-  saveShortBreakAction,
-  saveSickLeaveAction,
-} from "@/actions/availability";
-import { ActionForm } from "@/components/action-form";
-import { AvailabilityTimeFields } from "@/components/availability-time-fields";
+import { cancelLeaveAction } from "@/actions/availability";
 import { ServerActionButton } from "@/components/server-action-button";
-import { SubmitButton } from "@/components/ui";
-
-const DEFAULT_DURATION_MINUTES = 60;
-const MINUTES_PER_DAY = 1440;
-
-export function LeaveReportForm({
-  date,
-  suggestedStart,
-  canTakeFullDay,
-  compact = false,
-  pendingShiftLabels = [],
-  onSuccess,
-}: {
-  date: string;
-  suggestedStart: number;
-  canTakeFullDay: boolean;
-  compact?: boolean;
-  pendingShiftLabels?: string[];
-  onSuccess?: () => void;
-}) {
-  const panel = compact ? "p-1.5" : "p-3";
-  const namedShifts = pendingShiftLabels.filter((label) => label.length > 0);
-  const sickConfirm =
-    namedShifts.length > 0
-      ? `確定當日全日病假？未簽到的派更會取消：${namedShifts.join("、")}。已簽到的時段不能改為病假。`
-      : "確定當日全日病假？未簽到的派更會一併取消。已簽到的時段不能改為病假。";
-
-  return (
-    <div className="flex flex-col gap-3">
-    <div className={`rounded-xl bg-stone-200 ${panel}`}>
-      <p className="mb-2 text-center text-sm font-medium text-stone-900">
-        報放假
-      </p>
-      <div className="flex flex-col gap-2">
-        <ActionForm
-          action={saveShortBreakAction}
-          className="flex flex-col gap-2"
-          onSuccess={onSuccess}
-        >
-          <input type="hidden" name="leave_date" value={date} />
-          <AvailabilityTimeFields
-            tone="leave"
-            compact={compact}
-            defaultStartMinute={suggestedStart}
-            defaultEndMinute={Math.min(
-              suggestedStart + DEFAULT_DURATION_MINUTES,
-              MINUTES_PER_DAY,
-            )}
-          />
-          <SubmitButton variant="leave" className="w-full min-w-0">
-            報此時段小休
-          </SubmitButton>
-        </ActionForm>
-        {canTakeFullDay ? (
-          <ServerActionButton
-            action={saveLeaveAction.bind(null, date)}
-            confirmMessage="確定當日全日放假？當日可返工時段將會取消。"
-            confirmLabel="確定全日放假"
-            confirmVariant="leave"
-            className="w-full min-h-11 rounded-md border border-stone-300 bg-stone-100 px-2 py-1 text-sm font-medium text-stone-900 hover:bg-stone-200 disabled:opacity-60"
-          >
-            全日放假
-          </ServerActionButton>
-        ) : (
-          <p className="text-center text-xs text-stone-500">
-            當日已有派更，不可全日放假
-          </p>
-        )}
-      </div>
-    </div>
-    <div className={`rounded-xl bg-red-50 ${panel}`}>
-      <p className="mb-2 text-center text-sm font-medium text-red-900">
-        報病假
-      </p>
-      <div className="flex flex-col gap-2">
-        <ActionForm
-          action={saveSickLeaveAction}
-          className="flex flex-col gap-2"
-          onSuccess={onSuccess}
-        >
-          <input type="hidden" name="leave_date" value={date} />
-          <AvailabilityTimeFields
-            tone="sick"
-            compact={compact}
-            defaultStartMinute={suggestedStart}
-            defaultEndMinute={Math.min(
-              suggestedStart + DEFAULT_DURATION_MINUTES,
-              MINUTES_PER_DAY,
-            )}
-          />
-          <SubmitButton variant="sick" className="w-full min-w-0">
-            報此時段病假
-          </SubmitButton>
-        </ActionForm>
-        <ServerActionButton
-          action={async () => {
-            const formData = new FormData();
-            formData.set("leave_date", date);
-            formData.set("full_day", "1");
-            return saveSickLeaveAction(null, formData);
-          }}
-          confirmMessage={sickConfirm}
-          confirmLabel="確定全日病假"
-          confirmVariant="sick"
-          className="w-full min-h-11 rounded-md border border-red-200 bg-red-100 px-2 py-1 text-sm font-medium text-red-900 hover:bg-red-200 disabled:opacity-60"
-        >
-          全日病假
-        </ServerActionButton>
-        <p className="text-center text-xs text-red-800">
-          未簽到的派更會一併取消。已簽到的時段不能改為病假。
-        </p>
-      </div>
-    </div>
-    </div>
-  );
-}
 
 export function CancelFullDayLeaveButton({
   date,
@@ -143,11 +20,8 @@ export function CancelFullDayLeaveButton({
       }
       confirmLabel={sick ? "確定撤銷病假" : "確定撤銷放假"}
       confirmVariant={sick ? "sickQuiet" : "leaveQuiet"}
-      className={
-        sick
-          ? "w-full min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-800 disabled:opacity-60"
-          : "w-full min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
-      }
+      variant={sick ? "sickQuiet" : "leaveQuiet"}
+      className="w-full"
     >
       {sick ? "撤銷病假" : "撤銷放假"}
     </ServerActionButton>

@@ -8,6 +8,7 @@ import {
 } from "@/actions/availability";
 import { undoCheckInAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
+import { Alert } from "@/components/alert";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { CancelFullDayLeaveButton } from "@/components/leave-report-form";
@@ -226,7 +227,8 @@ export function CoachDayPanel({
                       confirmMessage="確定撤銷此時段放假？"
                       confirmLabel="確定撤銷放假"
                       confirmVariant="leaveQuiet"
-                      className="min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
+                      variant="leaveQuiet"
+                      className="w-full"
                     >
                       撤銷放假
                     </ServerActionButton>
@@ -243,11 +245,8 @@ export function CoachDayPanel({
                       leave.kind === "sick" ? "確定撤銷病假" : "確定撤銷放假"
                     }
                     confirmVariant={leave.kind === "sick" ? "sickQuiet" : "leaveQuiet"}
-                    className={
-                      leave.kind === "sick"
-                        ? "min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-800 disabled:opacity-60"
-                        : "min-h-11 rounded-md border border-stone-200 px-2 py-1 text-xs text-stone-800 disabled:opacity-60"
-                    }
+                    variant={leave.kind === "sick" ? "sickQuiet" : "leaveQuiet"}
+                    className="w-full"
                   >
                     {leave.kind === "sick" ? "撤銷病假" : "撤銷放假"}
                   </ServerActionButton>
@@ -310,9 +309,9 @@ export function CoachDayPanel({
                         staffKind={staffKind}
                       />
                     ) : (
-                      <p className="text-sm text-emerald-800">
+                      <Alert variant="filled" severity="warning">
                         只可簽到已經結束的時段
-                      </p>
+                      </Alert>
                     )}
                   </StaffShiftChip>
                 );
@@ -329,34 +328,35 @@ export function CoachDayPanel({
                     tone="confirmed"
                   >
                     {segment.lesson && lessonWindow ? (
-                      <div className="flex flex-col gap-2">
-                        <LessonCheckInForm
-                          lessonId={segment.lesson.id}
-                          date={lessonWindow.date}
-                          windowStart={slot.start_minute}
-                          windowEnd={slot.end_minute}
-                          initialPeriods={[
-                            {
-                              startMinute: lessonWindow.startMinute,
-                              endMinute: lessonWindow.endMinute,
-                            },
-                          ]}
-                          initialStudentNames={segment.lesson.student_names}
-                          initialLessonTypeId={segment.lesson.lesson_type_id}
-                          workTypes={workTypes}
-                          staffKind={staffKind}
-                          submitLabel="儲存修改"
-                        />
-                        <ServerActionButton
-                          action={undoCheckInAction.bind(null, segment.lesson.id)}
-                          confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
-                          confirmLabel="確定撤銷簽到"
-                          confirmVariant="confirmedQuiet"
-                          className="min-h-11 rounded-md border border-sky-200 px-2 py-1 text-xs text-sky-900 disabled:opacity-60"
-                        >
-                          撤銷簽到
-                        </ServerActionButton>
-                      </div>
+                      <LessonCheckInForm
+                        lessonId={segment.lesson.id}
+                        date={lessonWindow.date}
+                        windowStart={slot.start_minute}
+                        windowEnd={slot.end_minute}
+                        initialPeriods={[
+                          {
+                            startMinute: lessonWindow.startMinute,
+                            endMinute: lessonWindow.endMinute,
+                          },
+                        ]}
+                        initialStudentNames={segment.lesson.student_names}
+                        initialLessonTypeId={segment.lesson.lesson_type_id}
+                        workTypes={workTypes}
+                        staffKind={staffKind}
+                        submitLabel="儲存修改"
+                        sideAction={
+                          <ServerActionButton
+                            action={undoCheckInAction.bind(null, segment.lesson.id)}
+                            confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+                            confirmLabel="確定撤銷簽到"
+                            confirmVariant="confirmedQuiet"
+                            variant="confirmedQuiet"
+                            className="w-full"
+                          >
+                            撤銷簽到
+                          </ServerActionButton>
+                        }
+                      />
                     ) : null}
                   </StaffShiftChip>
                 );
@@ -398,7 +398,8 @@ export function CoachDayPanel({
                         confirmMessage="確定刪除此可返工時段？"
                         confirmLabel="確定刪除"
                         confirmVariant="danger"
-                        className="min-h-11 rounded-md border border-red-200 px-2 py-1 text-xs text-red-700 disabled:opacity-60"
+                        variant="danger"
+                        className="w-full"
                       >
                         刪除
                       </ServerActionButton>

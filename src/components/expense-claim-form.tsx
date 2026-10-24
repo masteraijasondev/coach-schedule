@@ -7,6 +7,7 @@ import {
   submitExpenseClaimAction,
 } from "@/actions/expenses";
 import { ActionForm } from "@/components/action-form";
+import { Alert } from "@/components/alert";
 import { buttonTone } from "@/components/button-styles";
 import { ServerActionButton } from "@/components/server-action-button";
 import { SubmitButton } from "@/components/ui";
@@ -166,11 +167,11 @@ export function ExpenseClaimForm({
         </a>
       ) : null}
       {!driveReady ? (
-        <p className="text-sm text-amber-800" role="status">
+        <Alert variant="filled" severity="warning">
           {submitted
             ? "尚未設定 Google Drive，暫時未能更換收據。"
             : "尚未設定 Google Drive，可以先儲存收據，但暫時未能提交。"}
-        </p>
+        </Alert>
       ) : null}
       <label className="block space-y-1 text-sm">
         <span className="text-stone-700">金額（港幣）</span>
@@ -201,9 +202,7 @@ export function ExpenseClaimForm({
         />
       </label>
       {draftError ? (
-        <p className="text-sm text-red-700" role="alert">
-          {draftError}
-        </p>
+        <Alert variant="filled" severity="error">{draftError}</Alert>
       ) : null}
       <ul className="divide-y divide-stone-100">
         {receipts.map((receipt) => (

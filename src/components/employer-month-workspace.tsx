@@ -411,7 +411,8 @@ export function EmployerMonthWorkspace({
             confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
             confirmLabel="確定撤銷派更"
             confirmVariant="slot"
-            className="min-h-11 rounded-md border border-stone-300 px-3 py-1.5 text-sm text-stone-800 disabled:opacity-60"
+            variant="slot"
+            className="w-full"
           >
             撤銷派更
           </ServerActionButton>
@@ -420,7 +421,8 @@ export function EmployerMonthWorkspace({
             confirmMessage="確定將這段派更轉為病假？"
             confirmLabel="確定轉為病假"
             confirmVariant="sick"
-            className="min-h-11 rounded-md border border-red-200 px-3 py-1.5 text-sm text-red-800 disabled:opacity-60"
+            variant="sickQuiet"
+            className="w-full"
           >
             轉為病假
           </ServerActionButton>
@@ -450,16 +452,19 @@ export function EmployerMonthWorkspace({
         staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
         action={employerEditCheckInAction}
         submitLabel="儲存修改"
+        sideAction={
+          <ServerActionButton
+            action={undoCheckInAction.bind(null, lesson.id)}
+            confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
+            confirmLabel="確定撤銷簽到"
+            confirmVariant="confirmedQuiet"
+            variant="confirmedQuiet"
+            className="w-full"
+          >
+            撤銷簽到
+          </ServerActionButton>
+        }
       />
-      <ServerActionButton
-        action={undoCheckInAction.bind(null, lesson.id)}
-        confirmMessage="確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
-        confirmLabel="確定撤銷簽到"
-        confirmVariant="confirmedQuiet"
-        className="min-h-11 rounded-md border border-sky-200 px-3 py-1.5 text-sm text-sky-900 disabled:opacity-60"
-      >
-        撤銷簽到
-      </ServerActionButton>
       </div>
     );
   }
@@ -498,7 +503,8 @@ export function EmployerMonthWorkspace({
           body: (
             <ServerActionButton
               action={restoreReleasedAvailabilityAction.bind(null, slot.id)}
-              className="min-h-11 rounded-md border border-amber-400 bg-amber-50 px-2 py-1 text-xs text-amber-950 disabled:opacity-60"
+              variant="slot"
+              className="w-full"
             >
               恢復待派更
             </ServerActionButton>

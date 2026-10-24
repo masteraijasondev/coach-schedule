@@ -2,6 +2,7 @@
 
 import { confirmRecoverySessionAction } from "@/actions/auth";
 import { ActionForm } from "@/components/action-form";
+import { Alert } from "@/components/alert";
 import { SubmitButton } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -96,13 +97,13 @@ function ConfirmRecovery() {
   if (hashSession) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-stone-600">
+        <Alert variant="filled" severity="info">
           連結已確認。按下面按鈕設定新密碼。請勿重新整理。
-        </p>
+        </Alert>
         {hashError ? (
-          <p className="text-sm text-red-700" role="alert">
+          <Alert variant="filled" severity="error">
             {hashError}
-          </p>
+          </Alert>
         ) : null}
         <button
           type="button"
@@ -127,9 +128,9 @@ function ConfirmRecovery() {
         <input type="hidden" name="token_hash" value={tokenHash} />
       ) : null}
       <input type="hidden" name="type" value={type} />
-      <p className="text-sm text-stone-600">
+      <Alert variant="filled" severity="info">
         按下面按鈕繼續設定新密碼。請用申請重設時的同一個瀏覽器開啟。
-      </p>
+      </Alert>
       <SubmitButton>設定新密碼</SubmitButton>
     </ActionForm>
   );
@@ -138,9 +139,7 @@ function ConfirmRecovery() {
 function InvalidLink({ message }: { message: string }) {
   return (
     <div className="space-y-4">
-      <p className="text-sm text-red-700" role="alert">
-        {message}
-      </p>
+      <Alert variant="filled" severity="error">{message}</Alert>
       <Link href="/forgot-password" className="text-sm text-stone-600 underline">
         重新申請
       </Link>

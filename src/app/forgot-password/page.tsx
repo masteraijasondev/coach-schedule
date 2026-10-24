@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/alert";
 import { Field } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -55,9 +56,9 @@ function ForgotPasswordForm() {
         </p>
       </div>
       {linkError ? (
-        <p className="text-sm text-red-700" role="alert">
+        <Alert variant="filled" severity="error">
           重設連結無效或已過期，請重新申請。
-        </p>
+        </Alert>
       ) : null}
       <form onSubmit={onSubmit} className="space-y-4" aria-busy={pending}>
         <Field label="電郵" name="email" type="email" required />
@@ -69,14 +70,14 @@ function ForgotPasswordForm() {
           {pending ? "處理中…" : "寄出重設連結"}
         </button>
         {error ? (
-          <p className="text-sm text-red-700" role="alert">
+          <Alert variant="filled" severity="error">
             {error}
-          </p>
+          </Alert>
         ) : null}
         {sent ? (
-          <p className="text-sm text-emerald-700">
+          <Alert variant="filled" severity="success">
             如該電郵已註冊，我們已寄出重設連結。請用這個瀏覽器開啟，並檢查垃圾郵件。
-          </p>
+          </Alert>
         ) : null}
       </form>
       <p className="text-sm text-stone-600">

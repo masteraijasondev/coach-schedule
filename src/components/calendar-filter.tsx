@@ -1,5 +1,6 @@
 "use client";
 
+import { Alert } from "@/components/alert";
 import {
   CALENDAR_STATUSES,
   CALENDAR_STATUS_LABELS,
@@ -174,10 +175,14 @@ export function CalendarFilterBar({
       </FilterSection>
 
       {filter.staffIds.length === 0 && staff.length > 0 ? (
-        <p className="text-xs text-amber-700">尚未選取員工，月曆將不會顯示任何時段。</p>
+        <Alert variant="filled" severity="warning">
+          尚未選取員工，月曆將不會顯示任何時段。
+        </Alert>
       ) : null}
       {filter.statuses.length === 0 ? (
-        <p className="text-xs text-amber-700">尚未選取狀態，相關時段將會隱藏。</p>
+        <Alert variant="filled" severity="warning">
+          尚未選取狀態，相關時段將會隱藏。
+        </Alert>
       ) : null}
 
       <FilterSection

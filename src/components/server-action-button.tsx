@@ -1,6 +1,11 @@
 "use client";
 
-import { buttonTone, type ButtonVariant } from "@/components/button-styles";
+import { Alert } from "@/components/alert";
+import {
+  buttonLabelClass,
+  buttonTone,
+  type ButtonVariant,
+} from "@/components/button-styles";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -13,6 +18,7 @@ type Props = {
   confirmMessage?: string;
   confirmLabel?: string;
   confirmVariant?: ButtonVariant;
+  variant?: ButtonVariant;
 };
 
 export function ServerActionButton({
@@ -22,6 +28,7 @@ export function ServerActionButton({
   confirmMessage,
   confirmLabel = "確定",
   confirmVariant = "primary",
+  variant,
 }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +56,8 @@ export function ServerActionButton({
   return (
     <div className="space-y-1">
       {asking && confirmMessage ? (
-        <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-2">
-          <p className="text-sm text-amber-950">{confirmMessage}</p>
+        <div className="space-y-2">
+          <Alert variant="filled" severity="warning">{confirmMessage}</Alert>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -75,7 +82,11 @@ export function ServerActionButton({
           type="button"
           disabled={pending}
           aria-busy={pending}
-          className={`inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold shadow-sm transition active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:active:translate-y-0 ${className ?? ""}`}
+          className={
+            variant
+              ? [buttonTone[variant], className].filter(Boolean).join(" ")
+              : `inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold shadow-sm transition active:translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none disabled:active:translate-y-0 ${className ?? ""}`
+          }
           onClick={() => {
             if (confirmMessage) {
               setAsking(true);
@@ -86,7 +97,11 @@ export function ServerActionButton({
         >
           {pending ? (
             <>
-              <LoadingSpinner size="sm" label="處理中…" />
+              <LoadingSpinner
+                size="sm"
+                label="處理中…"
+                className={variant ? buttonLabelClass(variant) : undefined}
+              />
               <span>處理中…</span>
             </>
           ) : (
@@ -95,9 +110,9 @@ export function ServerActionButton({
         </button>
       )}
       {error ? (
-        <p className="max-w-xs text-sm text-red-700" role="alert">
+        <Alert variant="filled" severity="error" className="max-w-xs">
           {error}
-        </p>
+        </Alert>
       ) : null}
     </div>
   );
