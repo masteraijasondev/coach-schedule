@@ -14,6 +14,7 @@ import {
   expectedHourlyAmount,
   hourlyRateOrNull,
 } from "@/lib/expected-pay";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { formatDateTime, formatMoney, nestedStudentName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -130,7 +131,11 @@ export default async function EmployerCoachSalaryPage({
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">薪資</h1>
         <p className="mt-1 text-sm text-[#525252]">
-          {coach.full_name} · {period} 結算期（{payrollPeriodLabel(period)}）
+          {coach.full_name} ·{" "}
+          <EmphasizedText
+            figure
+            text={`${period} 結算期（${payrollPeriodLabel(period)}）`}
+          />
         </p>
       </div>
       <Panel title="本結算期">
@@ -166,21 +171,29 @@ export default async function EmployerCoachSalaryPage({
             <ul className="divide-y divide-stone-100">
               {assignedLessons.map((lesson) => (
                 <li key={lesson.id} className="flex justify-between gap-3 py-2">
-                  <p className="text-sm tabular-nums text-stone-700">
-                    {formatDateTime(lesson.starts_at)}
-                    {hourlyRate == null
-                      ? ""
-                      : ` · ${(durationMinutes(lesson.starts_at, lesson.ends_at) / 60).toFixed(1)} 小時`}
+                  <p className="text-sm text-stone-700">
+                    <EmphasizedText
+                      figure
+                      text={`${formatDateTime(lesson.starts_at)}${
+                        hourlyRate == null
+                          ? ""
+                          : ` · ${(durationMinutes(lesson.starts_at, lesson.ends_at) / 60).toFixed(1)} 小時`
+                      }`}
+                    />
                   </p>
-                  <p className="text-sm font-medium">
-                    {hourlyRate == null
-                      ? "未設定時薪"
-                      : formatMoney(
+                  <p>
+                    {hourlyRate == null ? (
+                      "未設定時薪"
+                    ) : (
+                      <DataValue figure>
+                        {formatMoney(
                           expectedHourlyAmount(
                             durationMinutes(lesson.starts_at, lesson.ends_at),
                             hourlyRate,
                           ),
                         )}
+                      </DataValue>
+                    )}
                   </p>
                 </li>
               ))}
@@ -204,7 +217,7 @@ export default async function EmployerCoachSalaryPage({
                 <h3 className="text-sm font-semibold text-stone-800">
                   {group.name}
                 </h3>
-                <p className="text-sm font-medium">{formatMoney(group.total)}</p>
+                <DataValue figure>{formatMoney(group.total)}</DataValue>
               </div>
               <ul className="divide-y divide-stone-100">
                 {group.items.map((lesson) => {
@@ -215,27 +228,35 @@ export default async function EmployerCoachSalaryPage({
                       className="flex justify-between gap-3 py-3"
                     >
                       <div>
-                        <p className="text-sm tabular-nums text-stone-700">
-                          {formatDateTime(lesson.starts_at)}
+                        <p className="text-sm text-stone-700">
+                          <EmphasizedText figure text={formatDateTime(lesson.starts_at)} />
                         </p>
                         {group.payMode === "per_hour" ? (
-                          <p className="text-sm text-stone-500">
-                            {hoursBetween(lesson.starts_at, lesson.ends_at).toFixed(1)}{" "}
-                            小時
+                          <p className="text-sm text-stone-700">
+                            <DataValue>
+                              {hoursBetween(lesson.starts_at, lesson.ends_at).toFixed(1)} 小時
+                            </DataValue>
                           </p>
                         ) : null}
                         {group.payMode === "per_student" ? (
                           <p className="text-sm text-stone-500">
                             學生：{studentName ?? "—"}
-                            {lesson.student_fee_hkd == null
-                              ? ""
-                              : ` · 學費 ${formatMoney(Number(lesson.student_fee_hkd))}`}
+                            {lesson.student_fee_hkd == null ? (
+                              ""
+                            ) : (
+                              <>
+                                {" · 學費 "}
+                                <DataValue>
+                                  {formatMoney(Number(lesson.student_fee_hkd))}
+                                </DataValue>
+                              </>
+                            )}
                           </p>
                         ) : null}
                       </div>
-                      <p className="text-sm font-medium">
+                      <DataValue figure>
                         {formatMoney(Number(lesson.earned_amount_hkd ?? 0))}
-                      </p>
+                      </DataValue>
                     </li>
                   );
                 })}

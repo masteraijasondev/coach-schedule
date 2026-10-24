@@ -9,6 +9,7 @@ import {
 import { undoCheckInAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { Alert } from "@/components/alert";
+import { DataValue } from "@/components/data-value";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { LessonCheckInForm } from "@/components/lesson-check-in-form";
 import { CancelFullDayLeaveButton } from "@/components/leave-report-form";
@@ -156,7 +157,9 @@ export function CoachDayPanel({
   return (
     <Panel title={day}>
       <p className="text-sm text-stone-600">
-        已派更，待簽到 {pendingCount} · 已簽到 {confirmedCount}
+        已派更，待簽到 <DataValue figure>{pendingCount}</DataValue>
+        {" · "}
+        已簽到 <DataValue figure>{confirmedCount}</DataValue>
       </p>
       {fullDayLeave ? (
         <div className="mt-3 flex flex-col gap-2">

@@ -39,7 +39,7 @@ const LABEL_CLASS = {
 
 function selectClass(tone: keyof typeof SELECT_CHEVRON, compact: boolean) {
   return [
-    "w-full appearance-none rounded-md border bg-white bg-[length:0.75rem] bg-[right_0.35rem_center] bg-no-repeat outline-none tabular-nums",
+    "w-full appearance-none rounded-md border bg-white bg-[length:0.75rem] bg-[right_0.35rem_center] bg-no-repeat font-bold outline-none tabular-nums",
     compact ? "min-w-0 py-1 pl-1 pr-5 text-xs" : "min-w-[6.5rem] py-2 pl-2.5 pr-8 text-base",
     FIELD_CLASS[tone],
     SELECT_CHEVRON[tone],

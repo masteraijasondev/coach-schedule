@@ -24,7 +24,7 @@ function parseDefault(value?: string): { hour: string; minute: string } {
 }
 
 const selectClass =
-  "min-w-0 flex-1 appearance-none rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-center text-base font-medium tabular-nums text-stone-900 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200";
+  "min-w-0 flex-1 appearance-none rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5 text-center text-base font-bold tabular-nums text-stone-900 outline-none transition hover:border-stone-300 focus:border-stone-500 focus:bg-white focus:ring-2 focus:ring-stone-200";
 
 type Props = {
   label: string;

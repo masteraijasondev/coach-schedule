@@ -3,6 +3,7 @@
 import { updateLessonFeesAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { Field, SubmitButton } from "@/components/ui";
+import { DataValue } from "@/components/data-value";
 import { formatMoney } from "@/lib/format";
 
 type Props = {
@@ -34,8 +35,8 @@ export function EmployerLessonFeeForm({
           defaultValue={studentFeeHkd == null ? "" : String(studentFeeHkd)}
         />
         {listedTuitionHkd != null ? (
-          <p className="text-xs text-stone-500">
-            Airtable 本身學費 {formatMoney(listedTuitionHkd)}
+          <p className="text-sm text-stone-700">
+            Airtable 本身學費 <DataValue>{formatMoney(listedTuitionHkd)}</DataValue>
           </p>
         ) : null}
       </div>

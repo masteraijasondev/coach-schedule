@@ -28,12 +28,12 @@ export function AppShell({
     >
       <AppHeader title={title} name={name} items={items} tone={tone} />
       {tourRole ? <GuidedTour role={tourRole} /> : null}
-      <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+      <main className="w-full px-3 py-4 sm:px-4">{children}</main>
       <p
         className={
           ops
-            ? "px-4 pb-4 text-center text-xs text-[#525252]"
-            : "px-4 pb-4 text-center text-xs text-stone-600"
+            ? "px-3 pb-4 text-center text-xs text-[#525252] sm:px-4"
+            : "px-3 pb-4 text-center text-xs text-stone-600 sm:px-4"
         }
       >
         v{APP_VERSION}

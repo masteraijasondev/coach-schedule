@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarLegend } from "@/components/calendar-legend";
+import { EmphasizedText } from "@/components/data-value";
 import { isModifiedClick } from "@/lib/calendar-history";
 import Link from "next/link";
 import type { MouseEvent } from "react";
@@ -240,9 +241,9 @@ export function MonthCalendar({
                   <div
                     key={bar.id}
                     title={bar.text}
-                    className={`truncate rounded-sm px-1 py-0.5 text-left text-xs font-medium tabular-nums ${VARIANT_CHIP_CLASS[bar.variant]}`}
+                    className={`truncate rounded-sm px-1 py-0.5 text-left text-xs tabular-nums ${VARIANT_CHIP_CLASS[bar.variant]}`}
                   >
-                    {bar.text}
+                    <EmphasizedText text={bar.text} />
                   </div>
                 ))}
                 {hiddenCount > 0 ? (

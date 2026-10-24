@@ -276,7 +276,7 @@ export function CoachWeekCalendar({
               >
                 上週
               </Link>
-              <p className="text-sm font-medium tabular-nums">
+              <p className="text-base font-bold tabular-nums tracking-tight">
                 {week} – {weekEnd}
               </p>
               <Link
@@ -398,7 +398,7 @@ export function CoachWeekCalendar({
                           className={`${shell} ${blockTone}`}
                           style={{ top, height }}
                         >
-                          <p className="font-medium tabular-nums">{timeLabel}</p>
+                          <p className="font-bold tabular-nums">{timeLabel}</p>
                           <p>{leave.kind === "sick" ? "病假" : "小休"}</p>
                         </div>
                       );
@@ -410,7 +410,7 @@ export function CoachWeekCalendar({
                           className={`${shell} ${blockTone}`}
                           style={{ top, height }}
                         >
-                          <p className="font-medium tabular-nums">{timeLabel}</p>
+                          <p className="font-bold tabular-nums">{timeLabel}</p>
                           <p>{leave.kind === "sick" ? "病假" : "小休"}</p>
                           <ServerActionButton
                             action={cancelLeaveByIdAction.bind(null, leave.id)}
@@ -442,7 +442,7 @@ export function CoachWeekCalendar({
                         className={`${shell} border-stone-300 bg-stone-100 text-stone-950`}
                         style={{ top, height }}
                       >
-                        <summary className="cursor-pointer list-none font-medium tabular-nums">
+                        <summary className="cursor-pointer list-none font-bold tabular-nums">
                           {leave.kind === "sick" ? `${timeLabel} 病假` : `${timeLabel} 小休`}
                         </summary>
                         <div className="min-w-0 space-y-2 border-t border-stone-200 bg-white p-2 text-stone-900">
@@ -500,7 +500,7 @@ export function CoachWeekCalendar({
                         className="absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border border-stone-300 bg-stone-200 px-1 py-0.5 text-left text-xs text-stone-700"
                         style={{ top, height }}
                       >
-                        <p className="font-medium tabular-nums">{timeLabel}</p>
+                        <p className="font-bold tabular-nums">{timeLabel}</p>
                         <p>{calendarSlotLabel(true)}</p>
                       </div>,
                     ];
@@ -566,7 +566,7 @@ export function CoachWeekCalendar({
                           })
                         }
                       >
-                        <p className="font-medium tabular-nums">{timeLabel} 簽到</p>
+                        <p className="font-bold tabular-nums">{timeLabel} 簽到</p>
                         <p>{calendarAssignmentLabel("assigned")}</p>
                       </button>
                     );
@@ -601,7 +601,7 @@ export function CoachWeekCalendar({
                           })
                         }
                       >
-                        <p className="font-medium tabular-nums">{timeLabel} 修改</p>
+                        <p className="font-bold tabular-nums">{timeLabel} 修改</p>
                         <p>
                           {checkedInLabel({
                             typeName: typeNameById.get(lesson.lesson_type_id ?? ""),
@@ -623,7 +623,7 @@ export function CoachWeekCalendar({
                         }`}
                         style={{ top, height }}
                       >
-                        <p className="font-medium tabular-nums">{timeLabel}</p>
+                        <p className="font-bold tabular-nums">{timeLabel}</p>
                         <p>{locked ? "待公司派更" : "已開始"}</p>
                       </div>
                     );
@@ -635,7 +635,7 @@ export function CoachWeekCalendar({
                       className={`${shell} border-amber-300 bg-amber-100 text-amber-950`}
                       style={{ top, height }}
                     >
-                      <summary className="cursor-pointer list-none font-medium tabular-nums">
+                      <summary className="cursor-pointer list-none font-bold tabular-nums">
                         {timeLabel} 修改
                       </summary>
                       <div className="min-w-0 space-y-2 border-t border-sky-200 bg-white p-2 text-stone-900">

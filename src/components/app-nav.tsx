@@ -51,7 +51,7 @@ export function AppHeader({
           : "sticky top-0 z-20 border-b border-stone-200 bg-white"
       }
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
+      <div className="flex w-full items-center justify-between gap-3 px-3 py-3 sm:px-4">
         <div className="min-w-0">
           <p
             className={

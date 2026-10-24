@@ -10,6 +10,7 @@ import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { ServerActionButton } from "@/components/server-action-button";
 import { buttonTone } from "@/components/button-styles";
+import { EmphasizedText } from "@/components/data-value";
 import { SubmitButton } from "@/components/ui";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -81,9 +82,9 @@ export function StaffShiftChip({
   if (!children) {
     return (
       <div
-        className={`rounded-2xl px-4 py-3 text-sm font-medium tabular-nums ${CHIP_TONE[tone]}`}
+        className={`rounded-2xl px-4 py-3 text-sm tabular-nums ${CHIP_TONE[tone]}`}
       >
-        {label}
+        <EmphasizedText text={label} />
       </div>
     );
   }
@@ -94,13 +95,15 @@ export function StaffShiftChip({
       className={`rounded-2xl open:[&>summary>svg]:rotate-180 ${CHIP_TONE[tone]}`}
     >
       <summary
-        className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] [&::-webkit-details-marker]:hidden"
+        className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] [&::-webkit-details-marker]:hidden"
         onClick={(event) => {
           event.preventDefault();
           setOpen((current) => !current);
         }}
       >
-        <span>{label}</span>
+        <span>
+          <EmphasizedText text={label} />
+        </span>
         <Chevron />
       </summary>
       <div className="border-t border-black/5 bg-white px-4 py-3">{children}</div>

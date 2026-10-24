@@ -7,6 +7,7 @@ import {
   payrollPeriodLabel,
   shiftMonth,
 } from "@/lib/calendar";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
 import {
   durationMinutes,
@@ -126,7 +127,10 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">薪資</h1>
         <p className="mt-1 text-sm text-[#525252]">
-          {period} 結算期（{payrollPeriodLabel(period)}）
+          <EmphasizedText
+            figure
+            text={`${period} 結算期（${payrollPeriodLabel(period)}）`}
+          />
         </p>
       </div>
       <Panel title="本結算期">
@@ -158,19 +162,23 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">已派更，待簽到</p>
-                  <p className="font-bold italic text-stone-950">
+                  <p className="text-base font-bold italic tabular-nums text-stone-950">
                     <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                   </p>
                 </div>
-                <p className="text-sm tabular-nums text-stone-600">
-                  {hourlyRate == null
-                    ? "未設定時薪"
-                    : formatMoney(
+                <p className="text-stone-600">
+                  {hourlyRate == null ? (
+                    "未設定時薪"
+                  ) : (
+                    <DataValue figure>
+                      {formatMoney(
                         expectedHourlyAmount(
                           durationMinutes(lesson.starts_at, lesson.ends_at),
                           hourlyRate,
                         ),
                       )}
+                    </DataValue>
+                  )}
                 </p>
               </li>
             ))}
@@ -191,7 +199,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 <p className="font-medium">
                   {typeMap.get(lesson.lesson_type_id) ?? "課堂"}
                 </p>
-                <p className="font-bold italic text-stone-950">
+                <p className="text-base font-bold italic tabular-nums text-stone-950">
                   <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                 </p>
                 {payMode === "per_student" ? (
@@ -208,12 +216,12 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               </div>
               <p
                 className={
-                  lesson.earned_amount_hkd == null
-                    ? "text-sm text-amber-700"
-                    : "text-sm tabular-nums text-stone-700"
+                  lesson.earned_amount_hkd == null ? "text-amber-700" : "text-stone-950"
                 }
               >
-                {formatMoneyOrPending(lesson.earned_amount_hkd)}
+                <DataValue figure>
+                  {formatMoneyOrPending(lesson.earned_amount_hkd)}
+                </DataValue>
               </p>
             </li>
             );

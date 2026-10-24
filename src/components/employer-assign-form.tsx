@@ -12,6 +12,7 @@ import {
   periodPayTotals,
   type PayShift,
 } from "@/lib/expected-pay";
+import { EmphasizedText } from "@/components/data-value";
 import { formatAvailabilityTime, formatMoney } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -79,9 +80,11 @@ export function EmployerAssignForm({
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
       <p className="font-medium">為 {coachName} 派更</p>
-      <p className="mt-1 text-sm tabular-nums text-stone-600">
-        {date} · 可返工 {formatAvailabilityTime(startMinute)}–
-        {formatAvailabilityTime(slotEndMinute)}
+      <p className="mt-1 text-sm text-stone-800">
+        <EmphasizedText
+          figure
+          text={`${date} · 可返工 ${formatAvailabilityTime(startMinute)}–${formatAvailabilityTime(slotEndMinute)}`}
+        />
       </p>
       <p className="mt-1 text-sm text-stone-500">
         派更與暫無需要可各自選擇時段。預期薪金按時薪估計已派更、尚未簽到的時段。
@@ -89,13 +92,25 @@ export function EmployerAssignForm({
       <div
         className="mt-3 rounded-md border border-stone-200 bg-white p-3 text-sm"
       >
-        <p className="font-medium text-stone-800">
-          {payrollPeriodLabel(period)} 估計
+        <p className="text-stone-800">
+          <EmphasizedText figure text={payrollPeriodLabel(period)} /> 估計
         </p>
-        <p className="mt-1">已確認薪金：{formatMoney(totals.confirmed)}</p>
-        <p>預期薪金（已派更）：{formatExpectedPay(totals.expected)}</p>
-        <p>今次時段估計：{formatExpectedPay(draftPay)}</p>
-        <p>計入今次後預期：{formatExpectedPay(expectedAfterDraft)}</p>
+        <p className="mt-1">
+          已確認薪金：
+          <EmphasizedText figure text={formatMoney(totals.confirmed)} />
+        </p>
+        <p>
+          預期薪金（已派更）：
+          <EmphasizedText figure text={formatExpectedPay(totals.expected)} />
+        </p>
+        <p>
+          今次時段估計：
+          <EmphasizedText figure text={formatExpectedPay(draftPay)} />
+        </p>
+        <p>
+          計入今次後預期：
+          <EmphasizedText figure text={formatExpectedPay(expectedAfterDraft)} />
+        </p>
       </div>
       <div className="mt-3 grid gap-4">
         <ActionForm

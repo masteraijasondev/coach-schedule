@@ -15,6 +15,7 @@ import {
   periodPayTotals,
   type PayShift,
 } from "@/lib/expected-pay";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -111,7 +112,10 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
       <div>
         <h1 className="text-xl font-semibold tracking-tight text-[#2C2C2C]">薪資</h1>
         <p className="mt-1 text-sm text-[#525252]">
-          {period} 結算期（{payrollPeriodLabel(period)}）
+          <EmphasizedText
+            figure
+            text={`${period} 結算期（${payrollPeriodLabel(period)}）`}
+          />
         </p>
       </div>
       <Panel title="本結算期">
@@ -173,7 +177,7 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
                         className="flex justify-between gap-3 text-sm text-stone-600"
                       >
                         <span>{line.name}</span>
-                        <span>{formatMoney(line.amount)}</span>
+                        <DataValue figure>{formatMoney(line.amount)}</DataValue>
                       </li>
                     ))}
                   </ul>

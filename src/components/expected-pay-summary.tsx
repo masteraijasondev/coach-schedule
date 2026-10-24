@@ -1,3 +1,4 @@
+import { DataValue } from "@/components/data-value";
 import { formatMoney } from "@/lib/format";
 
 export function formatExpectedPay(expected: number | null): string {
@@ -16,18 +17,18 @@ export function ExpectedPaySummary({
   tour?: string;
 }) {
   const confirmedClass = compact
-    ? "text-sm font-medium"
-    : "text-2xl font-semibold tabular-nums tracking-tight";
-  const expectedClass = compact
-    ? "text-sm text-stone-600"
-    : "text-sm font-medium text-stone-700";
+    ? "text-base font-bold tabular-nums tracking-tight"
+    : "text-2xl font-bold tabular-nums tracking-tight";
+  const labelClass = "text-sm text-stone-600";
 
   return (
     <div data-tour={tour} className="text-right">
-      <p className={confirmedClass}>已確認薪金：{formatMoney(confirmed)}</p>
+      <p className={labelClass}>已確認薪金</p>
+      <p className={confirmedClass}>{formatMoney(confirmed)}</p>
       {expected === 0 ? null : (
-        <p className={expectedClass}>
-          預期薪金：{formatExpectedPay(expected)}
+        <p className={labelClass}>
+          預期薪金{" "}
+          <DataValue figure>{formatExpectedPay(expected)}</DataValue>
         </p>
       )}
     </div>

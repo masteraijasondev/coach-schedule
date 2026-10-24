@@ -3,6 +3,7 @@
 import { restoreReleasedAvailabilityAction } from "@/actions/availability";
 import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
+import { DataValue } from "@/components/data-value";
 import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { EmployerDirectAssignForm } from "@/components/employer-direct-assign-form";
 import { ServerActionButton } from "@/components/server-action-button";
@@ -205,8 +206,10 @@ export function EmployerAssignWorkspace({
         >
           上週
         </Link>
-        <p className="min-w-0 flex-1 text-center text-sm font-medium">
-          {coachName} · {week} – {weekEnd}
+        <p className="min-w-0 flex-1 text-center text-sm">
+          {coachName} · <DataValue figure>{week}</DataValue>
+          {" – "}
+          <DataValue figure>{weekEnd}</DataValue>
         </p>
         <Link
           href={nextWeekHref}
@@ -281,7 +284,7 @@ export function EmployerAssignWorkspace({
                   className="absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border border-stone-400 bg-stone-300 px-1 py-0.5 text-left text-xs font-medium text-stone-800"
                   style={{ top, height }}
                 >
-                  <span className="tabular-nums">{label}</span>
+                  <span className="font-bold tabular-nums">{label}</span>
                   <span className="mt-0.5 block truncate">小休</span>
                 </div>
               );
@@ -303,7 +306,7 @@ export function EmployerAssignWorkspace({
                   className="absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border border-stone-300 bg-stone-200 px-1 py-0.5 text-left text-xs font-medium text-stone-700"
                   style={{ top, height }}
                 >
-                  <span className="tabular-nums">{label}</span>
+                  <span className="font-bold tabular-nums">{label}</span>
                   <span className="mt-0.5 block truncate">
                     {calendarSlotLabel(true)}
                   </span>
@@ -359,7 +362,7 @@ export function EmployerAssignWorkspace({
                   className={`absolute right-0.5 left-0.5 z-[1] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                   style={{ top, height }}
                 >
-                  <span className="tabular-nums">{label}</span>
+                  <span className="font-bold tabular-nums">{label}</span>
                   <span className="mt-0.5 block">{statusLabel}</span>
                   {segment.lesson ? (
                     <ServerActionButton
@@ -402,7 +405,7 @@ export function EmployerAssignWorkspace({
                 className={`absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${className}`}
                 style={{ top, height }}
               >
-                <span className="tabular-nums">{label}</span>
+                <span className="font-bold tabular-nums">{label}</span>
                 <span className="mt-0.5 block truncate">待公司派更</span>
               </Link>
             );

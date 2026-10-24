@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarFilterBar } from "@/components/calendar-filter";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { CalendarViewToggle } from "@/components/calendar-view-toggle";
 import { EmployerAssignWorkspace } from "@/components/employer-assign-workspace";
 import { EmployerCoachPicker } from "@/components/employer-coach-picker";
@@ -146,7 +147,9 @@ function TodayRoster({
 
   return (
     <section aria-label="今日" className="rounded-2xl border border-stone-200 bg-white p-4">
-      <h2 className="text-sm font-semibold text-[#525252]">今日 {today}</h2>
+      <h2 className="text-sm font-semibold text-[#525252]">
+        今日 <DataValue figure>{today}</DataValue>
+      </h2>
       <div className="mt-3 grid gap-4 sm:grid-cols-3">
         <RosterChunk title="待派更" items={open} />
         <RosterChunk title="已派更，待簽到" items={waiting} />
@@ -165,7 +168,9 @@ function RosterChunk({ title, items }: { title: string; items: string[] }) {
       ) : (
         <ul className="mt-1 space-y-1 text-sm text-[#2C2C2C]">
           {items.map((item, index) => (
-            <li key={`${item}-${index}`}>{item}</li>
+            <li key={`${item}-${index}`}>
+              <EmphasizedText text={item} />
+            </li>
           ))}
         </ul>
       )}

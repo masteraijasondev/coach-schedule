@@ -595,7 +595,7 @@ function LessonCheckInFields({
             return (
               <li
                 key={`${period.startMinute}-${period.endMinute}`}
-                className="flex items-center justify-between gap-1 text-sm tabular-nums"
+                className="flex items-center justify-between gap-1 text-base font-bold tabular-nums"
               >
                 <span>{label}</span>
                 <RemoveButton

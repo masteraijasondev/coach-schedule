@@ -11,6 +11,7 @@ import { Alert } from "@/components/alert";
 import { buttonTone } from "@/components/button-styles";
 import { ServerActionButton } from "@/components/server-action-button";
 import { SubmitButton } from "@/components/ui";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { formatDateTime, formatMoneyOrPending } from "@/lib/format";
 import { useRef, useState } from "react";
 
@@ -46,9 +47,14 @@ export function SubmittedExpenseClaim({
     <div className="border-t border-stone-100 pt-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium">{amountLabel}</p>
+          <p>
+            <DataValue figure>{amountLabel}</DataValue>
+          </p>
           {submittedAt ? (
-            <p className="mt-1 text-sm text-stone-500">提交時間：{formatDateTime(submittedAt)}</p>
+            <p className="mt-1 text-sm text-stone-700">
+              提交時間：
+              <EmphasizedText figure text={formatDateTime(submittedAt)} />
+            </p>
           ) : null}
           {note.trim() !== "" ? <p className="mt-1 text-sm text-stone-600">{note}</p> : null}
           {receipts.length > 0 ? (

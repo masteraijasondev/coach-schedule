@@ -15,7 +15,9 @@ export function ExpensePeriodNav({
       <Link href={`${basePath}?month=${prev}`} className="text-sm text-stone-600 underline">
         上期
       </Link>
-      <p className="text-sm font-medium text-stone-800">{payrollPeriodLabel(period)}</p>
+      <p className="text-base font-bold tabular-nums tracking-tight text-stone-950">
+        {payrollPeriodLabel(period)}
+      </p>
       <Link href={`${basePath}?month=${next}`} className="text-sm text-stone-600 underline">
         下期
       </Link>

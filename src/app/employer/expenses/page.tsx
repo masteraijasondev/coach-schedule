@@ -2,6 +2,7 @@ import { ExpensePeriodNav } from "@/components/expense-period-nav";
 import { Panel } from "@/components/ui";
 import { requireEmployer } from "@/lib/auth";
 import { parsePayrollPeriodParam, payrollPeriodLabel } from "@/lib/calendar";
+import { DataValue, EmphasizedText } from "@/components/data-value";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -56,8 +57,9 @@ export default async function EmployerExpensesPage({ searchParams }: Props) {
                       <li key={claim.id} className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           {claim.submitted_at ? (
-                            <p className="text-sm text-stone-500">
-                              提交時間：{formatDateTime(claim.submitted_at)}
+                            <p className="text-sm text-stone-700">
+                              提交時間：
+                              <EmphasizedText figure text={formatDateTime(claim.submitted_at)} />
                             </p>
                           ) : null}
                           {claim.note ? (
@@ -74,8 +76,10 @@ export default async function EmployerExpensesPage({ searchParams }: Props) {
                             </a>
                           ) : null}
                         </div>
-                        <p className="shrink-0 text-sm font-medium">
-                          {formatMoney(Number(claim.amount_hkd ?? 0))}
+                        <p className="shrink-0">
+                          <DataValue figure>
+                            {formatMoney(Number(claim.amount_hkd ?? 0))}
+                          </DataValue>
                         </p>
                       </li>
                     ))}

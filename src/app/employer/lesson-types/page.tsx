@@ -3,6 +3,7 @@ import {
   toggleLessonTypeActiveAction,
 } from "@/actions/lesson-types";
 import { ActionForm } from "@/components/action-form";
+import { DataValue } from "@/components/data-value";
 import { buttonTone } from "@/components/button-styles";
 import { EmployerSettingsBackLink } from "@/components/employer-settings-back-link";
 import { Field, Panel, SelectField, SubmitButton } from "@/components/ui";
@@ -76,8 +77,8 @@ export default async function LessonTypesPage() {
             >
               <div>
                 <p className="font-medium">{type.name}</p>
-                <p className="text-sm text-stone-500">
-                  預設 {type.default_duration_minutes} 分鐘 ·{" "}
+                <p className="text-sm text-stone-700">
+                  預設 <DataValue>{type.default_duration_minutes} 分鐘</DataValue> ·{" "}
                   {PAY_MODE_LABELS[type.pay_mode] ?? type.pay_mode} ·{" "}
                   {type.registers_student ? "簽到可加入學生" : "簽到不可加入學生"}
                 </p>

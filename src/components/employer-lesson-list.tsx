@@ -1,5 +1,6 @@
 import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { Alert } from "@/components/alert";
+import { DataValue } from "@/components/data-value";
 import { EmployerLessonFeeForm } from "@/components/employer-lesson-fee-form";
 import { ServerActionButton } from "@/components/server-action-button";
 import { Panel } from "@/components/ui";
@@ -151,7 +152,7 @@ export async function EmployerLessonList({
                       {typeName.get(lesson.lesson_type_id) ?? "課堂"} ·{" "}
                       {lessonStatusLabel(lesson.status)}
                     </p>
-                    <p className="text-xl text-stone-500">
+                    <p className="text-xl font-bold tabular-nums tracking-tight text-[#2C2C2C]">
                       {formatDateTime(lesson.starts_at)} –{" "}
                       {formatDateTime(lesson.ends_at).slice(11)}
                     </p>
@@ -163,23 +164,32 @@ export async function EmployerLessonList({
                     ) : null}
                     {payModeByType.get(lesson.lesson_type_id) ===
                     "per_student" ? (
-                      <p className="text-sm text-stone-500">
+                      <p className="text-sm text-stone-700">
                         學生學費：
-                        {formatMoneyOrPending(lesson.student_fee_hkd)}
-                        {listedTuition != null
-                          ? ` · 本身學費 ${formatMoneyOrPending(listedTuition)}`
-                          : ""}
+                        <DataValue>
+                          {formatMoneyOrPending(lesson.student_fee_hkd)}
+                        </DataValue>
+                        {listedTuition != null ? (
+                          <>
+                            {" · 本身學費 "}
+                            <DataValue>
+                              {formatMoneyOrPending(listedTuition)}
+                            </DataValue>
+                          </>
+                        ) : null}
                       </p>
                     ) : null}
                     <p
                       className={
                         lesson.earned_amount_hkd == null
-                          ? "text-sm text-amber-700"
-                          : "text-sm text-emerald-700"
+                          ? "text-amber-700"
+                          : "text-emerald-800"
                       }
                     >
                       教練薪資：
-                      {formatMoneyOrPending(lesson.earned_amount_hkd)}
+                      <DataValue figure>
+                        {formatMoneyOrPending(lesson.earned_amount_hkd)}
+                      </DataValue>
                     </p>
                   </div>
                   {lesson.status === "assigned" ? (

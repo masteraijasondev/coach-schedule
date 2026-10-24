@@ -53,10 +53,10 @@ export function WeekTimeGrid({
             >
               <p className="text-sm font-semibold">{WEEKDAY_LABELS[dayIndex]}</p>
               <p
-                className={`mx-auto inline-flex h-6 w-6 items-center justify-center text-sm tabular-nums ${
+                className={`mx-auto inline-flex h-6 w-6 items-center justify-center text-sm font-bold tabular-nums ${
                   isToday
-                    ? "rounded-full bg-stone-900 font-medium text-white"
-                    : "text-stone-500"
+                    ? "rounded-full bg-stone-900 text-white"
+                    : "text-stone-900"
                 }`}
               >
                 {Number(date.slice(8))}
@@ -79,7 +79,7 @@ export function WeekTimeGrid({
           {hours.map((hour) => (
             <div
               key={hour}
-              className="absolute right-1 -translate-y-2 text-right text-xs tabular-nums text-stone-400"
+              className="absolute right-1 -translate-y-2 text-right text-xs font-bold tabular-nums text-stone-700"
               style={{
                 top: eventPosition(hour, hour + 60, gridStart, gridEnd).top,
               }}
