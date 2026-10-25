@@ -121,7 +121,7 @@ export function CalendarFilterBar({
   return (
     <details className="group rounded-2xl border border-stone-200 bg-white shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C] [&::-webkit-details-marker]:hidden">
-        <span>
+        <span className="min-w-0">
           <span className="text-sm font-medium text-[#2C2C2C]">篩選月曆</span>
           <span className="mt-0.5 block text-xs text-[#525252]">
             {isDefault
@@ -129,21 +129,28 @@ export function CalendarFilterBar({
               : "已篩選。點開可更改顯示的員工或狀態。"}
           </span>
         </span>
-        <span className="text-sm text-[#525252] group-open:hidden">展開</span>
-        <span className="hidden text-sm text-[#525252] group-open:inline">收起</span>
+        <span className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              reset();
+            }}
+            disabled={isDefault}
+            className={`${buttonTone.secondary} disabled:invisible`}
+          >
+            重設
+          </button>
+          <span className="group-open:hidden">
+            <span className={`${buttonTone.secondary} pointer-events-none`}>展開</span>
+          </span>
+          <span className="hidden group-open:inline">
+            <span className={`${buttonTone.secondary} pointer-events-none`}>收起</span>
+          </span>
+        </span>
       </summary>
       <div className="space-y-4 border-t border-stone-200 p-4">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={reset}
-          disabled={isDefault}
-          className={`${buttonTone.secondary} shrink-0 disabled:invisible`}
-        >
-          重設
-        </button>
-      </div>
-
       <FilterSection title="員工" hint={staffHint} tour="employer-filter-staff">
         {staff.length === 0 ? (
           <p className="text-sm text-[#525252]">尚未有員工</p>

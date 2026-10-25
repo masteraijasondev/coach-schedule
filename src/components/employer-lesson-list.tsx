@@ -156,9 +156,12 @@ export async function EmployerLessonList({
                       {formatDateTime(lesson.starts_at)} –{" "}
                       {formatDateTime(lesson.ends_at).slice(11)}
                     </p>
-                    <p className="text-sm text-stone-500">
-                      學生：{studentNames.join("、") || "無"}
-                    </p>
+                    {payModeByType.get(lesson.lesson_type_id) === "per_student" ||
+                    studentNames.length > 0 ? (
+                      <p className="text-sm text-stone-500">
+                        學生：{studentNames.join("、") || "無"}
+                      </p>
+                    ) : null}
                     {sizeLabel ? (
                       <p className="text-sm text-stone-500">{sizeLabel}</p>
                     ) : null}

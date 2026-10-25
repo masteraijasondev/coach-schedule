@@ -302,6 +302,8 @@ function LessonCheckInFields({
         },
       ].sort((a, b) => a.startMinute - b.startMinute),
     );
+    setSelectedNames([]);
+    setStudentQuery("");
   }
 
   function draftPeriod():
@@ -342,15 +344,22 @@ function LessonCheckInFields({
   function resolvedPeriods():
     | { ok: true; periods: CheckInPeriod[] }
     | { ok: false; error: string } {
-    const listed = periods.map((period) =>
-      period.locked && period.lessonTypeId
-        ? period
-        : {
-            ...period,
-            lessonTypeId,
-            studentNames: asksStudent ? [...selectedNames] : [],
-          },
-    );
+    const listed = periods.map((period) => {
+      if (period.locked && period.lessonTypeId) {
+        return period;
+      }
+      const keepSavedStudents =
+        periods.length > 1 && (period.studentNames?.length ?? 0) > 0;
+      return {
+        ...period,
+        lessonTypeId: period.lessonTypeId || lessonTypeId,
+        studentNames: keepSavedStudents
+          ? period.studentNames
+          : asksStudent
+            ? [...selectedNames]
+            : [],
+      };
+    });
     if (listed.length > 0) {
       if (listed.some((period) => !period.lessonTypeId)) {
         return { ok: false, error: "請選擇工作類型" };
@@ -459,8 +468,16 @@ function LessonCheckInFields({
             value={lessonTypeId}
             onChange={(event) => {
               const nextTypeId = event.target.value;
+              const nextAsksStudent =
+                staffKind === "coach" &&
+                workTypes.find((type) => type.id === nextTypeId)
+                  ?.registersStudent === true;
               setLessonTypeId(nextTypeId);
               setAddError(null);
+              if (!nextAsksStudent) {
+                setSelectedNames([]);
+                setStudentQuery("");
+              }
               setPeriods((current) =>
                 current.map((period) =>
                   period.locked
@@ -468,7 +485,9 @@ function LessonCheckInFields({
                     : {
                         ...period,
                         lessonTypeId: nextTypeId,
-                        studentNames: [],
+                        studentNames: nextAsksStudent
+                          ? (period.studentNames ?? [])
+                          : [],
                       },
                 ),
               );

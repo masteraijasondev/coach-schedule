@@ -715,6 +715,15 @@ async function keepUnregisteredAssignment(input: {
   return null;
 }
 
+function sameStudentSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  }
+  const sortedLeft = left.map((name) => name.toLowerCase()).sort();
+  const sortedRight = right.map((name) => name.toLowerCase()).sort();
+  return sortedLeft.every((name, index) => name === sortedRight[index]);
+}
+
 function selectedStudentNames(formData: FormData): string[] {
   const raw = String(formData.get("student_names") ?? "").trim();
   if (!raw) {
@@ -1119,7 +1128,15 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "讀取薪資設定失敗" };
     }
 
-    if (typeIds.length > 1) {
+    const firstStudents = typedPeriods[0]?.studentNames ?? [];
+    const studentsDiffer =
+      typedPeriods.length > 1 &&
+      typedPeriods.some(
+        (period) => !sameStudentSet(period.studentNames, firstStudents),
+      );
+    // Same job type still has to be saved per lesson when the students differ.
+    // The single check-in call copies one student list onto every split.
+    if (typeIds.length > 1 || studentsDiffer) {
       const prepared: {
         startMinute: number;
         endMinute: number;
@@ -1277,7 +1294,7 @@ async function confirmLessonPeriodsForStaff(
       (staffProfile.staff_kind === "operations" ||
         activeType.registers_student !== true);
     const studentNames =
-      typedPeriods.length === 1
+      typedPeriods[0].studentNames.length > 0
         ? typedPeriods[0].studentNames
         : selectedStudentNames(formData);
     let studentIds = selectedStudentIds(formData);
@@ -1413,7 +1430,49 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: confirmLessonErrorMessage(error.message) };
     }
 
-    if (!isAdmin && tuition != null) {
+    if (hourlyByType || isAdmin) {
+      const cleared = await linkLessonStudents(lessonId, []);
+      if (!cleared.ok) {
+        return cleared;
+      }
+      const admin = createAdminClient();
+      const { data: splits, error: splitError } = await admin
+        .from("lessons")
+        .select("id")
+        .eq("coach_id", staffId)
+        .eq("split_from_lesson_id", lessonId)
+        .eq("lesson_type_id", activeType.id);
+      if (splitError) {
+        console.error("[confirmLessonPeriodsAction] clear split students", {
+          error: splitError,
+          lessonId,
+        });
+      }
+      const splitIds = (splits ?? []).map((row) => row.id);
+      if (splitIds.length > 0) {
+        const { error: splitStudentError } = await admin
+          .from("lesson_students")
+          .delete()
+          .in("lesson_id", splitIds);
+        if (splitStudentError) {
+          console.error("[confirmLessonPeriodsAction] clear split students", {
+            error: splitStudentError,
+            lessonId,
+          });
+        }
+      }
+      const { error: feeError } = await admin
+        .from("lessons")
+        .update({ student_fee_hkd: null })
+        .in("id", [lessonId, ...splitIds])
+        .eq("coach_id", staffId);
+      if (feeError) {
+        console.error("[confirmLessonPeriodsAction] clear student fee", {
+          error: feeError,
+          lessonId,
+        });
+      }
+    } else if (tuition != null) {
       const { error: feeError } = await createAdminClient()
         .from("lessons")
         .update({ student_fee_hkd: tuition })
