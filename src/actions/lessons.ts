@@ -919,6 +919,39 @@ async function quoteCheckInPeriod(
   | { earned: number | null; studentFee: number | null; studentIds: string[] }
   | { error: string }
 > {
+  if (lessonType.pay_mode === "per_head") {
+    if (studentNames.length === 0) {
+      return { error: "請選擇教了哪位學生" };
+    }
+    const { data, error } = await supabase
+      .from("coach_rates")
+      .select("amount_hkd")
+      .eq("coach_id", staffId)
+      .eq("lesson_type_id", lessonType.id)
+      .maybeSingle();
+    if (error) {
+      console.error("[quoteCheckInPeriod] per head", {
+        error,
+        staffId,
+        lessonTypeId: lessonType.id,
+      });
+      return { error: "讀取 MIIT 每人薪資失敗" };
+    }
+    const price = data == null ? Number.NaN : Number(data.amount_hkd);
+    if (!Number.isFinite(price) || price < 0) {
+      return { error: "尚未設定 MIIT 每人薪資" };
+    }
+    const ensured = await ensureStudentIds(studentNames);
+    if (!ensured) {
+      return { error: "找不到學生" };
+    }
+    return {
+      earned: Math.round(price * studentNames.length * 100) / 100,
+      studentFee: null,
+      studentIds: ensured,
+    };
+  }
+
   const hourlyByType = lessonType.pay_mode === "per_hour";
   const skipsStudents =
     hourlyByType ||
@@ -1134,9 +1167,13 @@ async function confirmLessonPeriodsForStaff(
       typedPeriods.some(
         (period) => !sameStudentSet(period.studentNames, firstStudents),
       );
+    const pricedPerHead = typedPeriods.some(
+      (period) => typeById.get(period.lessonTypeId)?.pay_mode === "per_head",
+    );
     // Same job type still has to be saved per lesson when the students differ.
     // The single check-in call copies one student list onto every split.
-    if (typeIds.length > 1 || studentsDiffer) {
+    // MIIT is count × fixed price on each slot, even when the names match.
+    if (typeIds.length > 1 || studentsDiffer || pricedPerHead) {
       const prepared: {
         startMinute: number;
         endMinute: number;

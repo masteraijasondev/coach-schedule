@@ -57,10 +57,24 @@ async function saveHourlyJobRates(
   types: { id: string; pay_mode: string }[],
 ): Promise<string | null> {
   for (const type of types) {
-    if (type.pay_mode !== "per_hour") {
+    const priced =
+      type.pay_mode === "per_hour"
+        ? {
+            field: `hourly_rate_${type.id}`,
+            invalid: "請輸入有效的工作類型時薪",
+            save: "更新工作類型時薪失敗",
+          }
+        : type.pay_mode === "per_head"
+          ? {
+              field: `head_rate_${type.id}`,
+              invalid: "請輸入有效的 MIIT 每人薪資",
+              save: "更新 MIIT 每人薪資失敗",
+            }
+          : null;
+    if (!priced) {
       continue;
     }
-    const raw = String(formData.get(`hourly_rate_${type.id}`) ?? "").trim();
+    const raw = String(formData.get(priced.field) ?? "").trim();
     if (!raw) {
       const { error } = await supabase
         .from("coach_rates")
@@ -69,13 +83,13 @@ async function saveHourlyJobRates(
         .eq("lesson_type_id", type.id);
       if (error) {
         console.error("[saveHourlyJobRates] delete", { error, coachId, typeId: type.id });
-        return "更新工作類型時薪失敗";
+        return priced.save;
       }
       continue;
     }
     const amount = Number(raw);
     if (!Number.isFinite(amount) || amount < 0) {
-      return "請輸入有效的工作類型時薪";
+      return priced.invalid;
     }
     const { error } = await supabase.from("coach_rates").upsert(
       {
@@ -87,7 +101,7 @@ async function saveHourlyJobRates(
     );
     if (error) {
       console.error("[saveHourlyJobRates] upsert", { error, coachId, typeId: type.id });
-      return "更新工作類型時薪失敗";
+      return priced.save;
     }
   }
   return null;

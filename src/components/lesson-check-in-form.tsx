@@ -509,7 +509,7 @@ function LessonCheckInFields({
         <div className="space-y-2 text-sm">
           <label className="block space-y-1">
             <span className="text-stone-700">
-              {sessionKind === "group"
+              {sessionKind === "group" || sessionKind === "miit"
                 ? "學生（可多於一位學生）"
                 : "學生"}
             </span>

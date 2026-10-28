@@ -296,7 +296,7 @@ export default async function CoachesPage() {
                         <li
                           key={type.id}
                           className={
-                            type.pay_mode === "per_hour"
+                            type.pay_mode === "per_hour" || type.pay_mode === "per_head"
                               ? "inline-flex w-fit items-center gap-1.5 px-1.5 py-0.5"
                               : "inline-flex w-fit items-center"
                           }
@@ -311,17 +311,27 @@ export default async function CoachesPage() {
                             />
                             {type.name}
                           </label>
-                          {type.pay_mode === "per_hour" ? (
+                          {type.pay_mode === "per_hour" || type.pay_mode === "per_head" ? (
                             <input
-                              name={`hourly_rate_${type.id}`}
+                              name={
+                                type.pay_mode === "per_head"
+                                  ? `head_rate_${type.id}`
+                                  : `hourly_rate_${type.id}`
+                              }
                               type="number"
                               min="0"
                               step="0.01"
                               defaultValue={rateValue}
-                              placeholder="時薪"
-                              aria-label={`${type.name} 時薪`}
+                              placeholder={type.pay_mode === "per_head" ? "每人" : "時薪"}
+                              aria-label={
+                                type.pay_mode === "per_head"
+                                  ? `${type.name} 每人薪資`
+                                  : `${type.name} 時薪`
+                              }
                               data-tour={
-                                tour ? "employer-coach-type-rate" : undefined
+                                tour && type.pay_mode === "per_hour"
+                                  ? "employer-coach-type-rate"
+                                  : undefined
                               }
                               className="h-7 w-20 rounded-md border border-stone-300 bg-white px-2 text-sm text-stone-900 outline-none focus:border-stone-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
                             />
