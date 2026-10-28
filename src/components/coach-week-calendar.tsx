@@ -139,6 +139,7 @@ export function CoachWeekCalendar({
   lessons,
   workTypes,
   staffKind,
+  payRatio = null,
   scope = "all",
   loadError = false,
   onWeekNavigate,
@@ -152,6 +153,7 @@ export function CoachWeekCalendar({
   lessons: CoachWeekLesson[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
+  payRatio?: number | null;
   scope?: CoachScheduleScope;
   loadError?: boolean;
   onWeekNavigate?: (
@@ -256,58 +258,56 @@ export function CoachWeekCalendar({
           </Alert>
         </Panel>
       ) : (
-        <Panel title="可返工時間週曆">
+        <Panel title="週曆">
           <div className="space-y-3">
-        <p className="text-sm text-stone-500">
-          選擇指定日期及時段申報可返工，或申報小休、放假、病假。已派更、待簽到的時段請按色塊上的簽到，在週曆下方確認。每次新增、修改或刪除都會即時儲存。可返工時間以
-          15 分鐘為單位；放假、病假同簽到仍然以 30 分鐘為單位。
-        </p>
-            <div className="flex items-center justify-between gap-2">
-              <Link
-                href={coachWeekHref(prevWeek, month, day, view, linkedScope)}
-                className="text-sm text-stone-600 underline"
-                onClick={(event) =>
-                  onWeekNavigate?.(
-                    prevWeek,
-                    coachWeekHref(prevWeek, month, day, view, linkedScope),
-                    event,
-                  )
-                }
-              >
-                上週
-              </Link>
-              <p className="text-base font-bold tabular-nums tracking-tight">
-                {week} – {weekEnd}
-              </p>
-              <Link
-                href={coachWeekHref(nextWeek, month, day, view, linkedScope)}
-                className="text-sm text-stone-600 underline"
-                onClick={(event) =>
-                  onWeekNavigate?.(
-                    nextWeek,
-                    coachWeekHref(nextWeek, month, day, view, linkedScope),
-                    event,
-                  )
-                }
-              >
-                下週
-              </Link>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <Link
+                  href={coachWeekHref(prevWeek, month, day, view, linkedScope)}
+                  className="inline-flex min-h-11 items-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-[#2C2C2C] hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+                  onClick={(event) =>
+                    onWeekNavigate?.(
+                      prevWeek,
+                      coachWeekHref(prevWeek, month, day, view, linkedScope),
+                      event,
+                    )
+                  }
+                >
+                  上週
+                </Link>
+                <p className="text-base font-bold tabular-nums tracking-tight">
+                  {week} – {weekEnd}
+                </p>
+                <Link
+                  href={coachWeekHref(nextWeek, month, day, view, linkedScope)}
+                  className="inline-flex min-h-11 items-center rounded-md border border-stone-300 bg-white px-3 text-sm font-semibold text-[#2C2C2C] hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+                  onClick={(event) =>
+                    onWeekNavigate?.(
+                      nextWeek,
+                      coachWeekHref(nextWeek, month, day, view, linkedScope),
+                      event,
+                    )
+                  }
+                >
+                  下週
+                </Link>
+              </div>
+              {week !== currentWeek ? (
+                <Link
+                  href={coachWeekHref(currentWeek, month, day, view, linkedScope)}
+                  className="text-sm text-[#2C2C2C] underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]"
+                  onClick={(event) =>
+                    onWeekNavigate?.(
+                      currentWeek,
+                      coachWeekHref(currentWeek, month, day, view, linkedScope),
+                      event,
+                    )
+                  }
+                >
+                  返回本週
+                </Link>
+              ) : null}
             </div>
-            {week !== currentWeek ? (
-              <Link
-                href={coachWeekHref(currentWeek, month, day, view, linkedScope)}
-                className="text-sm text-stone-600 underline"
-                onClick={(event) =>
-                  onWeekNavigate?.(
-                    currentWeek,
-                    coachWeekHref(currentWeek, month, day, view, linkedScope),
-                    event,
-                  )
-                }
-              >
-                返回本週
-              </Link>
-            ) : null}
             <CalendarLegend />
             <WeekTimeGrid
               days={days}
@@ -720,6 +720,7 @@ export function CoachWeekCalendar({
                   initialLessonTypeId={openCheckIn.initialLessonTypeId}
                   workTypes={workTypes}
                   staffKind={staffKind}
+                  payRatio={payRatio}
                   submitLabel={openCheckIn.registered ? "儲存修改" : "確認簽到"}
                   initiallyEditing={openCheckIn.registered}
                   sideAction={
@@ -739,9 +740,14 @@ export function CoachWeekCalendar({
                 />
               </div>
             ) : null}
-            <p className="mt-2 text-sm text-stone-500">
-              請於頂列申報放假或新增時段。色塊對齊整點；紅線表示現在時間。
-            </p>
+            <details className="text-sm text-stone-600">
+              <summary className="cursor-pointer font-medium text-[#2C2C2C] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2C2C2C]">
+                操作說明
+              </summary>
+              <p className="mt-1 leading-5">
+                頂列可報更、小休、放假或病假。色塊「簽到」在週曆下方確認。可返工以 15 分鐘為單位；放假、病假同簽到以 30 分鐘為單位。紅線是現在時間。
+              </p>
+            </details>
           </div>
         </Panel>
       )}

@@ -16,6 +16,7 @@ import { hourlyRateOrNull } from "@/lib/expected-pay";
 import { nestedStudentId, nestedStudentNames } from "@/lib/format";
 import { loadColleagueSchedules } from "@/lib/load-colleague-schedules";
 import { parseCoachScheduleScope } from "@/lib/coach-href";
+import { loadStaffCompensation } from "@/lib/staff-compensation";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -83,11 +84,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
         .from("staff_work_types")
         .select("lesson_type_id, lesson_types(id, name, active, registers_student, pay_mode)")
         .eq("coach_id", coach.id),
-      supabase
-        .from("profiles")
-        .select("staff_kind, hourly_rate_hkd")
-        .eq("id", coach.id)
-        .maybeSingle(),
+      loadStaffCompensation(coach.id),
       supabase
         .from("coach_rates")
         .select("lesson_type_id, amount_hkd")
@@ -107,7 +104,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
     { data: availabilities },
     { data: leaves },
     { data: workTypeRows },
-    { data: staffProfile },
+    staffProfile,
     { data: rateRows },
   ] = own;
 
@@ -126,12 +123,16 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       if (!type || !type.active) {
         return null;
       }
+      const typeRate = rateByType.get(type.id) ?? null;
       return {
         id: type.id,
         name: type.name,
         registersStudent: type.registers_student === true,
         payMode: type.pay_mode,
-        hourlyRate: rateByType.get(type.id) ?? fallbackHourlyRate,
+        hourlyRate:
+          type.pay_mode === "per_hour"
+            ? (typeRate ?? fallbackHourlyRate)
+            : typeRate,
       };
     })
     .filter(
@@ -172,6 +173,7 @@ export default async function CoachCalendarPage({ searchParams }: Props) {
       colleagues={team.colleagues}
       lessonTypes={team.lessonTypes}
       staffKind={staffProfile?.staff_kind === "operations" ? "operations" : "coach"}
+      payRatio={hourlyRateOrNull(staffProfile?.pay_ratio)}
       scope={scope}
       remoteWeekCalendar={
         !weekInGrid ? (

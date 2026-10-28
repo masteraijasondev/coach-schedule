@@ -108,6 +108,7 @@ export function CoachDayPanel({
   leaves,
   workTypes,
   staffKind,
+  payRatio = null,
   teamDay = null,
 }: {
   day: string;
@@ -117,6 +118,7 @@ export function CoachDayPanel({
   leaves: CoachDayLeave[];
   workTypes: StaffWorkTypeOption[];
   staffKind: "coach" | "operations";
+  payRatio?: number | null;
   teamDay?: ReactNode;
 }) {
   const router = useRouter();
@@ -310,6 +312,7 @@ export function CoachDayPanel({
                         windowEnd={lessonWindow.endMinute}
                         workTypes={workTypes}
                         staffKind={staffKind}
+                        payRatio={payRatio}
                       />
                     ) : (
                       <Alert variant="filled" severity="warning">
@@ -346,6 +349,7 @@ export function CoachDayPanel({
                         initialLessonTypeId={segment.lesson.lesson_type_id}
                         workTypes={workTypes}
                         staffKind={staffKind}
+                        payRatio={payRatio}
                         submitLabel="儲存修改"
                         sideAction={
                           <ServerActionButton

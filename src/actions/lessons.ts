@@ -9,8 +9,7 @@ import {
   pastCheckInEndMinute,
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
-import { lookupAirtableTuition } from "@/lib/airtable-tuition";
-import { calculateLessonPay } from "@/lib/pay";
+import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
 import { coachPayFromFeeRatio } from "@/lib/pt-rate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -179,23 +178,20 @@ function assertFiveMinuteTime(time: string): string | null {
   return null;
 }
 
-function revalidateSchedules() {
+function revalidateCalendar() {
   revalidatePath("/employer");
   revalidatePath("/employer/lessons");
-  revalidatePath("/employer/salary");
   revalidatePath("/coach");
+}
+
+function revalidatePay() {
+  revalidatePath("/employer/salary");
   revalidatePath("/coach/salary");
 }
 
-function parseOptionalCount(raw: string): number | null {
-  if (raw.trim() === "") {
-    return null;
-  }
-  const count = Number(raw);
-  if (!Number.isInteger(count) || count <= 0) {
-    return null;
-  }
-  return count;
+function revalidateSchedules() {
+  revalidateCalendar();
+  revalidatePay();
 }
 
 async function assertNoCoachOverlap(
@@ -225,26 +221,6 @@ async function assertNoCoachOverlap(
   return null;
 }
 
-async function getLessonTypePayMode(
-  lessonTypeId: string,
-): Promise<PayMode | { error: string }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("lesson_types")
-    .select("pay_mode")
-    .eq("id", lessonTypeId)
-    .single();
-
-  if (error || !data) {
-    console.error("[getLessonTypePayMode]", { error });
-    return { error: "讀取課堂類型失敗" };
-  }
-
-  return data.pay_mode as PayMode;
-}
-
-const PT_RATIOS = new Set([1, 2, 3]);
-
 function parseOptionalMoney(
   raw: string,
 ): { ok: true; value: number | null } | { ok: false; error: string } {
@@ -256,100 +232,6 @@ function parseOptionalMoney(
     return { ok: false, error: "金額無效" };
   }
   return { ok: true, value: amount };
-}
-
-async function resolveLessonPay(input: {
-  coachId: string;
-  lessonTypeId: string;
-  studentId?: string | null;
-  headcountRaw?: string;
-  expectedHeadcountRaw?: string;
-  startsAt: string;
-  endsAt: string;
-}): Promise<
-  | {
-      amount: number | null;
-      studentId?: string;
-      studentFeeHkd?: number | null;
-      headcount?: number;
-      expectedHeadcount?: number;
-    }
-  | { error: string }
-> {
-  const payModeResult = await getLessonTypePayMode(input.lessonTypeId);
-  if (typeof payModeResult === "object" && "error" in payModeResult) {
-    return payModeResult;
-  }
-
-  const headcount = parseOptionalCount(input.headcountRaw ?? "");
-  const expectedHeadcount = parseOptionalCount(
-    input.expectedHeadcountRaw ?? "",
-  );
-
-  if ((input.headcountRaw ?? "").trim() !== "" && headcount == null) {
-    return {
-      error:
-        payModeResult === "per_student"
-          ? "請選擇 1:1、1:2 或 1:3"
-          : "實際人數必須為正整數",
-    };
-  }
-  if (
-    (input.expectedHeadcountRaw ?? "").trim() !== "" &&
-    expectedHeadcount == null
-  ) {
-    return { error: "應到人數必須為正整數" };
-  }
-
-  if (payModeResult === "per_student") {
-    if (!input.studentId) {
-      return { error: "請選擇學生" };
-    }
-    if (headcount == null || !PT_RATIOS.has(headcount)) {
-      return { error: "請選擇 1:1、1:2 或 1:3" };
-    }
-  }
-
-  if (payModeResult === "per_head" && headcount == null) {
-    return { error: "請輸入實際人數" };
-  }
-
-  const durationMinutes =
-    (new Date(input.endsAt).getTime() - new Date(input.startsAt).getTime()) /
-    60_000;
-
-  const payResult = await calculateLessonPay({
-    coachId: input.coachId,
-    lessonTypeId: input.lessonTypeId,
-    payMode: payModeResult,
-    studentId: payModeResult === "per_student" ? input.studentId : undefined,
-    headcount: payModeResult === "per_head" ? headcount : undefined,
-    durationMinutes,
-  });
-
-  if ("error" in payResult) {
-    return payResult;
-  }
-
-  return {
-    amount: payResult.amount,
-    studentId:
-      payModeResult === "per_student" ? input.studentId ?? undefined : undefined,
-    studentFeeHkd: payResult.studentFeeHkd,
-    headcount:
-      payModeResult === "per_student" || payModeResult === "per_head"
-        ? headcount ?? undefined
-        : undefined,
-    expectedHeadcount:
-      payModeResult === "per_head" ? expectedHeadcount ?? undefined : undefined,
-  };
-}
-
-async function linkLessonStudent(
-  lessonId: string,
-  studentId: string | undefined,
-): Promise<ActionResult> {
-  return linkLessonStudents(lessonId, studentId ? [studentId] : []);
 }
 
 async function linkLessonStudents(
@@ -569,7 +451,7 @@ export async function createLessonAction(
       }
     }
 
-    revalidateSchedules();
+    revalidateCalendar();
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[createLessonAction] unexpected", { error });
@@ -744,34 +626,56 @@ function selectedStudentNames(formData: FormData): string[] {
 }
 
 async function ensureStudentIds(names: string[]): Promise<string[] | null> {
-  const admin = createAdminClient();
-  const ids: string[] = [];
-  for (const name of names) {
-    const { data: existing, error: lookupError } = await admin
-      .from("students")
-      .select("id")
-      .ilike("name", name)
-      .limit(1);
-    if (lookupError) {
-      console.error("[ensureStudentIds] lookup", { error: lookupError, name });
-      return null;
-    }
-    if (existing?.[0]?.id) {
-      ids.push(existing[0].id);
-      continue;
-    }
-    const { data, error } = await admin
-      .from("students")
-      .insert({ name })
-      .select("id")
-      .single();
-    if (error || !data) {
-      console.error("[ensureStudentIds] insert", { error, name });
-      return null;
-    }
-    ids.push(data.id);
+  const trimmed = names.map((name) => name.trim()).filter(Boolean);
+  const uniqueNames = [...new Set(trimmed)];
+  if (uniqueNames.length === 0) {
+    return [];
   }
-  return ids;
+  const admin = createAdminClient();
+  const lookedUp = await Promise.all(
+    uniqueNames.map(async (name) => {
+      const { data, error } = await admin
+        .from("students")
+        .select("id")
+        .ilike("name", name)
+        .limit(1);
+      if (error) {
+        console.error("[ensureStudentIds] lookup", { error, name });
+        return { name, id: null as string | null, failed: true };
+      }
+      return { name, id: data?.[0]?.id ?? null, failed: false };
+    }),
+  );
+  if (lookedUp.some((row) => row.failed)) {
+    return null;
+  }
+  const idByLower = new Map<string, string>();
+  for (const row of lookedUp) {
+    if (row.id) {
+      idByLower.set(row.name.toLowerCase(), row.id);
+    }
+  }
+  const missing = uniqueNames.filter(
+    (name) => !idByLower.has(name.toLowerCase()),
+  );
+  if (missing.length > 0) {
+    const { data: inserted, error: insertError } = await admin
+      .from("students")
+      .insert(missing.map((name) => ({ name })))
+      .select("id, name");
+    if (insertError || !inserted || inserted.length !== missing.length) {
+      console.error("[ensureStudentIds] insert", { error: insertError });
+      return null;
+    }
+    for (const row of inserted) {
+      idByLower.set(String(row.name).toLowerCase(), row.id);
+    }
+  }
+  const ids = names.map((name) => idByLower.get(name.trim().toLowerCase()));
+  if (ids.some((id) => !id)) {
+    return null;
+  }
+  return ids as string[];
 }
 
 function selectedStudentIds(formData: FormData): string[] {
@@ -923,12 +827,19 @@ async function quoteCheckInPeriod(
     if (studentNames.length === 0) {
       return { error: "請選擇教了哪位學生" };
     }
-    const { data, error } = await supabase
-      .from("coach_rates")
-      .select("amount_hkd")
-      .eq("coach_id", staffId)
-      .eq("lesson_type_id", lessonType.id)
-      .maybeSingle();
+    const ratio = Number(profile.pay_ratio);
+    if (!Number.isFinite(ratio) || ratio <= 0) {
+      return { error: "尚未設定 Coach 分成比例" };
+    }
+    const [{ data, error }, ensured] = await Promise.all([
+      supabase
+        .from("coach_rates")
+        .select("amount_hkd")
+        .eq("coach_id", staffId)
+        .eq("lesson_type_id", lessonType.id)
+        .maybeSingle(),
+      ensureStudentIds(studentNames),
+    ]);
     if (error) {
       console.error("[quoteCheckInPeriod] per head", {
         error,
@@ -937,17 +848,17 @@ async function quoteCheckInPeriod(
       });
       return { error: "讀取 MIIT 每人薪資失敗" };
     }
+    if (!ensured) {
+      return { error: "找不到學生" };
+    }
     const price = data == null ? Number.NaN : Number(data.amount_hkd);
     if (!Number.isFinite(price) || price < 0) {
       return { error: "尚未設定 MIIT 每人薪資" };
     }
-    const ensured = await ensureStudentIds(studentNames);
-    if (!ensured) {
-      return { error: "找不到學生" };
-    }
     return {
-      earned: Math.round(price * studentNames.length * 100) / 100,
-      studentFee: null,
+      earned:
+        Math.round(price * studentNames.length * ratio * 100) / 100,
+      studentFee: Math.round(price * studentNames.length * 100) / 100,
       studentIds: ensured,
     };
   }
@@ -988,22 +899,24 @@ async function quoteCheckInPeriod(
   if (!Number.isFinite(ratio) || ratio <= 0) {
     return { error: "尚未設定 Coach 分成比例" };
   }
-  const ensured = await ensureStudentIds(studentNames);
+  const [ensured, tuitionResult] = await Promise.all([
+    ensureStudentIds(studentNames),
+    lookupAirtableTuitions(studentNames),
+  ]);
   if (!ensured) {
     return { error: "找不到學生" };
   }
+  if (tuitionResult.error) {
+    console.error("[quoteCheckInPeriod] tuition", { error: tuitionResult.error });
+    return { error: "讀取學生學費失敗" };
+  }
   let pay = 0;
   let fee = 0;
-  for (const [index, name] of studentNames.entries()) {
-    try {
-      const listed = await lookupAirtableTuition(name);
-      if (listed != null) {
-        fee += listed;
-        pay += coachPayFromFeeRatio(listed, ratio);
-      }
-    } catch (lookupError) {
-      console.error("[quoteCheckInPeriod] tuition", { error: lookupError, studentId: ensured[index] });
-      return { error: "讀取學生學費失敗" };
+  for (const name of studentNames) {
+    const listed = tuitionResult.fees.get(name);
+    if (listed != null) {
+      fee += listed;
+      pay += coachPayFromFeeRatio(listed, ratio);
     }
   }
   return {
@@ -1042,7 +955,7 @@ async function confirmLessonPeriodsForStaff(
     const typeIds = [...new Set(typedPeriods.map((period) => period.lessonTypeId))];
 
     const supabase = await createClient();
-    const { data: lesson, error: lessonError } = await supabase
+    const lessonPromise = supabase
       .from("lessons")
       .select(
         "id, lesson_type_id, starts_at, ends_at, status, coach_id, headcount, expected_headcount, notes",
@@ -1050,7 +963,25 @@ async function confirmLessonPeriodsForStaff(
       .eq("id", lessonId)
       .eq("coach_id", staffId)
       .maybeSingle();
+    const typesPromise = Promise.all([
+      supabase
+        .from("staff_work_types")
+        .select("lesson_type_id")
+        .eq("coach_id", staffId)
+        .in("lesson_type_id", typeIds),
+      supabase
+        .from("lesson_types")
+        .select("id, name, registers_student, pay_mode")
+        .in("id", typeIds)
+        .eq("active", true),
+    ]);
+    const profilePromise = supabase
+      .from("profiles")
+      .select("staff_kind, hourly_rate_hkd, pay_ratio")
+      .eq("id", staffId)
+      .maybeSingle();
 
+    const { data: lesson, error: lessonError } = await lessonPromise;
     if (lessonError) {
       console.error("[confirmLessonPeriodsAction] load", { error: lessonError });
       return { ok: false, error: "讀取派更失敗" };
@@ -1059,19 +990,27 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "僅已派更或已簽到的時段可以確認或修改簽到" };
     }
 
-    const [{ data: allowedTypes, error: allowedError }, { data: activeTypes, error: typeError }] =
-      await Promise.all([
-        supabase
-          .from("staff_work_types")
-          .select("lesson_type_id")
-          .eq("coach_id", staffId)
-          .in("lesson_type_id", typeIds),
-        supabase
-          .from("lesson_types")
-          .select("id, name, registers_student, pay_mode")
-          .in("id", typeIds)
-          .eq("active", true),
-      ]);
+    const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+    const availabilityPromise =
+      lesson.status === "completed"
+        ? supabase
+            .from("staff_availabilities")
+            .select("start_minute, end_minute")
+            .eq("coach_id", staffId)
+            .eq("available_date", window.date)
+            .eq("released", false)
+            .lte("start_minute", window.startMinute)
+            .gte("end_minute", window.endMinute)
+            .order("start_minute", { ascending: true })
+            .limit(1)
+        : Promise.resolve({ data: null as { start_minute: number; end_minute: number }[] | null, error: null });
+
+    const [
+      [{ data: allowedTypes, error: allowedError }, { data: activeTypes, error: typeError }],
+      { data: staffProfile, error: staffError },
+      { data: covers, error: coverError },
+    ] = await Promise.all([typesPromise, profilePromise, availabilityPromise]);
+
     if (allowedError || typeError) {
       console.error("[confirmLessonPeriodsAction] work type", {
         error: allowedError ?? typeError,
@@ -1104,20 +1043,9 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: "請選擇實際工作類型" };
     }
 
-    const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
     let windowStart = window.startMinute;
     let windowEnd = window.endMinute;
     if (lesson.status === "completed") {
-      const { data: covers, error: coverError } = await supabase
-        .from("staff_availabilities")
-        .select("start_minute, end_minute")
-        .eq("coach_id", staffId)
-        .eq("available_date", window.date)
-        .eq("released", false)
-        .lte("start_minute", window.startMinute)
-        .gte("end_minute", window.endMinute)
-        .order("start_minute", { ascending: true })
-        .limit(1);
       if (coverError) {
         console.error("[confirmLessonPeriodsAction] availability", {
           error: coverError,
@@ -1151,11 +1079,6 @@ async function confirmLessonPeriodsForStaff(
       return { ok: false, error: periodError };
     }
 
-    const { data: staffProfile, error: staffError } = await supabase
-      .from("profiles")
-      .select("staff_kind, hourly_rate_hkd, pay_ratio")
-      .eq("id", staffId)
-      .maybeSingle();
     if (staffError || !staffProfile) {
       console.error("[confirmLessonPeriodsAction] profile", { error: staffError });
       return { ok: false, error: "讀取薪資設定失敗" };
@@ -1174,51 +1097,71 @@ async function confirmLessonPeriodsForStaff(
     // The single check-in call copies one student list onto every split.
     // MIIT is count × fixed price on each slot, even when the names match.
     if (typeIds.length > 1 || studentsDiffer || pricedPerHead) {
-      const prepared: {
+      const allStudentNames = [
+        ...new Set(typedPeriods.flatMap((period) => period.studentNames)),
+      ];
+      if (allStudentNames.length > 0) {
+        const warmed = await ensureStudentIds(allStudentNames);
+        if (!warmed) {
+          return { ok: false, error: "找不到學生" };
+        }
+        // Warm Airtable index once before parallel period quotes.
+        await lookupAirtableTuitions(allStudentNames);
+      }
+      const quoteResults = await Promise.all(
+        typedPeriods.map(async (period) => {
+          const lessonType = typeById.get(period.lessonTypeId);
+          if (!lessonType) {
+            return { error: "請選擇實際工作類型" as const };
+          }
+          const startsAt = parseHongKongDateTime(
+            window.date,
+            minutesToClock(period.startMinute),
+          );
+          const endsAt = parseHongKongDateTime(
+            window.date,
+            minutesToClock(period.endMinute),
+          );
+          if (endsAt > now) {
+            return { error: "只可簽到已經結束的時段" as const };
+          }
+          const durationMinutes =
+            (endsAt.getTime() - startsAt.getTime()) / 60_000;
+          const quote = await quoteCheckInPeriod(
+            supabase,
+            staffId,
+            staffProfile,
+            lessonType,
+            period.studentNames,
+            durationMinutes,
+          );
+          if ("error" in quote) {
+            return { error: quote.error };
+          }
+          return {
+            startMinute: period.startMinute,
+            endMinute: period.endMinute,
+            lessonTypeId: period.lessonTypeId,
+            earned: quote.earned,
+            studentFee: quote.studentFee,
+            studentIds: quote.studentIds,
+          };
+        }),
+      );
+      const failedQuote = quoteResults.find(
+        (row): row is { error: string } => "error" in row,
+      );
+      if (failedQuote) {
+        return { ok: false, error: failedQuote.error };
+      }
+      const prepared = quoteResults as {
         startMinute: number;
         endMinute: number;
         lessonTypeId: string;
         earned: number | null;
         studentFee: number | null;
         studentIds: string[];
-      }[] = [];
-      for (const period of typedPeriods) {
-        const lessonType = typeById.get(period.lessonTypeId);
-        if (!lessonType) {
-          return { ok: false, error: "請選擇實際工作類型" };
-        }
-        const startsAt = parseHongKongDateTime(
-          window.date,
-          minutesToClock(period.startMinute),
-        );
-        const endsAt = parseHongKongDateTime(
-          window.date,
-          minutesToClock(period.endMinute),
-        );
-        if (endsAt > now) {
-          return { ok: false, error: "只可簽到已經結束的時段" };
-        }
-        const durationMinutes = (endsAt.getTime() - startsAt.getTime()) / 60_000;
-        const quote = await quoteCheckInPeriod(
-          supabase,
-          staffId,
-          staffProfile,
-          lessonType,
-          period.studentNames,
-          durationMinutes,
-        );
-        if ("error" in quote) {
-          return { ok: false, error: quote.error };
-        }
-        prepared.push({
-          startMinute: period.startMinute,
-          endMinute: period.endMinute,
-          lessonTypeId: period.lessonTypeId,
-          earned: quote.earned,
-          studentFee: quote.studentFee,
-          studentIds: quote.studentIds,
-        });
-      }
+      }[];
 
       const first = prepared[0];
       const fullDayEnd = await showFullDayEndToDatabase(
@@ -1367,13 +1310,18 @@ async function confirmLessonPeriodsForStaff(
         return { ok: false, error: "尚未設定 Coach 分成比例" };
       }
       let namedRows: { id: string; name: string }[] = [];
+      let tuitionResult: Awaited<ReturnType<typeof lookupAirtableTuitions>>;
       if (names.length > 0) {
-        const ensured = await ensureStudentIds(names);
+        const [ensured, tuitions] = await Promise.all([
+          ensureStudentIds(names),
+          lookupAirtableTuitions(names),
+        ]);
         if (!ensured) {
           return { ok: false, error: "找不到學生" };
         }
         studentIds = ensured;
         namedRows = names.map((name, index) => ({ id: ensured[index], name }));
+        tuitionResult = tuitions;
       } else {
         const { data: studentRows, error: studentError } = await supabase
           .from("students")
@@ -1383,19 +1331,23 @@ async function confirmLessonPeriodsForStaff(
           return { ok: false, error: "找不到學生" };
         }
         namedRows = studentRows ?? [];
+        tuitionResult = await lookupAirtableTuitions(
+          namedRows.map((student) => student.name),
+        );
       }
       let pay = 0;
       let fee = 0;
+      if (tuitionResult.error) {
+        console.error("[confirmLessonPeriodsAction] tuition", {
+          error: tuitionResult.error,
+        });
+        return { ok: false, error: "讀取學生學費失敗" };
+      }
       for (const student of namedRows) {
-        try {
-          const listed = await lookupAirtableTuition(student.name);
-          if (listed != null) {
-            fee += listed;
-            pay += coachPayFromFeeRatio(listed, ratio);
-          }
-        } catch (lookupError) {
-          console.error("[confirmLessonPeriodsAction] tuition", { error: lookupError });
-          return { ok: false, error: "讀取學生學費失敗" };
+        const listed = tuitionResult.fees.get(student.name);
+        if (listed != null) {
+          fee += listed;
+          pay += coachPayFromFeeRatio(listed, ratio);
         }
       }
       tuition = fee > 0 ? fee : null;
@@ -1612,7 +1564,7 @@ export async function markAssignmentSickLeaveAction(
       return { ok: false, error: "已記下病假，但未能取消原派更" };
     }
 
-    revalidateSchedules();
+    revalidateCalendar();
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[markAssignmentSickLeaveAction] unexpected", { error });
@@ -1710,8 +1662,10 @@ export async function updateLessonFeesAction(
       }
     }
 
-    revalidateSchedules();
+    // Fee edits land on salary + coach detail; skip full schedule fan-out.
+    revalidatePay();
     revalidatePath("/employer/coaches");
+    revalidatePath("/employer/lessons");
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[updateLessonFeesAction] unexpected", { error });
@@ -1776,7 +1730,11 @@ export async function cancelLessonAction(lessonId: string): Promise<ActionResult
       return { ok: false, error: "取消課堂失敗" };
     }
 
-    revalidateSchedules();
+    if (lesson.status === "completed") {
+      revalidateSchedules();
+    } else {
+      revalidateCalendar();
+    }
     return { ok: true, data: undefined };
   } catch (error) {
     console.error("[cancelLessonAction] unexpected", { error });

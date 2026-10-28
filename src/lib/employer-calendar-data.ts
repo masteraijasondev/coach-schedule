@@ -70,7 +70,14 @@ export async function loadEmployerCalendarData(range: {
   coaches: EmployerMonthCoach[];
   availabilities: EmployerMonthSlot[];
   leaves: EmployerMonthLeave[];
-  workTypes: { coachId: string; id: string; name: string; registersStudent: boolean }[];
+  workTypes: {
+    coachId: string;
+    id: string;
+    name: string;
+    registersStudent: boolean;
+    payMode?: string;
+    hourlyRate?: number | null;
+  }[];
 }> {
   const supabase = await createClient();
   const [
@@ -81,6 +88,7 @@ export async function loadEmployerCalendarData(range: {
     coachesResult,
     namesResult,
     workTypesResult,
+    ratesResult,
   ] = await Promise.all([
     supabase
       .from("lessons")
@@ -107,7 +115,7 @@ export async function loadEmployerCalendarData(range: {
       .lte("leave_date", range.gridEnd),
     supabase
       .from("profiles")
-      .select("id, full_name, staff_kind, hourly_rate_hkd")
+      .select("id, full_name, staff_kind, hourly_rate_hkd, pay_ratio")
       .eq("role", "coach")
       .eq("active", true)
       .order("full_name"),
@@ -118,6 +126,7 @@ export async function loadEmployerCalendarData(range: {
     supabase
       .from("staff_work_types")
       .select("coach_id, lesson_type_id, lesson_types(id, name, active, registers_student, pay_mode)"),
+    supabase.from("coach_rates").select("coach_id, lesson_type_id, amount_hkd"),
   ]);
 
   if (lessonsResult.error) {
@@ -157,8 +166,20 @@ export async function loadEmployerCalendarData(range: {
       full_name: coach.full_name,
       staff_kind: null,
       hourly_rate_hkd: null,
+      pay_ratio: null,
     }));
   }
+  if (ratesResult.error) {
+    console.error("[loadEmployerCalendarData] rates", {
+      error: ratesResult.error,
+    });
+  }
+  const rateByCoachType = new Map(
+    (ratesResult.data ?? []).map((row) => [
+      `${row.coach_id}:${row.lesson_type_id}`,
+      hourlyRateOrNull(row.amount_hkd),
+    ]),
+  );
 
   const lessonRows = (lessonsResult.data ?? []) as LessonRow[];
   const lessonIds = lessonRows.map((lesson) => lesson.id);
@@ -194,12 +215,15 @@ export async function loadEmployerCalendarData(range: {
       if (!type?.active) {
         return null;
       }
+      const typeRate =
+        rateByCoachType.get(`${row.coach_id}:${type.id}`) ?? null;
       return {
         coachId: row.coach_id,
         id: type.id,
         name: type.name,
         registersStudent: type.registers_student === true,
         payMode: type.pay_mode,
+        hourlyRate: typeRate,
       };
     })
     .filter(
@@ -211,6 +235,7 @@ export async function loadEmployerCalendarData(range: {
         name: string;
         registersStudent: boolean;
         payMode: string;
+        hourlyRate: number | null;
       } => type != null,
     );
   const types = (typesResult.data ?? []).map((type) => ({
@@ -227,6 +252,9 @@ export async function loadEmployerCalendarData(range: {
     ),
     hourly_rate_hkd: hourlyRateOrNull(
       "hourly_rate_hkd" in coach ? coach.hourly_rate_hkd : null,
+    ),
+    pay_ratio: hourlyRateOrNull(
+      "pay_ratio" in coach ? coach.pay_ratio : null,
     ),
   }));
 

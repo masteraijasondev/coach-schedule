@@ -10,6 +10,7 @@ import {
   shiftMonth,
 } from "@/lib/calendar";
 import { ExpectedPaySummary } from "@/components/expected-pay-summary";
+import { PayMethodDetails } from "@/components/pay-method-details";
 import {
   hourlyRateOrNull,
   periodPayTotals,
@@ -138,9 +139,9 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
             下期
           </Link>
         </div>
-        <p className="mb-3 text-sm text-stone-500">
-          結算期：{payrollPeriodLabel(period)}。已確認薪金只計已簽到。預期薪金只計尚未簽到的已派更時段，按時薪估計；學生分成要簽到後先計入已確認薪金。
-        </p>
+        <PayMethodDetails>
+          <p>點員工姓名可查看明細與工種費率。</p>
+        </PayMethodDetails>
         <ul className="divide-y divide-stone-100">
           {(coaches ?? []).map((person) => {
             const byType = wagesByCoach.get(person.id) ?? new Map<string, number>();

@@ -27,7 +27,7 @@ export function ExpectedPaySummary({
       <p className={confirmedClass}>{formatMoney(confirmed)}</p>
       {expected === 0 ? null : (
         <p className={labelClass}>
-          預期薪金{" "}
+          預期（時薪估計）{" "}
           <DataValue figure>{formatExpectedPay(expected)}</DataValue>
         </p>
       )}

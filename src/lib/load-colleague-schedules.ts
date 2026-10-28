@@ -47,21 +47,36 @@ export async function loadColleagueSchedules(range: {
     // Staff RLS only returns the signed-in person's rows. This read uses the
     // service role after the coach check, and selects schedule fields only.
     const admin = createAdminClient();
-    const [staffRows, lessonRows, availabilityRows, leaveRows, typeRows] = await Promise.all([
-      selectAll("profiles", (from, to) =>
-        admin
-          .from("profiles")
-          .select("id, full_name")
-          .eq("role", "coach")
-          .eq("active", true)
-          .neq("id", coach.id)
-          .order("full_name")
-          .range(from, to),
-      ),
+    const staffRows = await selectAll("profiles", (from, to) =>
+      admin
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "coach")
+        .eq("active", true)
+        .neq("id", coach.id)
+        .order("full_name")
+        .range(from, to),
+    );
+    const colleagueIds = staffRows.map((row) => row.id);
+    if (colleagueIds.length === 0) {
+      const typeRows = await selectAll("lesson types", (from, to) =>
+        admin.from("lesson_types").select("id, name").range(from, to),
+      );
+      return {
+        colleagues: [],
+        lessonTypes: typeRows.map((type) => ({
+          id: type.id,
+          name: type.name,
+        })),
+      };
+    }
+
+    const [lessonRows, availabilityRows, leaveRows, typeRows] = await Promise.all([
       selectAll("lessons", (from, to) =>
         admin
           .from("lessons")
           .select("id, coach_id, lesson_type_id, starts_at, ends_at, status")
+          .in("coach_id", colleagueIds)
           .in("status", ["assigned", "completed"])
           .gte("starts_at", range.lessonStart)
           .lt("starts_at", range.lessonEnd)
@@ -72,6 +87,7 @@ export async function loadColleagueSchedules(range: {
         admin
           .from("staff_availabilities")
           .select("id, coach_id, available_date, start_minute, end_minute, released")
+          .in("coach_id", colleagueIds)
           .gte("available_date", range.gridStart)
           .lte("available_date", range.gridEnd)
           .order("start_minute")
@@ -81,6 +97,7 @@ export async function loadColleagueSchedules(range: {
         admin
           .from("staff_leaves")
           .select("id, coach_id, leave_date, kind, start_minute, end_minute")
+          .in("coach_id", colleagueIds)
           .gte("leave_date", range.gridStart)
           .lte("leave_date", range.gridEnd)
           .range(from, to),

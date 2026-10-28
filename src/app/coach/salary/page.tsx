@@ -9,13 +9,16 @@ import {
 } from "@/lib/calendar";
 import { DataValue, EmphasizedText } from "@/components/data-value";
 import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
+import { PayMethodDetails } from "@/components/pay-method-details";
 import {
   durationMinutes,
   expectedHourlyAmount,
   hourlyRateOrNull,
 } from "@/lib/expected-pay";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
+import { describePayFormula, payRatioPercentLabel } from "@/lib/pay-formula";
 import { relatedStudentName } from "@/lib/employer-calendar-data";
+import { loadStaffCompensation } from "@/lib/staff-compensation";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = {
@@ -47,7 +50,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
   const { start, end } = payrollPeriodBoundsIso(period);
 
   const supabase = await createClient();
-  const [{ data: lessons }, { data: profile }] = await Promise.all([
+  const [{ data: lessons }, profile] = await Promise.all([
     supabase
       .from("lessons")
       .select(
@@ -58,11 +61,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
       .gte("starts_at", start)
       .lt("starts_at", end)
       .order("starts_at", { ascending: true }),
-    supabase
-      .from("profiles")
-      .select("hourly_rate_hkd")
-      .eq("id", coach.id)
-      .maybeSingle(),
+    loadStaffCompensation(coach.id),
   ]);
   const confirmedLessons = (lessons ?? []).filter(
     (lesson) => lesson.status === "completed",
@@ -71,6 +70,8 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
     (lesson) => lesson.status === "assigned",
   );
   const hourlyRate = hourlyRateOrNull(profile?.hourly_rate_hkd);
+  const payRatio = hourlyRateOrNull(profile?.pay_ratio);
+  const ratioLabel = payRatioPercentLabel(payRatio);
 
   const lessonIds = confirmedLessons.map((lesson) => lesson.id);
   const typeIds = [...new Set(confirmedLessons.map((l) => l.lesson_type_id))];
@@ -91,9 +92,14 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
   const studentByLesson = new Map<string, string>();
+  const studentCountByLesson = new Map<string, number>();
   const studentName = new Map<string, string>();
   for (const row of lessonStudents ?? []) {
     studentByLesson.set(row.lesson_id, row.student_id);
+    studentCountByLesson.set(
+      row.lesson_id,
+      (studentCountByLesson.get(row.lesson_id) ?? 0) + 1,
+    );
     const name = relatedStudentName(row.students);
     if (name) {
       studentName.set(row.student_id, name);
@@ -153,9 +159,12 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
             下期
           </Link>
         </div>
-        <p className="mb-3">
-          已確認薪金只計已簽到課堂。{expected === 0 ? "" : `預期薪金（${formatExpectedPay(expected)}） 按尚未簽到的已派更時段 × 時薪估計。`}學生分成要簽到後先計入已確認薪金。
-        </p>
+        <PayMethodDetails>
+          {ratioLabel ? <p>目前分成：{ratioLabel}</p> : null}
+          {expected === 0 ? null : (
+            <p>本頁預期合計 {formatExpectedPay(expected)}（時薪估計）。</p>
+          )}
+        </PayMethodDetails>
         {assignedLessons.length > 0 ? (
           <ul className="mb-4 divide-y divide-stone-100 rounded-md border border-dashed border-stone-300">
             {assignedLessons.map((lesson) => (
@@ -165,6 +174,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                   <p className="text-base font-bold italic tabular-nums text-stone-950">
                     <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
                   </p>
+                  <p className="text-xs text-stone-500">時薪估計（PT／MIIT 簽到後才計）</p>
                 </div>
                 <p className="text-stone-600">
                   {hourlyRate == null ? (
@@ -193,6 +203,13 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
               lesson.expected_headcount,
             );
             const linkedStudentId = studentByLesson.get(lesson.id);
+            const formula = describePayFormula({
+              payMode,
+              studentCount: studentCountByLesson.get(lesson.id) ?? 0,
+              payRatio,
+              minutes: durationMinutes(lesson.starts_at, lesson.ends_at),
+              unitRate: payMode === "per_hour" ? hourlyRate : null,
+            });
             return (
             <li key={lesson.id} className="flex justify-between gap-3 py-3">
               <div>
@@ -213,6 +230,7 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
                 {sizeLabel ? (
                   <p className="text-sm text-stone-500">{sizeLabel}</p>
                 ) : null}
+                <p className="text-xs text-stone-500">{formula.line}</p>
               </div>
               <p
                 className={

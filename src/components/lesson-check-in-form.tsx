@@ -1,7 +1,10 @@
 "use client";
 
 import { confirmLessonPeriodsAction } from "@/actions/lessons";
-import { listAirtableStudentNamesAction } from "@/actions/students";
+import {
+  clearAirtableStudentNamesCache,
+  ensureAirtableStudentNames,
+} from "@/lib/airtable-student-names-client";
 import { airtableSessionKind } from "@/lib/session-kind";
 import { ActionForm } from "@/components/action-form";
 import { Alert } from "@/components/alert";
@@ -16,6 +19,7 @@ import {
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { formatAvailabilityTime } from "@/lib/format";
+import { describePayFormula } from "@/lib/pay-formula";
 import { formatInTimeZone } from "date-fns-tz";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -117,6 +121,7 @@ function LessonCheckInFields({
   initialLessonTypeId,
   staffKind = "coach",
   fallbackHourlyRate = null,
+  payRatio = null,
   action = confirmLessonPeriodsAction,
   sideAction,
   nowMs,
@@ -137,6 +142,7 @@ function LessonCheckInFields({
     hourlyRate?: number | null;
   }[];
   fallbackHourlyRate?: number | null;
+  payRatio?: number | null;
   initialLessonTypeId?: string;
   staffKind?: "coach" | "operations";
   action?: typeof confirmLessonPeriodsAction;
@@ -185,14 +191,49 @@ function LessonCheckInFields({
   const workTypeName =
     workTypes.find((type) => type.id === lessonTypeId)?.name ?? "";
   const sessionKind = airtableSessionKind(workTypeName);
+  const activeWorkType = workTypes.find((type) => type.id === lessonTypeId);
   const asksStudent =
-    staffKind === "coach" &&
-    workTypes.find((type) => type.id === lessonTypeId)?.registersStudent === true;
+    staffKind === "coach" && activeWorkType?.registersStudent === true;
   const studentNamesPayload = JSON.stringify(asksStudent ? selectedNames : []);
   const searchNames = useMemo(
     () => matchingStudentNames(studentDirectory ?? [], studentQuery),
     [studentDirectory, studentQuery],
   );
+  const draftMinutes = Math.max(0, draftEnd - draftStart);
+  const listedStudentCount = periods.reduce((sum, period) => {
+    if (period.locked) {
+      return sum + (period.studentNames?.length ?? 0);
+    }
+    return sum + (asksStudent ? selectedNames.length : 0);
+  }, 0);
+  const previewStudents =
+    periods.length > 0
+      ? listedStudentCount
+      : asksStudent
+        ? selectedNames.length
+        : 0;
+  const unitRateForType = (type?: {
+    payMode?: string;
+    hourlyRate?: number | null;
+  }) =>
+    type?.payMode === "per_hour"
+      ? (type.hourlyRate ?? fallbackHourlyRate)
+      : (type?.hourlyRate ?? null);
+  const payPreview = lessonTypeId
+    ? describePayFormula({
+        payMode: activeWorkType?.payMode,
+        studentCount: previewStudents,
+        unitRate: unitRateForType(activeWorkType),
+        payRatio,
+        minutes:
+          periods.length > 0
+            ? periods.reduce(
+                (sum, period) => sum + (period.endMinute - period.startMinute),
+                0,
+              )
+            : draftMinutes,
+      })
+    : null;
 
   const directoryLoading =
     asksStudent && studentDirectory === null && searchError === null;
@@ -202,16 +243,16 @@ function LessonCheckInFields({
       return;
     }
     let cancelled = false;
-    listAirtableStudentNamesAction()
+    ensureAirtableStudentNames()
       .then((result) => {
         if (cancelled) {
           return;
         }
         if (!result.ok) {
-          setSearchError("無法載入學生名單");
+          setSearchError(result.error);
           return;
         }
-        setStudentDirectory(result.data);
+        setStudentDirectory(result.names);
         setSearchError(null);
       })
       .catch((error: unknown) => {
@@ -284,6 +325,17 @@ function LessonCheckInFields({
     }
     if (asksStudent && selectedNames.length === 0) {
       setAddError("請選擇教了哪位學生");
+      return;
+    }
+    const addQuote = describePayFormula({
+      payMode: activeWorkType?.payMode,
+      studentCount: asksStudent ? selectedNames.length : 0,
+      unitRate: unitRateForType(activeWorkType),
+      payRatio,
+      minutes: next.endMinute - next.startMinute,
+    });
+    if (addQuote.blocked) {
+      setAddError(addQuote.blocked);
       return;
     }
     setAddError(null);
@@ -527,6 +579,7 @@ function LessonCheckInFields({
                 type="button"
                 className="cursor-pointer underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
                 onClick={() => {
+                  clearAirtableStudentNamesCache();
                   setSearchError(null);
                   setStudentDirectory(null);
                 }}
@@ -579,6 +632,15 @@ function LessonCheckInFields({
                 </li>
               ))}
             </ul>
+          ) : null}
+        </div>
+      ) : null}
+      {payPreview ? (
+        <div className="rounded-md border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800">
+          <p className="font-medium text-[#2C2C2C]">預計薪金</p>
+          <p className="mt-0.5 font-bold tabular-nums">{payPreview.line}</p>
+          {payPreview.blocked ? (
+            <p className="mt-1 text-red-800">{payPreview.blocked}</p>
           ) : null}
         </div>
       ) : null}
@@ -646,6 +708,20 @@ function LessonCheckInFields({
           if (!built.ok) {
             setAddError(built.error);
             return built;
+          }
+          for (const period of built.periods) {
+            const type = workTypes.find((item) => item.id === period.lessonTypeId);
+            const quote = describePayFormula({
+              payMode: type?.payMode,
+              studentCount: period.studentNames?.length ?? 0,
+              unitRate: unitRateForType(type),
+              payRatio,
+              minutes: period.endMinute - period.startMinute,
+            });
+            if (quote.blocked) {
+              setAddError(quote.blocked);
+              return { ok: false, error: quote.blocked };
+            }
           }
           setAddError(null);
           formData.set(

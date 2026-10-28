@@ -65,6 +65,7 @@ export function CoachMonthWorkspace({
   colleagues,
   lessonTypes,
   staffKind,
+  payRatio = null,
   scope,
 }: {
   month: string;
@@ -78,6 +79,7 @@ export function CoachMonthWorkspace({
   colleagues: ColleagueSchedule[];
   lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
+  payRatio?: number | null;
   scope: CoachScheduleScope;
 }) {
   const [selection, setSelection] = useCalendarSelection(month, {
@@ -271,6 +273,7 @@ export function CoachMonthWorkspace({
           leaves={leaves}
           workTypes={workTypes}
           staffKind={staffKind}
+          payRatio={payRatio}
           teamDay={colleagues.length > 0 ? <TeamDaySchedule bars={teamDay} /> : null}
         />
       </div>

@@ -74,6 +74,7 @@ export type EmployerMonthCoach = {
   full_name: string;
   staff_kind: StaffKind;
   hourly_rate_hkd: number | null;
+  pay_ratio?: number | null;
 };
 
 export type EmployerMonthSlot = {
@@ -449,6 +450,7 @@ export function EmployerMonthWorkspace({
         initialLessonTypeId={lesson.lesson_type_id}
         workTypes={coachWorkTypes}
         fallbackHourlyRate={coach?.hourly_rate_hkd ?? null}
+        payRatio={coach?.pay_ratio ?? null}
         staffKind={coach?.staff_kind === "operations" ? "operations" : "coach"}
         action={employerEditCheckInAction}
         submitLabel="儲存修改"

@@ -58,6 +58,7 @@ export async function EmployerLessonList({
 }) {
   const { start, end } = availabilityWeekBoundsIso(listWeek);
   const supabase = await createClient();
+  // Warm Airtable index while lessons + names load; do not await it alone.
   const tuitionWarm = lookupAirtableTuitions([]);
   const [lessonsResult, namesResult] = await Promise.all([
     supabase
@@ -74,8 +75,8 @@ export async function EmployerLessonList({
       p_start: start,
       p_end: end,
     }),
+    tuitionWarm,
   ]);
-  await tuitionWarm;
 
   const error = lessonsResult.error ?? namesResult.error;
   if (error) {

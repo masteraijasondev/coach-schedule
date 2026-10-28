@@ -53,6 +53,7 @@ export function CoachCalendarShell({
   colleagues,
   lessonTypes,
   staffKind,
+  payRatio = null,
   scope: initialScope,
   remoteWeekCalendar,
 }: {
@@ -77,6 +78,7 @@ export function CoachCalendarShell({
   colleagues: ColleagueSchedule[];
   lessonTypes: { id: string; name: string }[];
   staffKind: "coach" | "operations";
+  payRatio?: number | null;
   scope: CoachScheduleScope;
   remoteWeekCalendar: ReactNode;
 }) {
@@ -180,6 +182,7 @@ export function CoachCalendarShell({
           colleagues={showColleagues ? colleagues : []}
           lessonTypes={lessonTypes}
           staffKind={staffKind}
+          payRatio={payRatio}
           scope={scope}
         />
       </div>
@@ -197,6 +200,7 @@ export function CoachCalendarShell({
               lessons={weekLessons}
               workTypes={workTypes}
               staffKind={staffKind}
+              payRatio={payRatio}
               scope={scope}
               onWeekNavigate={selectWeek}
             />
