@@ -13,7 +13,7 @@
     "version:patch": "npm version patch && git push --follow-tags"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.4",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.109.0",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
