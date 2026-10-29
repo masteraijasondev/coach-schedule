@@ -20,10 +20,6 @@ function positiveFee(raw: number | null | undefined): number | null {
   return raw;
 }
 
-/**
- * One positive fee line per checked-in student.
- * Missing or non-positive appointment prices use headRateFallback.
- */
 export function resolveMiitFeeLedger(input: {
   studentNames: string[];
   appointmentFeesByName: ReadonlyMap<string, number>;
@@ -58,7 +54,6 @@ export function resolveMiitFeeLedger(input: {
   return { ok: true, lines };
 }
 
-/** Sum of line fees × pay ratio (per-line rounding, same as PT). */
 export function quoteFeeRatioFromLedger(
   lines: FeeLine[],
   payRatio: number,

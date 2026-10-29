@@ -70,10 +70,6 @@ export type QuoteMiitLessonPayResult =
   | { ok: true; quote: LessonPayQuote }
   | { ok: false; error: string };
 
-/**
- * MIIT quote from slot Appointment Prices × pay ratio.
- * Missing or ≤0 prices fall back to coach_rates head rate.
- */
 export async function quoteMiitLessonPay(input: {
   slot: SlotWindow;
   studentNames: string[];

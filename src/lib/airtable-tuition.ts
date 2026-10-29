@@ -332,15 +332,10 @@ function putNameKeys(index: Map<string, number>, display: string, amount: number
 
 export type MiitSlotEntry = {
   studentName: string;
-  /** Raw Appointment Price; ≤0 / NaN treated as missing by the fee ledger. */
   appointmentPrice: number | null;
   startMinute: number;
 };
 
-/**
- * MIIT roster + prices for one slot.
- * Same overlap rule as expected-students; does not drop $0 prices.
- */
 export async function lookupMiitSlotCatalog(
   slot: SlotWindow,
 ): Promise<{ entries: MiitSlotEntry[]; error: string | null }> {
@@ -369,8 +364,7 @@ export async function lookupMiitSlotCatalog(
       }
     }
 
-    // Closest Start Time to slot.startMinute wins when the same student overlaps twice.
-    const bestByName = new Map<
+    const closestByName = new Map<
       string,
       { appointmentPrice: number | null; startMinute: number; distance: number }
     >();
@@ -399,9 +393,9 @@ export async function lookupMiitSlotCatalog(
         if (!studentName) {
           continue;
         }
-        const existing = bestByName.get(studentName);
+        const existing = closestByName.get(studentName);
         if (!existing || distance < existing.distance) {
-          bestByName.set(studentName, {
+          closestByName.set(studentName, {
             appointmentPrice,
             startMinute: when.minute,
             distance,
@@ -410,7 +404,7 @@ export async function lookupMiitSlotCatalog(
       }
     }
 
-    const entries: MiitSlotEntry[] = [...bestByName.entries()].map(
+    const entries: MiitSlotEntry[] = [...closestByName.entries()].map(
       ([studentName, row]) => ({
         studentName,
         appointmentPrice: row.appointmentPrice,
@@ -424,7 +418,6 @@ export async function lookupMiitSlotCatalog(
   }
 }
 
-/** Map checked-in names → raw appointment prices (includes ≤0 when matched). */
 export function appointmentFeesForCheckedInNames(
   entries: MiitSlotEntry[],
   studentNames: string[],

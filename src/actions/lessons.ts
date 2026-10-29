@@ -1095,7 +1095,6 @@ async function confirmLessonPeriodsForStaff(
     );
     // Same job type still has to be saved per lesson when the students differ.
     // The single check-in call copies one student list onto every split.
-    // MIIT quotes each slot from Airtable Appointment Price, even when names match.
     if (typeIds.length > 1 || studentsDiffer || pricedPerHead) {
       const allStudentNames = [
         ...new Set(typedPeriods.flatMap((period) => period.studentNames)),
@@ -1105,7 +1104,6 @@ async function confirmLessonPeriodsForStaff(
         if (!warmed) {
           return { ok: false, error: "找不到學生" };
         }
-        // PT tuition index only — MIIT loads its own slot catalog per quote.
         if (pricedPerStudent) {
           await lookupAirtableTuitions(allStudentNames);
         }
