@@ -38,7 +38,6 @@ import {
   parseCalendarFilter,
   type CalendarFilter,
 } from "@/lib/calendar-filter";
-import type { PayShift } from "@/lib/expected-pay";
 import { formatAvailabilityTime } from "@/lib/format";
 import { TIMEZONE } from "@/lib/constants";
 import { employerCalendarHrefWithFilter } from "@/lib/employer-href";
@@ -196,7 +195,6 @@ export function EmployerCalendarShell({
   leaves,
   workTypes,
   remoteWeekPanel,
-  payShifts,
   initialFilter,
 }: {
   initialView: CalendarView;
@@ -222,7 +220,6 @@ export function EmployerCalendarShell({
     payMode?: string;
   }[];
   remoteWeekPanel: ReactNode;
-  payShifts: PayShift[];
   initialFilter: CalendarFilter;
 }) {
   const [view, setView] = useCalendarView(initialView);
@@ -398,7 +395,6 @@ export function EmployerCalendarShell({
           availabilities={availabilities}
           leaves={leaves}
           workTypes={workTypes}
-          payShifts={payShifts}
           filter={filter}
         />
       </div>
@@ -466,10 +462,6 @@ export function EmployerCalendarShell({
               lessons={weekLessons}
               nowMinute={nowMinute}
               view="week"
-              hourlyRate={selectedCoach.hourly_rate_hkd}
-              payShifts={payShifts.filter(
-                (shift) => shift.coachId === selectedCoach.id,
-              )}
               onWeekNavigate={selectWeek}
             />
           </Panel>

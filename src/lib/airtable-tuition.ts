@@ -216,18 +216,15 @@ async function loadTuitionIndexUncached(now: number): Promise<CacheEntry> {
       listAirtableRecords(APPOINTMENT_TABLE, {
         filterByFormula:
           "AND(NOT({Canceled}), {Appointment Price}>0, FIND('Personal Training', {Type}), IS_AFTER({Start Time}, DATEADD(TODAY(), -180, 'days')))",
-        "fields[]": [
-          "Student",
-          "Appointment Price",
-          "Certificate Code",
-          "Type",
-        ],
+        "fields[]": ["Student", "Appointment Price", "Type"],
         "sort[0][field]": "Start Time",
         "sort[0][direction]": "desc",
       }),
     ]);
 
-    const pricesByStudentId = new Map<string, { open: number[]; all: number[] }>();
+    // Mode across every PT price. Do not prefer "no Certificate Code" rows —
+    // a single open/walk-in price can override the real package rate (e.g. Kelly).
+    const pricesByStudentId = new Map<string, number[]>();
     for (const appointment of appointments) {
       const studentIds = appointment.fields.Student;
       if (!Array.isArray(studentIds) || studentIds.length === 0) {
@@ -237,16 +234,12 @@ async function loadTuitionIndexUncached(now: number): Promise<CacheEntry> {
       if (!Number.isFinite(price) || price <= 0) {
         continue;
       }
-      const hasCert = Boolean(appointment.fields["Certificate Code"]);
       for (const studentId of studentIds) {
         if (typeof studentId !== "string") {
           continue;
         }
-        const bucket = pricesByStudentId.get(studentId) ?? { open: [], all: [] };
-        bucket.all.push(price);
-        if (!hasCert) {
-          bucket.open.push(price);
-        }
+        const bucket = pricesByStudentId.get(studentId) ?? [];
+        bucket.push(price);
         pricesByStudentId.set(studentId, bucket);
       }
     }
@@ -259,8 +252,7 @@ async function loadTuitionIndexUncached(now: number): Promise<CacheEntry> {
       if (!display) {
         continue;
       }
-      const bucket = pricesByStudentId.get(student.id);
-      const samples = bucket?.open?.length ? bucket.open : bucket?.all ?? [];
+      const samples = pricesByStudentId.get(student.id) ?? [];
       const tuition = modeAmount(samples);
       if (tuition == null) {
         continue;

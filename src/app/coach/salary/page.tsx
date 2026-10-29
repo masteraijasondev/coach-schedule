@@ -12,8 +12,9 @@ import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay
 import { PayMethodDetails } from "@/components/pay-method-details";
 import {
   durationMinutes,
-  expectedHourlyAmount,
+  expectedAssignedAmount,
   hourlyRateOrNull,
+  isHourlyPayMode,
 } from "@/lib/expected-pay";
 import { formatDateTime, formatLessonSizeLabel, formatMoney, formatMoneyOrPending } from "@/lib/format";
 import { describePayFormula, payRatioPercentLabel } from "@/lib/pay-formula";
@@ -74,23 +75,36 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
   const ratioLabel = payRatioPercentLabel(payRatio);
 
   const lessonIds = confirmedLessons.map((lesson) => lesson.id);
-  const typeIds = [...new Set(confirmedLessons.map((l) => l.lesson_type_id))];
-  const [{ data: types }, { data: lessonStudents }] = await Promise.all([
-    typeIds.length
-      ? supabase
-          .from("lesson_types")
-          .select("id, name, pay_mode")
-          .in("id", typeIds)
-      : Promise.resolve({ data: [] }),
-    lessonIds.length
-      ? supabase
-          .from("lesson_students")
-          .select("lesson_id, student_id, students(name)")
-          .in("lesson_id", lessonIds)
-      : Promise.resolve({ data: [] }),
-  ]);
+  const typeIds = [
+    ...new Set((lessons ?? []).map((lesson) => lesson.lesson_type_id)),
+  ];
+  const [{ data: types }, { data: lessonStudents }, { data: rates }] =
+    await Promise.all([
+      typeIds.length
+        ? supabase
+            .from("lesson_types")
+            .select("id, name, pay_mode")
+            .in("id", typeIds)
+        : Promise.resolve({ data: [] }),
+      lessonIds.length
+        ? supabase
+            .from("lesson_students")
+            .select("lesson_id, student_id, students(name)")
+            .in("lesson_id", lessonIds)
+        : Promise.resolve({ data: [] }),
+      supabase
+        .from("coach_rates")
+        .select("lesson_type_id, amount_hkd")
+        .eq("coach_id", coach.id),
+    ]);
   const typeMap = new Map((types ?? []).map((t) => [t.id, t.name]));
   const payModeByType = new Map((types ?? []).map((t) => [t.id, t.pay_mode]));
+  const rateByType = new Map(
+    (rates ?? []).map((row) => [
+      row.lesson_type_id,
+      hourlyRateOrNull(row.amount_hkd),
+    ]),
+  );
   const studentByLesson = new Map<string, string>();
   const studentCountByLesson = new Map<string, number>();
   const studentName = new Map<string, string>();
@@ -110,20 +124,28 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
     (sum, lesson) => sum + Number(lesson.earned_amount_hkd ?? 0),
     0,
   );
-  const expected =
-    hourlyRate == null
-      ? null
-      : Math.round(
-          assignedLessons.reduce(
-            (sum, lesson) =>
-              sum +
-              expectedHourlyAmount(
-                durationMinutes(lesson.starts_at, lesson.ends_at),
-                hourlyRate,
-              ),
-            0,
-          ) * 100,
-        ) / 100;
+  let expectedSum = 0;
+  let hasHourlyExpected = false;
+  for (const lesson of assignedLessons) {
+    const amount = expectedAssignedAmount(
+      {
+        startsAt: lesson.starts_at,
+        endsAt: lesson.ends_at,
+        payMode: payModeByType.get(lesson.lesson_type_id),
+        lessonTypeId: lesson.lesson_type_id,
+      },
+      hourlyRate,
+      rateByType,
+    );
+    if (amount == null) {
+      continue;
+    }
+    hasHourlyExpected = true;
+    expectedSum += amount;
+  }
+  const expected = hasHourlyExpected
+    ? Math.round(expectedSum * 100) / 100
+    : null;
 
   const prev = shiftMonth(period, -1);
   const next = shiftMonth(period, 1);
@@ -161,37 +183,52 @@ export default async function CoachSalaryPage({ searchParams }: Props) {
         </div>
         <PayMethodDetails>
           {ratioLabel ? <p>目前分成：{ratioLabel}</p> : null}
-          {expected === 0 ? null : (
-            <p>本頁預期合計 {formatExpectedPay(expected)}（時薪估計）。</p>
+          {expected == null || expected === 0 ? null : (
+            <p>本頁未簽到時薪合計 {formatExpectedPay(expected)}。</p>
           )}
         </PayMethodDetails>
         {assignedLessons.length > 0 ? (
           <ul className="mb-4 divide-y divide-stone-100 rounded-md border border-dashed border-stone-300">
-            {assignedLessons.map((lesson) => (
-              <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium">已派更，待簽到</p>
-                  <p className="text-base font-bold italic tabular-nums text-stone-950">
-                    <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
+            {assignedLessons.map((lesson) => {
+              const payMode = payModeByType.get(lesson.lesson_type_id);
+              const typeName = typeMap.get(lesson.lesson_type_id) ?? "工作";
+              const amount = expectedAssignedAmount(
+                {
+                  startsAt: lesson.starts_at,
+                  endsAt: lesson.ends_at,
+                  payMode,
+                  lessonTypeId: lesson.lesson_type_id,
+                },
+                hourlyRate,
+                rateByType,
+              );
+              return (
+                <li key={lesson.id} className="flex justify-between gap-3 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">已派更，待簽到 · {typeName}</p>
+                    <p className="text-base font-bold italic tabular-nums text-stone-950">
+                      <SalaryWhen startsAt={lesson.starts_at} endsAt={lesson.ends_at} />
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      {isHourlyPayMode(payMode)
+                        ? "時薪估計"
+                        : "PT／MIIT／小組簽到後才計"}
+                    </p>
+                  </div>
+                  <p className="text-stone-600">
+                    {isHourlyPayMode(payMode) ? (
+                      amount == null ? (
+                        "未設定時薪"
+                      ) : (
+                        <DataValue figure>{formatMoney(amount)}</DataValue>
+                      )
+                    ) : (
+                      "簽到後才計"
+                    )}
                   </p>
-                  <p className="text-xs text-stone-500">時薪估計（PT／MIIT 簽到後才計）</p>
-                </div>
-                <p className="text-stone-600">
-                  {hourlyRate == null ? (
-                    "未設定時薪"
-                  ) : (
-                    <DataValue figure>
-                      {formatMoney(
-                        expectedHourlyAmount(
-                          durationMinutes(lesson.starts_at, lesson.ends_at),
-                          hourlyRate,
-                        ),
-                      )}
-                    </DataValue>
-                  )}
-                </p>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
         <ul className="divide-y divide-stone-100">

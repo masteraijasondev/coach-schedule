@@ -10,10 +10,12 @@ import {
 } from "@/lib/calendar";
 import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
 import { PayMethodDetails } from "@/components/pay-method-details";
+import { ResyncAirtablePayButton } from "@/components/resync-airtable-pay-button";
 import {
   durationMinutes,
-  expectedHourlyAmount,
+  expectedAssignedAmount,
   hourlyRateOrNull,
+  isHourlyPayMode,
 } from "@/lib/expected-pay";
 import { DataValue, EmphasizedText } from "@/components/data-value";
 import { formatDateTime, formatMoney, nestedStudentName } from "@/lib/format";
@@ -105,22 +107,29 @@ export default async function EmployerCoachSalaryPage({
   const confirmedLessons = (lessons ?? []).filter(
     (lesson) => lesson.status === "completed",
   );
-  const expected =
-    hourlyRate == null
-      ? null
-      : Math.round(
-          assignedLessons.reduce(
-            (sum, lesson) =>
-              sum +
-              expectedHourlyAmount(
-                durationMinutes(lesson.starts_at, lesson.ends_at),
-                hourlyRate,
-              ),
-            0,
-          ) * 100,
-        ) / 100;
-
   const typeById = new Map((lessonTypes ?? []).map((type) => [type.id, type]));
+  let expectedSum = 0;
+  let hasHourlyExpected = false;
+  for (const lesson of assignedLessons) {
+    const amount = expectedAssignedAmount(
+      {
+        startsAt: lesson.starts_at,
+        endsAt: lesson.ends_at,
+        payMode: typeById.get(lesson.lesson_type_id)?.pay_mode,
+        lessonTypeId: lesson.lesson_type_id,
+      },
+      hourlyRate,
+      rateByType,
+    );
+    if (amount == null) {
+      continue;
+    }
+    hasHourlyExpected = true;
+    expectedSum += amount;
+  }
+  const expected = hasHourlyExpected
+    ? Math.round(expectedSum * 100) / 100
+    : null;
   const lessonsByType = new Map<string, typeof confirmedLessons>();
   for (const lesson of confirmedLessons) {
     const group = lessonsByType.get(lesson.lesson_type_id) ?? [];
@@ -176,6 +185,9 @@ export default async function EmployerCoachSalaryPage({
             下期
           </Link>
         </div>
+        <div className="mb-4">
+          <ResyncAirtablePayButton coachId={coachId} period={period} />
+        </div>
         <PayMethodDetails>
           {payRatioPercentLabel(payRatio) ? (
             <p>分成：{payRatioPercentLabel(payRatio)}</p>
@@ -188,41 +200,62 @@ export default async function EmployerCoachSalaryPage({
         </PayMethodDetails>
         <section className="mb-4">
           <h3 className="text-sm font-semibold text-stone-800">
-            已派更，待簽到 · {formatExpectedPay(expected)}
+            已派更，待簽到
+            {expected == null ? "" : ` · ${formatExpectedPay(expected)}`}
           </h3>
-          <p className="text-xs text-stone-500">時薪估計；PT／MIIT 簽到後才計入已確認</p>
+          <p className="text-xs text-stone-500">
+            只合計時薪工種；PT／MIIT／小組簽到後才計入已確認
+          </p>
           {assignedLessons.length === 0 ? (
             <p className="py-2 text-sm text-stone-500">此結算期尚無未簽到派更</p>
           ) : (
             <ul className="divide-y divide-stone-100">
-              {assignedLessons.map((lesson) => (
-                <li key={lesson.id} className="flex justify-between gap-3 py-2">
-                  <p className="text-sm text-stone-700">
-                    <EmphasizedText
-                      figure
-                      text={`${formatDateTime(lesson.starts_at)}${
-                        hourlyRate == null
-                          ? ""
-                          : ` · ${(durationMinutes(lesson.starts_at, lesson.ends_at) / 60).toFixed(1)} 小時`
-                      }`}
-                    />
-                  </p>
-                  <p>
-                    {hourlyRate == null ? (
-                      "未設定時薪"
-                    ) : (
-                      <DataValue figure>
-                        {formatMoney(
-                          expectedHourlyAmount(
-                            durationMinutes(lesson.starts_at, lesson.ends_at),
-                            hourlyRate,
-                          ),
-                        )}
-                      </DataValue>
-                    )}
-                  </p>
-                </li>
-              ))}
+              {assignedLessons.map((lesson) => {
+                const payMode = typeById.get(lesson.lesson_type_id)?.pay_mode;
+                const typeName =
+                  typeById.get(lesson.lesson_type_id)?.name ?? "工作";
+                const amount = expectedAssignedAmount(
+                  {
+                    startsAt: lesson.starts_at,
+                    endsAt: lesson.ends_at,
+                    payMode,
+                    lessonTypeId: lesson.lesson_type_id,
+                  },
+                  hourlyRate,
+                  rateByType,
+                );
+                const hourly = isHourlyPayMode(payMode);
+                return (
+                  <li key={lesson.id} className="flex justify-between gap-3 py-2">
+                    <div>
+                      <p className="text-sm text-stone-700">
+                        <EmphasizedText
+                          figure
+                          text={`${formatDateTime(lesson.starts_at)} · ${typeName}${
+                            hourly
+                              ? ` · ${(durationMinutes(lesson.starts_at, lesson.ends_at) / 60).toFixed(1)} 小時`
+                              : ""
+                          }`}
+                        />
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        {hourly ? "時薪估計" : "簽到後才計"}
+                      </p>
+                    </div>
+                    <p>
+                      {hourly ? (
+                        amount == null ? (
+                          "未設定時薪"
+                        ) : (
+                          <DataValue figure>{formatMoney(amount)}</DataValue>
+                        )
+                      ) : (
+                        "簽到後才計"
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

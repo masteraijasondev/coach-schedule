@@ -10,7 +10,7 @@ import {
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
-import { coachPayFromFeeRatio } from "@/lib/pt-rate";
+import { quotePtLessonPay } from "@/lib/lesson-pay";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, PayMode } from "@/lib/types";
@@ -899,29 +899,19 @@ async function quoteCheckInPeriod(
   if (!Number.isFinite(ratio) || ratio <= 0) {
     return { error: "尚未設定 Coach 分成比例" };
   }
-  const [ensured, tuitionResult] = await Promise.all([
+  const [ensured, quoted] = await Promise.all([
     ensureStudentIds(studentNames),
-    lookupAirtableTuitions(studentNames),
+    quotePtLessonPay({ studentNames, payRatio: ratio }),
   ]);
   if (!ensured) {
     return { error: "找不到學生" };
   }
-  if (tuitionResult.error) {
-    console.error("[quoteCheckInPeriod] tuition", { error: tuitionResult.error });
-    return { error: "讀取學生學費失敗" };
-  }
-  let pay = 0;
-  let fee = 0;
-  for (const name of studentNames) {
-    const listed = tuitionResult.fees.get(name);
-    if (listed != null) {
-      fee += listed;
-      pay += coachPayFromFeeRatio(listed, ratio);
-    }
+  if (!quoted.ok) {
+    return { error: quoted.error };
   }
   return {
-    earned: pay,
-    studentFee: fee > 0 ? fee : null,
+    earned: quoted.quote.earnedAmountHkd,
+    studentFee: quoted.quote.studentFeeHkd,
     studentIds: ensured,
   };
 }
@@ -1309,19 +1299,13 @@ async function confirmLessonPeriodsForStaff(
       if (!Number.isFinite(ratio) || ratio <= 0) {
         return { ok: false, error: "尚未設定 Coach 分成比例" };
       }
-      let namedRows: { id: string; name: string }[] = [];
-      let tuitionResult: Awaited<ReturnType<typeof lookupAirtableTuitions>>;
+      let quoteNames: string[] = names;
       if (names.length > 0) {
-        const [ensured, tuitions] = await Promise.all([
-          ensureStudentIds(names),
-          lookupAirtableTuitions(names),
-        ]);
+        const ensured = await ensureStudentIds(names);
         if (!ensured) {
           return { ok: false, error: "找不到學生" };
         }
         studentIds = ensured;
-        namedRows = names.map((name, index) => ({ id: ensured[index], name }));
-        tuitionResult = tuitions;
       } else {
         const { data: studentRows, error: studentError } = await supabase
           .from("students")
@@ -1330,28 +1314,17 @@ async function confirmLessonPeriodsForStaff(
         if (studentError || (studentRows ?? []).length !== studentIds.length) {
           return { ok: false, error: "找不到學生" };
         }
-        namedRows = studentRows ?? [];
-        tuitionResult = await lookupAirtableTuitions(
-          namedRows.map((student) => student.name),
-        );
+        quoteNames = (studentRows ?? []).map((student) => student.name);
       }
-      let pay = 0;
-      let fee = 0;
-      if (tuitionResult.error) {
-        console.error("[confirmLessonPeriodsAction] tuition", {
-          error: tuitionResult.error,
-        });
-        return { ok: false, error: "讀取學生學費失敗" };
+      const quoted = await quotePtLessonPay({
+        studentNames: quoteNames,
+        payRatio: ratio,
+      });
+      if (!quoted.ok) {
+        return { ok: false, error: quoted.error };
       }
-      for (const student of namedRows) {
-        const listed = tuitionResult.fees.get(student.name);
-        if (listed != null) {
-          fee += listed;
-          pay += coachPayFromFeeRatio(listed, ratio);
-        }
-      }
-      tuition = fee > 0 ? fee : null;
-      sessionAmount = pay;
+      tuition = quoted.quote.studentFeeHkd;
+      sessionAmount = quoted.quote.earnedAmountHkd ?? 0;
       const linked = await linkLessonStudents(lessonId, studentIds);
       if (!linked.ok) {
         return linked;

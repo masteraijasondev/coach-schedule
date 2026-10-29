@@ -130,5 +130,5 @@ export function describePayFormula(input: {
 }
 
 export function expectedPayMethodLabel(): string {
-  return "預期薪金只估計按時薪計的未簽到派更；PT／MIIT 要簽到後才計入已確認薪金。";
+  return "預期合計＝已確認＋未簽到時薪估計（只計時薪派更）；PT／MIIT 要簽到後才計入已確認。";
 }

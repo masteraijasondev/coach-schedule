@@ -15,7 +15,6 @@ import {
   scrollToCalendarDay,
   useCalendarSelection,
 } from "@/lib/calendar-history";
-import type { PayShift } from "@/lib/expected-pay";
 import { employerCalendarHref } from "@/lib/employer-href";
 import { calendarAssignmentLabel, calendarSlotLabel, checkedInLabel, formatAvailabilityTime } from "@/lib/format";
 import { weekGridRange } from "@/lib/week-grid";
@@ -71,8 +70,6 @@ export function EmployerAssignWorkspace({
   selectedSlot,
   view,
   nowMinute,
-  hourlyRate = null,
-  payShifts = [],
   onWeekNavigate,
 }: {
   coachId: string;
@@ -93,8 +90,6 @@ export function EmployerAssignWorkspace({
   selectedSlot?: SlotSelection | null;
   view?: "month" | "week";
   nowMinute: number | null;
-  hourlyRate?: number | null;
-  payShifts?: PayShift[];
   onWeekNavigate?: (
     week: string,
     href: string,
@@ -422,8 +417,6 @@ export function EmployerAssignWorkspace({
             date={liveSlot.date}
             startMinute={liveSlot.startMinute}
             slotEndMinute={liveSlot.slotEndMinute}
-            hourlyRate={hourlyRate}
-            payShifts={payShifts}
             clearHref={employerCalendarHref({
               month,
               day: liveSlot.date,

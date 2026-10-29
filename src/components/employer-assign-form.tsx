@@ -5,15 +5,8 @@ import { createLessonAction } from "@/actions/lessons";
 import { ActionForm } from "@/components/action-form";
 import { AvailabilityTimeFields } from "@/components/availability-time-fields";
 import { SubmitButton } from "@/components/ui";
-import { formatExpectedPay } from "@/components/expected-pay-summary";
-import { payrollPeriodForDate, payrollPeriodLabel } from "@/lib/calendar";
-import {
-  expectedHourlyAmount,
-  periodPayTotals,
-  type PayShift,
-} from "@/lib/expected-pay";
 import { EmphasizedText } from "@/components/data-value";
-import { formatAvailabilityTime, formatMoney } from "@/lib/format";
+import { formatAvailabilityTime } from "@/lib/format";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -26,8 +19,6 @@ export function EmployerAssignForm({
   startMinute,
   slotEndMinute,
   clearHref,
-  hourlyRate = null,
-  payShifts = [],
 }: {
   coachId: string;
   coachName: string;
@@ -35,8 +26,6 @@ export function EmployerAssignForm({
   startMinute: number;
   slotEndMinute: number;
   clearHref: string;
-  hourlyRate?: number | null;
-  payShifts?: PayShift[];
 }) {
   const router = useRouter();
   const [assignStart, setAssignStart] = useState(startMinute);
@@ -61,17 +50,6 @@ export function EmployerAssignForm({
     assignStart > startMinute || assignEnd < slotEndMinute;
   const releasingAll =
     releaseStart === startMinute && releaseEnd === slotEndMinute;
-  const period = payrollPeriodForDate(date);
-  const totals = periodPayTotals(payShifts, hourlyRate ?? null, period);
-  const draftMinutes = Math.max(0, assignEnd - assignStart);
-  const draftPay =
-    hourlyRate == null
-      ? null
-      : expectedHourlyAmount(draftMinutes, hourlyRate);
-  const expectedAfterDraft =
-    totals.expected == null || draftPay == null
-      ? null
-      : Math.round((totals.expected + draftPay) * 100) / 100;
 
   function goClear() {
     router.replace(clearHref);
@@ -87,31 +65,8 @@ export function EmployerAssignForm({
         />
       </p>
       <p className="mt-1 text-sm text-stone-500">
-        派更與暫無需要可各自選擇時段。預期薪金按時薪估計已派更、尚未簽到的時段。
+        派更與暫無需要可各自選擇時段。
       </p>
-      <div
-        className="mt-3 rounded-md border border-stone-200 bg-white p-3 text-sm"
-      >
-        <p className="text-stone-800">
-          <EmphasizedText figure text={payrollPeriodLabel(period)} /> 估計
-        </p>
-        <p className="mt-1">
-          已確認薪金：
-          <EmphasizedText figure text={formatMoney(totals.confirmed)} />
-        </p>
-        <p>
-          預期薪金（已派更）：
-          <EmphasizedText figure text={formatExpectedPay(totals.expected)} />
-        </p>
-        <p>
-          今次時段估計：
-          <EmphasizedText figure text={formatExpectedPay(draftPay)} />
-        </p>
-        <p>
-          計入今次後預期：
-          <EmphasizedText figure text={formatExpectedPay(expectedAfterDraft)} />
-        </p>
-      </div>
       <div className="mt-3 grid gap-4">
         <ActionForm
           action={createLessonAction}

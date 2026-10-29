@@ -46,10 +46,13 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
         .gte("starts_at", start)
         .lt("starts_at", end)
         .not("coach_id", "is", null),
-      supabase.from("lesson_types").select("id, name"),
+      supabase.from("lesson_types").select("id, name, pay_mode"),
     ]);
 
   const typeName = new Map((lessonTypes ?? []).map((type) => [type.id, type.name]));
+  const payModeByType = new Map(
+    (lessonTypes ?? []).map((type) => [type.id, type.pay_mode]),
+  );
   const wagesByCoach = new Map<string, Map<string, number>>();
   const shiftsByCoach = new Map<string, PayShift[]>();
   for (const lesson of lessons ?? []) {
@@ -74,6 +77,8 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           lesson.earned_amount_hkd == null
             ? null
             : Number(lesson.earned_amount_hkd),
+        payMode: payModeByType.get(lesson.lesson_type_id) ?? null,
+        lessonTypeId: lesson.lesson_type_id,
       });
       shiftsByCoach.set(lesson.coach_id, shifts);
     }

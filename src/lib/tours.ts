@@ -18,7 +18,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "employer-salary-detail",
         title: "一位同事的薪金",
-        body: "已確認薪金只計已簽到。預期薪金按尚未簽到的已派更時段乘時薪估計。下方按工作類型列出已簽到明細。",
+        body: "已確認薪金只計已簽到。預期合計＝已確認＋尚未簽到的時薪派更估計。下方按工作類型列出已簽到明細。",
       },
     ],
   },
@@ -29,7 +29,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "employer-salary-totals",
         title: "已確認與預期",
-        body: "已確認薪金只計已簽到。預期薪金只計尚未簽到的已派更，按時薪估計。點員工姓名可看這一位的明細。",
+        body: "已確認薪金只計已簽到。預期合計＝已確認＋尚未簽到的時薪派更估計。點員工姓名可看這一位的明細。",
       },
     ],
   },
@@ -178,7 +178,7 @@ export const COACH_TOURS: RouteTour[] = [
       {
         id: "coach-salary-totals",
         title: "已確認與預期",
-        body: "已確認薪金只計已簽到課堂。預期薪金按尚未簽到的已派更時段乘時薪估計。學生分成要簽到後先計入已確認。",
+        body: "已確認薪金只計已簽到課堂。預期合計＝已確認＋尚未簽到的時薪派更估計。學生分成要簽到後先計入已確認。",
       },
     ],
   },
