@@ -1,3 +1,4 @@
+import type { SlotWindow } from "@/lib/fee-ledger";
 import { airtableSessionKind } from "@/lib/session-kind";
 
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID || "app6XDt9DxsHqgAoW";
@@ -317,6 +318,127 @@ function resolveTuition(
   return undefined;
 }
 
+function putNameKeys(index: Map<string, number>, display: string, amount: number) {
+  const keys = new Set(
+    [display, normalizeName(display), ...aliasKeys(display)].filter(
+      (value): value is string => Boolean(value),
+    ),
+  );
+  for (const key of keys) {
+    index.set(key, amount);
+    index.set(normalizeName(key), amount);
+  }
+}
+
+export type MiitSlotEntry = {
+  studentName: string;
+  appointmentPrice: number | null;
+  startMinute: number;
+};
+
+export async function lookupMiitSlotCatalog(
+  slot: SlotWindow,
+): Promise<{ entries: MiitSlotEntry[]; error: string | null }> {
+  if (!airtableToken()) {
+    return { entries: [], error: "尚未設定 Airtable" };
+  }
+  try {
+    const [students, appointments] = await Promise.all([
+      listAirtableRecords(STUDENT_TABLE, {
+        "fields[]": ["Full_Name", "Student_Name"],
+      }),
+      listAirtableRecords(APPOINTMENT_TABLE, {
+        filterByFormula: `AND(NOT({Canceled}), ${appointmentTypeFormula("miit")}, IS_AFTER({Start Time}, DATEADD(DATETIME_PARSE('${slot.date}'), -1, 'days')), IS_BEFORE({Start Time}, DATEADD(DATETIME_PARSE('${slot.date}'), 2, 'days')))`,
+        "fields[]": ["Student", "Appointment Price", "Start Time", "Type"],
+        "sort[0][field]": "Start Time",
+        "sort[0][direction]": "desc",
+      }),
+    ]);
+    const nameById = new Map<string, string>();
+    for (const student of students) {
+      const display =
+        fieldString(student.fields, "Full_Name") ||
+        fieldString(student.fields, "Student_Name");
+      if (display) {
+        nameById.set(student.id, display);
+      }
+    }
+
+    const closestByName = new Map<
+      string,
+      { appointmentPrice: number | null; startMinute: number; distance: number }
+    >();
+    for (const appointment of appointments) {
+      const start = fieldString(appointment.fields, "Start Time");
+      const when = hongKongMinutes(start);
+      if (!when || when.date !== slot.date) {
+        continue;
+      }
+      const appointmentEnd = when.minute + 60;
+      if (when.minute >= slot.endMinute || appointmentEnd <= slot.startMinute) {
+        continue;
+      }
+      const studentIds = appointment.fields.Student;
+      if (!Array.isArray(studentIds)) {
+        continue;
+      }
+      const rawPrice = Number(appointment.fields["Appointment Price"]);
+      const appointmentPrice = Number.isFinite(rawPrice) ? rawPrice : null;
+      const distance = Math.abs(when.minute - slot.startMinute);
+      for (const studentId of studentIds) {
+        if (typeof studentId !== "string") {
+          continue;
+        }
+        const studentName = nameById.get(studentId);
+        if (!studentName) {
+          continue;
+        }
+        const existing = closestByName.get(studentName);
+        if (!existing || distance < existing.distance) {
+          closestByName.set(studentName, {
+            appointmentPrice,
+            startMinute: when.minute,
+            distance,
+          });
+        }
+      }
+    }
+
+    const entries: MiitSlotEntry[] = [...closestByName.entries()].map(
+      ([studentName, row]) => ({
+        studentName,
+        appointmentPrice: row.appointmentPrice,
+        startMinute: row.startMinute,
+      }),
+    );
+    return { entries, error: null };
+  } catch (error) {
+    console.error("[lookupMiitSlotCatalog]", { error });
+    return { entries: [], error: "無法讀取 Airtable 預約學生" };
+  }
+}
+
+export function appointmentFeesForCheckedInNames(
+  entries: MiitSlotEntry[],
+  studentNames: string[],
+): Map<string, number> {
+  const index = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.appointmentPrice == null || !Number.isFinite(entry.appointmentPrice)) {
+      continue;
+    }
+    putNameKeys(index, entry.studentName, entry.appointmentPrice);
+  }
+  const fees = new Map<string, number>();
+  for (const name of studentNames) {
+    const amount = resolveTuition(index, name);
+    if (amount != null) {
+      fees.set(name, amount);
+    }
+  }
+  return fees;
+}
+
 export async function lookupAirtableTuitions(
   names: string[],
 ): Promise<{ fees: Map<string, number>; error: string | null }> {
@@ -372,6 +494,17 @@ export async function lookupAirtableExpectedStudents(input: {
   const kind = airtableSessionKind(input.workTypeName);
   if (!kind) {
     return { names: [], error: null };
+  }
+  if (kind === "miit") {
+    const catalog = await lookupMiitSlotCatalog({
+      date: input.date,
+      startMinute: input.startMinute,
+      endMinute: input.endMinute,
+    });
+    const names = [
+      ...new Set(catalog.entries.map((entry) => entry.studentName)),
+    ].sort((a, b) => a.localeCompare(b, "zh-Hant"));
+    return { names, error: catalog.error };
   }
   if (!airtableToken()) {
     return { names: [], error: "尚未設定 Airtable" };

@@ -31,32 +31,30 @@ export function describePayFormula(input: {
   const minutes = input.minutes ?? 0;
 
   if (mode === "per_head") {
-    if (rate == null || !Number.isFinite(rate) || rate < 0) {
+    if (rate == null || !Number.isFinite(rate) || rate <= 0) {
       return {
-        line: "MIIT：人數 × 每人價 × 分成",
+        line: "MIIT：預約學費合計 × 分成（缺價用每人薪資）",
         amount: null,
         blocked: "尚未設定 MIIT 每人薪資",
       };
     }
     if (input.payRatio == null || !Number.isFinite(input.payRatio) || input.payRatio <= 0) {
       return {
-        line: `MIIT：人數 × ${formatMoney(rate)} × 分成`,
+        line: "MIIT：預約學費合計 × 分成（簽到後按 Airtable；缺價用每人薪資）",
         amount: null,
         blocked: "尚未設定 Coach 分成比例",
       };
     }
     if (count <= 0) {
       return {
-        line: `人數 × ${formatMoney(rate)} × ${ratioLabel}`,
+        line: `預約學費合計 × ${ratioLabel}（簽到後按 Airtable；缺價用每人薪資）`,
         amount: null,
         blocked: null,
       };
     }
-    const fee = Math.round(rate * count * 100) / 100;
-    const amount = Math.round(fee * Number(input.payRatio) * 100) / 100;
     return {
-      line: `${count} × ${formatMoney(rate)} × ${ratioLabel} = ${formatMoney(amount)}`,
-      amount,
+      line: `${count} 位學生：預約學費合計 × ${ratioLabel}（簽到後按 Airtable；缺價用每人薪資）`,
+      amount: null,
       blocked: null,
     };
   }

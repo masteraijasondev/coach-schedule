@@ -1,5 +1,14 @@
-import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
+import {
+  appointmentFeesForCheckedInNames,
+  lookupAirtableTuitions,
+  lookupMiitSlotCatalog,
+} from "@/lib/airtable-tuition";
 import { payrollPeriodBoundsIso } from "@/lib/calendar";
+import {
+  quoteFeeRatioFromLedger,
+  resolveMiitFeeLedger,
+  type SlotWindow,
+} from "@/lib/fee-ledger";
 import { coachPayFromFeeRatio } from "@/lib/pt-rate";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { PayMode } from "@/lib/types";
@@ -52,6 +61,55 @@ export async function quotePtLessonPay(input: {
     quote: {
       studentFeeHkd: fee > 0 ? fee : null,
       earnedAmountHkd: fee > 0 ? pay : 0,
+      source: "airtable",
+    },
+  };
+}
+
+export type QuoteMiitLessonPayResult =
+  | { ok: true; quote: LessonPayQuote }
+  | { ok: false; error: string };
+
+export async function quoteMiitLessonPay(input: {
+  slot: SlotWindow;
+  studentNames: string[];
+  payRatio: number;
+  headRateFallback: number;
+}): Promise<QuoteMiitLessonPayResult> {
+  const names = input.studentNames.map((name) => name.trim()).filter(Boolean);
+  if (names.length === 0) {
+    return { ok: false, error: "請選擇教了哪位學生" };
+  }
+  const ratio = Number(input.payRatio);
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    return { ok: false, error: "尚未設定 Coach 分成比例" };
+  }
+
+  const catalog = await lookupMiitSlotCatalog(input.slot);
+  if (catalog.error) {
+    console.error("[quoteMiitLessonPay] catalog", { error: catalog.error });
+    return { ok: false, error: "讀取 MIIT 學費失敗" };
+  }
+
+  const appointmentFeesByName = appointmentFeesForCheckedInNames(
+    catalog.entries,
+    names,
+  );
+  const ledger = resolveMiitFeeLedger({
+    studentNames: names,
+    appointmentFeesByName,
+    headRateFallback: input.headRateFallback,
+  });
+  if (!ledger.ok) {
+    return { ok: false, error: ledger.error };
+  }
+
+  const quoted = quoteFeeRatioFromLedger(ledger.lines, ratio);
+  return {
+    ok: true,
+    quote: {
+      studentFeeHkd: quoted.studentFeeHkd,
+      earnedAmountHkd: quoted.earnedAmountHkd,
       source: "airtable",
     },
   };

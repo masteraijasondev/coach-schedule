@@ -10,7 +10,8 @@ import {
 } from "@/lib/check-in";
 import { TIMEZONE } from "@/lib/constants";
 import { lookupAirtableTuitions } from "@/lib/airtable-tuition";
-import { quotePtLessonPay } from "@/lib/lesson-pay";
+import type { SlotWindow } from "@/lib/fee-ledger";
+import { quoteMiitLessonPay, quotePtLessonPay } from "@/lib/lesson-pay";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, PayMode } from "@/lib/types";
@@ -819,6 +820,7 @@ async function quoteCheckInPeriod(
   lessonType: CheckInLessonType,
   studentNames: string[],
   durationMinutes: number,
+  slot: SlotWindow,
 ): Promise<
   | { earned: number | null; studentFee: number | null; studentIds: string[] }
   | { error: string }
@@ -851,14 +853,19 @@ async function quoteCheckInPeriod(
     if (!ensured) {
       return { error: "找不到學生" };
     }
-    const price = data == null ? Number.NaN : Number(data.amount_hkd);
-    if (!Number.isFinite(price) || price < 0) {
-      return { error: "尚未設定 MIIT 每人薪資" };
+    const headRate = data == null ? Number.NaN : Number(data.amount_hkd);
+    const quoted = await quoteMiitLessonPay({
+      slot,
+      studentNames,
+      payRatio: ratio,
+      headRateFallback: headRate,
+    });
+    if (!quoted.ok) {
+      return { error: quoted.error };
     }
     return {
-      earned:
-        Math.round(price * studentNames.length * ratio * 100) / 100,
-      studentFee: Math.round(price * studentNames.length * 100) / 100,
+      earned: quoted.quote.earnedAmountHkd,
+      studentFee: quoted.quote.studentFeeHkd,
       studentIds: ensured,
     };
   }
@@ -1083,9 +1090,11 @@ async function confirmLessonPeriodsForStaff(
     const pricedPerHead = typedPeriods.some(
       (period) => typeById.get(period.lessonTypeId)?.pay_mode === "per_head",
     );
+    const pricedPerStudent = typedPeriods.some(
+      (period) => typeById.get(period.lessonTypeId)?.pay_mode === "per_student",
+    );
     // Same job type still has to be saved per lesson when the students differ.
     // The single check-in call copies one student list onto every split.
-    // MIIT is count × fixed price on each slot, even when the names match.
     if (typeIds.length > 1 || studentsDiffer || pricedPerHead) {
       const allStudentNames = [
         ...new Set(typedPeriods.flatMap((period) => period.studentNames)),
@@ -1095,8 +1104,9 @@ async function confirmLessonPeriodsForStaff(
         if (!warmed) {
           return { ok: false, error: "找不到學生" };
         }
-        // Warm Airtable index once before parallel period quotes.
-        await lookupAirtableTuitions(allStudentNames);
+        if (pricedPerStudent) {
+          await lookupAirtableTuitions(allStudentNames);
+        }
       }
       const quoteResults = await Promise.all(
         typedPeriods.map(async (period) => {
@@ -1124,6 +1134,11 @@ async function confirmLessonPeriodsForStaff(
             lessonType,
             period.studentNames,
             durationMinutes,
+            {
+              date: window.date,
+              startMinute: period.startMinute,
+              endMinute: period.endMinute,
+            },
           );
           if ("error" in quote) {
             return { error: quote.error };
