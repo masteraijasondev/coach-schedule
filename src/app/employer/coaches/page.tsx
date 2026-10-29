@@ -322,10 +322,12 @@ export default async function CoachesPage() {
                               min="0"
                               step="0.01"
                               defaultValue={rateValue}
-                              placeholder={type.pay_mode === "per_head" ? "每人" : "時薪"}
+                              placeholder={
+                                type.pay_mode === "per_head" ? "缺價後備" : "時薪"
+                              }
                               aria-label={
                                 type.pay_mode === "per_head"
-                                  ? `${type.name} 每人薪資`
+                                  ? `${type.name} 缺價後備每人薪資`
                                   : `${type.name} 時薪`
                               }
                               data-tour={

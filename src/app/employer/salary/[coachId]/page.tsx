@@ -274,7 +274,7 @@ export default async function EmployerCoachSalaryPage({
             const typeRate = rateByType.get(group.typeId) ?? null;
             const rateLabel =
               group.payMode === "per_head" && typeRate != null
-                ? `每人 ${formatMoney(typeRate)}`
+                ? `缺價後備每人 ${formatMoney(typeRate)}`
                 : group.payMode === "per_hour" && typeRate != null
                   ? `時薪 ${formatMoney(typeRate)}`
                   : group.payMode === "per_hour" && hourlyRate != null
@@ -346,6 +346,16 @@ export default async function EmployerCoachSalaryPage({
                         {group.payMode === "per_head" ? (
                           <p className="text-sm text-stone-500">
                             學生 {studentCountByLesson.get(lesson.id) ?? 0} 人
+                            {lesson.student_fee_hkd == null ? (
+                              ""
+                            ) : (
+                              <>
+                                {" · 學費 "}
+                                <DataValue>
+                                  {formatMoney(Number(lesson.student_fee_hkd))}
+                                </DataValue>
+                              </>
+                            )}
                           </p>
                         ) : null}
                         <p className="text-xs text-stone-500">{formula.line}</p>
