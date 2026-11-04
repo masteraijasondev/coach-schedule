@@ -90,6 +90,7 @@ export function EmployerDirectAssignForm({
             action={createLessonAction}
             className="mt-3 grid gap-3"
             onSuccess={() => {
+              setOpen(false);
               if (clearHref) {
                 router.replace(clearHref);
                 return;

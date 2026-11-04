@@ -152,6 +152,7 @@ async function ensureOpenAvailability(
       start_minute: gap.start,
       end_minute: gap.end,
       released: false,
+      auto_for_assign: true,
     });
     if (insertError) {
       console.error("[ensureOpenAvailability] insert", { insertError, gap });
@@ -159,6 +160,75 @@ async function ensureOpenAvailability(
     }
   }
   return null;
+}
+
+/** Remove availability covering the cancelled lesson so that window is free (no 待公司派更). */
+async function clearAvailabilityWindow(
+  coachId: string,
+  date: string,
+  startMinute: number,
+  endMinute: number,
+): Promise<void> {
+  const admin = createAdminClient();
+  const { data: rows, error } = await admin
+    .from("staff_availabilities")
+    .select("id, start_minute, end_minute, released")
+    .eq("coach_id", coachId)
+    .eq("available_date", date)
+    .lt("start_minute", endMinute)
+    .gt("end_minute", startMinute);
+
+  if (error) {
+    console.error("[clearAvailabilityWindow] load", {
+      error,
+      coachId,
+      date,
+      startMinute,
+      endMinute,
+    });
+    return;
+  }
+
+  for (const row of rows ?? []) {
+    const { error: deleteError } = await admin
+      .from("staff_availabilities")
+      .delete()
+      .eq("id", row.id);
+    if (deleteError) {
+      console.error("[clearAvailabilityWindow] delete", {
+        error: deleteError,
+        id: row.id,
+      });
+      continue;
+    }
+
+    const remnants: { start: number; end: number }[] = [];
+    if (row.start_minute < startMinute) {
+      remnants.push({ start: row.start_minute, end: startMinute });
+    }
+    if (row.end_minute > endMinute) {
+      remnants.push({ start: endMinute, end: row.end_minute });
+    }
+
+    for (const remnant of remnants) {
+      const { error: insertError } = await admin
+        .from("staff_availabilities")
+        .insert({
+          coach_id: coachId,
+          available_date: date,
+          start_minute: remnant.start,
+          end_minute: remnant.end,
+          released: row.released,
+          auto_for_assign: false,
+        });
+      if (insertError) {
+        console.error("[clearAvailabilityWindow] remnant", {
+          error: insertError,
+          remnant,
+        });
+      }
+    }
+  }
 }
 
 function parseHongKongDateTime(date: string, time: string): Date {
@@ -1701,7 +1771,7 @@ export async function cancelLessonAction(lessonId: string): Promise<ActionResult
 
     const { data: lesson } = await supabase
       .from("lessons")
-      .select("status")
+      .select("status, coach_id, starts_at, ends_at")
       .eq("id", lessonId)
       .single();
 
@@ -1716,6 +1786,16 @@ export async function cancelLessonAction(lessonId: string): Promise<ActionResult
 
     if (error) {
       return { ok: false, error: "取消課堂失敗" };
+    }
+
+    if (lesson.coach_id && lesson.status === "assigned") {
+      const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+      await clearAvailabilityWindow(
+        lesson.coach_id,
+        window.date,
+        window.startMinute,
+        window.endMinute,
+      );
     }
 
     if (lesson.status === "completed") {

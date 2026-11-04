@@ -199,7 +199,7 @@ export async function EmployerLessonList({
                   {lesson.status === "assigned" ? (
                     <ServerActionButton
                       action={cancelLessonAction.bind(null, lesson.id)}
-                      confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
+                      confirmMessage="確定撤銷呢次派更？該時段會變回空閒，不再顯示待公司派更。"
                       confirmLabel="確定撤銷派更"
                       confirmVariant="slot"
                       variant="slot"

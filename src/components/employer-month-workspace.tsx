@@ -406,7 +406,7 @@ export function EmployerMonthWorkspace({
         <div className="flex flex-col gap-2">
           <ServerActionButton
             action={cancelLessonAction.bind(null, lesson.id)}
-            confirmMessage="確定撤銷呢次派更？時段會回到待公司派更。"
+            confirmMessage="確定撤銷呢次派更？該時段會變回空閒，不再顯示待公司派更。"
             confirmLabel="確定撤銷派更"
             confirmVariant="slot"
             variant="slot"
@@ -564,6 +564,7 @@ export function EmployerMonthWorkspace({
             key: `${slot.id}-${segment.startMinute}-${segment.endMinute}`,
             start: segment.startMinute,
             tone: variant,
+            defaultOpen: overlap.status === "assigned",
             label:
               overlap.status === "completed"
                 ? checkedInLabel({
@@ -618,6 +619,7 @@ export function EmployerMonthWorkspace({
       key: lesson.id,
       start: window.startMinute,
       tone: pending ? "pending" : "confirmed",
+      defaultOpen: pending,
       label: pending
         ? `${formatAvailabilityTime(window.startMinute)}–${formatAvailabilityTime(window.endMinute)} ${calendarAssignmentLabel("assigned")}`
         : checkedInLabel({
@@ -643,7 +645,9 @@ export function EmployerMonthWorkspace({
         start: items[0]?.start ?? 0,
         coachName: group.coachName,
         tone: sickOnly ? ("sick" as const) : absenceOnly ? ("leave" as const) : ("staff" as const),
-        defaultOpen: items.some((item) => item.defaultOpen),
+        defaultOpen:
+          items.some((item) => item.defaultOpen) ||
+          items.some((item) => item.tone === "pending"),
         label: sickOnly
           ? `${group.coachName} 病假`
           : absenceOnly
@@ -712,6 +716,17 @@ export function EmployerMonthWorkspace({
                   }
                   tone={chip.items[0].tone}
                 />
+              ) : chip.items.length === 1 && chip.items[0]?.body ? (
+                <StaffShiftChip
+                  key={chip.key}
+                  label={`${chip.items[0].label} · ${chip.coachName}`}
+                  tone={chip.items[0].tone}
+                  defaultOpen={
+                    chip.items[0].defaultOpen || chip.items[0].tone === "pending"
+                  }
+                >
+                  {chip.items[0].body}
+                </StaffShiftChip>
               ) : (
                 <StaffShiftChip
                   key={chip.key}

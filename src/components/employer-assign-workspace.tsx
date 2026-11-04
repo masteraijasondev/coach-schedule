@@ -368,7 +368,7 @@ export function EmployerAssignWorkspace({
                       }
                       confirmMessage={
                         pending
-                          ? "確定撤銷呢次派更？時段會回到待公司派更。"
+                          ? "確定撤銷呢次派更？該時段會變回空閒，不再顯示待公司派更。"
                           : "確定撤銷簽到？會回到待簽到，本次薪資不會計算。"
                       }
                       confirmLabel={pending ? "確定撤銷派更" : "確定撤銷簽到"}
