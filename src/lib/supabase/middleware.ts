@@ -110,6 +110,11 @@ export async function updateSession(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/forgot-password" ||
     pathname.startsWith("/auth/");
+  const isWebhookPath = pathname.startsWith("/api/webhooks/");
+
+  if (isWebhookPath) {
+    return NextResponse.next({ request });
+  }
 
   if (isStaleRefreshToken(authError)) {
     const response = isPublicAuthPath
