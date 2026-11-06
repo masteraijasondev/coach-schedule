@@ -10,7 +10,6 @@ import {
 } from "@/lib/calendar";
 import { ExpectedPaySummary, formatExpectedPay } from "@/components/expected-pay-summary";
 import { PayMethodDetails } from "@/components/pay-method-details";
-import { ResyncAirtablePayButton } from "@/components/resync-airtable-pay-button";
 import {
   durationMinutes,
   expectedAssignedAmount,
@@ -184,9 +183,6 @@ export default async function EmployerCoachSalaryPage({
           >
             下期
           </Link>
-        </div>
-        <div className="mb-4">
-          <ResyncAirtablePayButton coachId={coachId} period={period} />
         </div>
         <PayMethodDetails>
           {payRatioPercentLabel(payRatio) ? (

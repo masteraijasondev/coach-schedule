@@ -3,7 +3,10 @@ import {
   lookupAirtableTuitions,
   lookupMiitSlotCatalog,
 } from "@/lib/airtable-tuition";
-import { payrollPeriodBoundsIso } from "@/lib/calendar";
+import {
+  lessonMinutesInHongKong,
+  payrollPeriodBoundsIso,
+} from "@/lib/calendar";
 import {
   quoteFeeRatioFromLedger,
   resolveMiitFeeLedger,
@@ -194,9 +197,14 @@ type LessonRow = {
   coach_id: string | null;
   status: string;
   lesson_type_id: string;
+  starts_at: string;
+  ends_at: string;
   student_fee_hkd: number | null;
   earned_amount_hkd: number | null;
 };
+
+const LESSON_PAY_SELECT =
+  "id, coach_id, status, lesson_type_id, starts_at, ends_at, student_fee_hkd, earned_amount_hkd";
 
 function moneyEq(
   left: number | null | undefined,
@@ -212,7 +220,7 @@ function moneyEq(
 }
 
 /**
- * Default entry: re-quote completed PT lessons from Airtable and write back.
+ * Re-quote completed PT + MIIT lessons from Airtable and write back.
  * Requires lessonId, or coachId+period, or period alone.
  */
 export async function resyncLessonPayFromAirtable(
@@ -235,9 +243,7 @@ export async function resyncLessonPayFromAirtable(
   if (scope.lessonId) {
     const { data, error } = await admin
       .from("lessons")
-      .select(
-        "id, coach_id, status, lesson_type_id, student_fee_hkd, earned_amount_hkd",
-      )
+      .select(LESSON_PAY_SELECT)
       .eq("id", scope.lessonId)
       .maybeSingle();
     if (error) {
@@ -254,9 +260,7 @@ export async function resyncLessonPayFromAirtable(
     const { start, end } = payrollPeriodBoundsIso(scope.period);
     let query = admin
       .from("lessons")
-      .select(
-        "id, coach_id, status, lesson_type_id, student_fee_hkd, earned_amount_hkd",
-      )
+      .select(LESSON_PAY_SELECT)
       .eq("status", "completed")
       .gte("starts_at", start)
       .lt("starts_at", end);
@@ -285,16 +289,34 @@ export async function resyncLessonPayFromAirtable(
   ];
   const lessonIds = lessons.map((lesson) => lesson.id);
 
-  const [typesResult, profilesResult, linksResult] = await Promise.all([
-    admin.from("lesson_types").select("id, pay_mode").in("id", typeIds),
-    coachIds.length
-      ? admin.from("profiles").select("id, pay_ratio").in("id", coachIds)
-      : Promise.resolve({ data: [] as { id: string; pay_ratio: number | null }[], error: null }),
-    admin
-      .from("lesson_students")
-      .select("lesson_id, student_id, students(name)")
-      .in("lesson_id", lessonIds),
-  ]);
+  const [typesResult, profilesResult, linksResult, ratesResult] =
+    await Promise.all([
+      admin.from("lesson_types").select("id, pay_mode").in("id", typeIds),
+      coachIds.length
+        ? admin.from("profiles").select("id, pay_ratio").in("id", coachIds)
+        : Promise.resolve({
+            data: [] as { id: string; pay_ratio: number | null }[],
+            error: null,
+          }),
+      admin
+        .from("lesson_students")
+        .select("lesson_id, student_id, students(name)")
+        .in("lesson_id", lessonIds),
+      coachIds.length
+        ? admin
+            .from("coach_rates")
+            .select("coach_id, lesson_type_id, amount_hkd")
+            .in("coach_id", coachIds)
+            .in("lesson_type_id", typeIds)
+        : Promise.resolve({
+            data: [] as {
+              coach_id: string;
+              lesson_type_id: string;
+              amount_hkd: number;
+            }[],
+            error: null,
+          }),
+    ]);
 
   if (typesResult.error) {
     console.error("[resyncLessonPayFromAirtable] types", {
@@ -314,12 +336,23 @@ export async function resyncLessonPayFromAirtable(
     });
     return { ...report, error: "讀取學生失敗" };
   }
+  if (ratesResult.error) {
+    console.error("[resyncLessonPayFromAirtable] coach rates", {
+      error: ratesResult.error,
+    });
+    return { ...report, error: "讀取 MIIT 每人薪資失敗" };
+  }
 
   const payModeByType = new Map(
     (typesResult.data ?? []).map((row) => [row.id, row.pay_mode as PayMode]),
   );
   const ratioByCoach = new Map(
     (profilesResult.data ?? []).map((row) => [row.id, row.pay_ratio]),
+  );
+  const headRateByCoachType = new Map(
+    (ratesResult.data ?? []).map(
+      (row) => [`${row.coach_id}:${row.lesson_type_id}`, Number(row.amount_hkd)] as const,
+    ),
   );
 
   const namesByLesson = new Map<string, string[]>();
@@ -369,12 +402,15 @@ export async function resyncLessonPayFromAirtable(
     }
   }
 
-  const allNames = [
-    ...new Set([...namesByLesson.values()].flat()),
-  ];
-  if (allNames.length > 0) {
-    // Warm Airtable index once before per-lesson quotes.
-    await lookupAirtableTuitions(allNames);
+  const hasPt = lessons.some(
+    (lesson) => payModeByType.get(lesson.lesson_type_id) === "per_student",
+  );
+  if (hasPt) {
+    const allNames = [...new Set([...namesByLesson.values()].flat())];
+    if (allNames.length > 0) {
+      // Warm PT Airtable index once before per-lesson quotes.
+      await lookupAirtableTuitions(allNames);
+    }
   }
 
   for (const lesson of lessons) {
@@ -382,7 +418,8 @@ export async function resyncLessonPayFromAirtable(
       report.skipped += 1;
       continue;
     }
-    if (payModeByType.get(lesson.lesson_type_id) !== "per_student") {
+    const payMode = payModeByType.get(lesson.lesson_type_id);
+    if (payMode !== "per_student" && payMode !== "per_head") {
       report.skipped += 1;
       continue;
     }
@@ -395,7 +432,7 @@ export async function resyncLessonPayFromAirtable(
       report.skipped += 1;
       continue;
     }
-    if (manualPairs) {
+    if (payMode === "per_student" && manualPairs) {
       const studentIds = studentIdsByLesson.get(lesson.id) ?? [];
       const isManual = studentIds.some((studentId) =>
         manualPairs!.has(`${lesson.coach_id}:${studentId}`),
@@ -407,12 +444,30 @@ export async function resyncLessonPayFromAirtable(
     }
 
     const ratio = Number(ratioByCoach.get(lesson.coach_id));
-    const quoted = await quotePtLessonPay({ studentNames: names, payRatio: ratio });
+    let quoted: QuotePtLessonPayResult | QuoteMiitLessonPayResult;
+    if (payMode === "per_head") {
+      const headRate = headRateByCoachType.get(
+        `${lesson.coach_id}:${lesson.lesson_type_id}`,
+      );
+      if (headRate == null || !Number.isFinite(headRate) || headRate <= 0) {
+        report.skipped += 1;
+        continue;
+      }
+      const slot = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
+      quoted = await quoteMiitLessonPay({
+        slot,
+        studentNames: names,
+        payRatio: ratio,
+        headRateFallback: headRate,
+      });
+    } else {
+      quoted = await quotePtLessonPay({ studentNames: names, payRatio: ratio });
+    }
     if (!quoted.ok) {
       report.skipped += 1;
       continue;
     }
-    if (quoted.quote.studentFeeHkd == null) {
+    if (payMode === "per_student" && quoted.quote.studentFeeHkd == null) {
       // No Airtable price — leave existing snapshot alone.
       report.skipped += 1;
       continue;

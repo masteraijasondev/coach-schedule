@@ -151,13 +151,21 @@ function leaveLabel(kind: string | null | undefined): string {
   return "放假";
 }
 
+function lessonStatusLabel(status: string): string {
+  if (status === "completed") {
+    return "已簽到";
+  }
+  return "已派更";
+}
+
 async function lessonEvent(record: LessonRecord): Promise<CalendarEventInput> {
   const [name, typeName] = await Promise.all([
     coachName(record.coach_id),
     lessonTypeName(record.assigned_lesson_type_id ?? record.lesson_type_id),
   ]);
+  const statusLabel = lessonStatusLabel(record.status);
   return {
-    summary: `${name} · ${typeName}`,
+    summary: `${name} · ${statusLabel} · ${typeName}`,
     description: `lesson_id=${record.id} status=${record.status}`,
     colorId: record.status === "completed" ? "10" : "9",
     start: hongKongDateTime(record.starts_at),

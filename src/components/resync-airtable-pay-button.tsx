@@ -8,16 +8,17 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 type Props = {
-  coachId: string;
   period: string;
+  coachId?: string;
 };
 
-export function ResyncAirtablePayButton({ coachId, period }: Props) {
+export function ResyncAirtablePayButton({ period, coachId }: Props) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [pending, startTransition] = useTransition();
+  const scopeLabel = coachId ? "此同事" : "全部同事";
 
   function run() {
     setError(null);
@@ -25,7 +26,10 @@ export function ResyncAirtablePayButton({ coachId, period }: Props) {
     setAsking(false);
     startTransition(async () => {
       try {
-        const result = await resyncAirtableLessonPayAction({ coachId, period });
+        const result = await resyncAirtableLessonPayAction({
+          period,
+          ...(coachId ? { coachId } : {}),
+        });
         if (!result.ok) {
           setError(result.error);
           return;
@@ -47,8 +51,8 @@ export function ResyncAirtablePayButton({ coachId, period }: Props) {
       {asking ? (
         <div className="space-y-2">
           <Alert variant="filled" severity="warning">
-            會用而家 Airtable 學費 × 分成，覆寫此結算期已簽到 PT
-            課堂嘅學費同人工。確定要繼續？
+            會用而家 Airtable 學費 × 分成，覆寫此結算期{scopeLabel}
+            已簽到 PT／MIIT 課堂嘅學費同人工。確定要繼續？
           </Alert>
           <div className="flex flex-wrap gap-2">
             <button
@@ -87,7 +91,7 @@ export function ResyncAirtablePayButton({ coachId, period }: Props) {
             setAsking(true);
           }}
         >
-          跟 Airtable 重算 PT
+          跟 Airtable 重算 PT／MIIT
         </button>
       )}
       {summary ? (

@@ -11,6 +11,7 @@ import {
 } from "@/lib/calendar";
 import { ExpectedPaySummary } from "@/components/expected-pay-summary";
 import { PayMethodDetails } from "@/components/pay-method-details";
+import { ResyncAirtablePayButton } from "@/components/resync-airtable-pay-button";
 import {
   hourlyRateOrNull,
   periodPayTotals,
@@ -143,6 +144,9 @@ export default async function EmployerSalaryPage({ searchParams }: Props) {
           >
             下期
           </Link>
+        </div>
+        <div className="mb-4">
+          <ResyncAirtablePayButton period={period} />
         </div>
         <PayMethodDetails>
           <p>點員工姓名可查看明細與工種費率。</p>
