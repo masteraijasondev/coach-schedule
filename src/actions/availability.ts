@@ -295,6 +295,39 @@ export async function cancelLeaveByIdAction(
   }
 }
 
+export async function employerCancelLeaveByIdAction(
+  leaveId: string,
+): Promise<ActionResult> {
+  try {
+    await requireEmployer();
+    if (!leaveId) {
+      return { ok: false, error: "找不到放假紀錄" };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("employer_delete_staff_leave_by_id", {
+      p_id: leaveId,
+    });
+
+    if (error) {
+      console.error("[employerCancelLeaveByIdAction]", { error, leaveId });
+      if (error.message.includes("Past leave")) {
+        return { ok: false, error: "過去的放假不能取消" };
+      }
+      if (error.message.includes("not found")) {
+        return { ok: false, error: "找不到放假紀錄" };
+      }
+      return { ok: false, error: availabilityDatabaseError(error.message) };
+    }
+
+    revalidateAvailabilityPages();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    console.error("[employerCancelLeaveByIdAction] unexpected", { error });
+    return { ok: false, error: "取消放假時發生錯誤" };
+  }
+}
+
 export async function saveAvailabilityAction(
   _prev: ActionResult | null,
   formData: FormData,

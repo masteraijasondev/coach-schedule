@@ -279,6 +279,30 @@ export function isFullDayLeave(leave: {
   return leave.start_minute == null || leave.end_minute == null;
 }
 
+/** Punch timed blocks (e.g. sick leave) out of availability ranges. */
+export function subtractMinuteRanges(
+  ranges: { start: number; end: number }[],
+  blocks: { start: number; end: number }[],
+): { start: number; end: number }[] {
+  let open = ranges;
+  for (const block of blocks) {
+    open = open.flatMap((range) => {
+      if (block.end <= range.start || block.start >= range.end) {
+        return [range];
+      }
+      const next: { start: number; end: number }[] = [];
+      if (block.start > range.start) {
+        next.push({ start: range.start, end: block.start });
+      }
+      if (block.end < range.end) {
+        next.push({ start: block.end, end: range.end });
+      }
+      return next;
+    });
+  }
+  return open;
+}
+
 /**
  * Month grid days as yyyy-MM-dd strings, Sunday-first.
  * Pure UTC date math so the grid is identical on every device,

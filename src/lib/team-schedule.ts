@@ -3,6 +3,7 @@ import {
   isFullDayLeave,
   lessonDayKey,
   lessonMinutesInHongKong,
+  subtractMinuteRanges,
   takeCompletedLessonOnce,
 } from "@/lib/calendar";
 import { checkedInLabel, formatAvailabilityTime, leaveWindowLabel } from "@/lib/format";
@@ -100,6 +101,19 @@ function barsForPerson(
     });
   }
 
+  const timedSickByDate = new Map<string, { start: number; end: number }[]>();
+  for (const leave of person.leaves) {
+    if (isFullDayLeave(leave) || leave.kind !== "sick") {
+      continue;
+    }
+    const blocks = timedSickByDate.get(leave.leave_date) ?? [];
+    blocks.push({
+      start: leave.start_minute ?? 0,
+      end: leave.end_minute ?? 0,
+    });
+    timedSickByDate.set(leave.leave_date, blocks);
+  }
+
   for (const availability of person.availabilities) {
     if (fullLeaveDates.has(availability.available_date)) {
       continue;
@@ -116,36 +130,42 @@ function barsForPerson(
       });
       continue;
     }
-    for (const segment of availabilitySegments(
-      availability.available_date,
-      availability.start_minute,
-      availability.end_minute,
-      shiftLessons,
-    )) {
-      if (!takeCompletedLessonOnce(segment, seenCompleted)) {
-        continue;
+    const openRanges = subtractMinuteRanges(
+      [{ start: availability.start_minute, end: availability.end_minute }],
+      timedSickByDate.get(availability.available_date) ?? [],
+    );
+    for (const range of openRanges) {
+      for (const segment of availabilitySegments(
+        availability.available_date,
+        range.start,
+        range.end,
+        shiftLessons,
+      )) {
+        if (!takeCompletedLessonOnce(segment, seenCompleted)) {
+          continue;
+        }
+        if (segment.lesson) {
+          coveredLessonIds.add(segment.lesson.id);
+        }
+        const pending = segment.lesson?.status === "assigned";
+        const confirmed = segment.lesson?.status === "completed";
+        const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+        const segmentLabel = confirmed
+          ? checkedInLabel({
+              time: segmentTime,
+              typeName: typeNameById.get(segment.lesson?.lesson_type_id ?? ""),
+              withStatus: false,
+            })
+          : segmentTime;
+        bars.push({
+          id: `team-slot-${availability.id}-${segment.startMinute}-${segment.endMinute}`,
+          date: availability.available_date,
+          label: segmentLabel,
+          coachName: person.fullName,
+          timeLabel: segmentLabel,
+          variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
+        });
       }
-      if (segment.lesson) {
-        coveredLessonIds.add(segment.lesson.id);
-      }
-      const pending = segment.lesson?.status === "assigned";
-      const confirmed = segment.lesson?.status === "completed";
-      const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
-      const segmentLabel = confirmed
-        ? checkedInLabel({
-            time: segmentTime,
-            typeName: typeNameById.get(segment.lesson?.lesson_type_id ?? ""),
-            withStatus: false,
-          })
-        : segmentTime;
-      bars.push({
-        id: `team-slot-${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        date: availability.available_date,
-        label: segmentLabel,
-        coachName: person.fullName,
-        timeLabel: segmentLabel,
-        variant: pending ? "pending" : confirmed ? "confirmed" : "slot",
-      });
     }
   }
 

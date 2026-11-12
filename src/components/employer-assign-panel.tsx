@@ -26,6 +26,7 @@ type LeaveSlot = {
   leave_date: string;
   start_minute?: number | null;
   end_minute?: number | null;
+  kind?: string | null;
 };
 
 type LessonRow = {
@@ -116,7 +117,7 @@ export async function EmployerAssignPanel({
     leaves == null
       ? supabase
           .from("staff_leaves")
-          .select("id, leave_date, start_minute, end_minute")
+          .select("id, leave_date, start_minute, end_minute, kind")
           .eq("coach_id", coachId)
           .gte("leave_date", week)
           .lte("leave_date", weekEnd)

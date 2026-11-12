@@ -1,6 +1,9 @@
 "use client";
 
-import { restoreReleasedAvailabilityAction } from "@/actions/availability";
+import {
+  employerCancelLeaveByIdAction,
+  restoreReleasedAvailabilityAction,
+} from "@/actions/availability";
 import { cancelLessonAction, undoCheckInAction } from "@/actions/lessons";
 import { CalendarLegend, EMPLOYER_CALENDAR_LEGEND } from "@/components/calendar-legend";
 import { DataValue } from "@/components/data-value";
@@ -8,7 +11,16 @@ import { EmployerAssignForm } from "@/components/employer-assign-form";
 import { EmployerDirectAssignForm } from "@/components/employer-direct-assign-form";
 import { ServerActionButton } from "@/components/server-action-button";
 import { WeekTimeGrid, eventPosition } from "@/components/week-time-grid";
-import { availabilityWeekStart, availabilitySegments, isFullDayLeave, lessonMinutesInHongKong, overlappingLesson, shiftAvailabilityWeek, takeCompletedLessonOnce } from "@/lib/calendar";
+import {
+  availabilityWeekStart,
+  availabilitySegments,
+  isFullDayLeave,
+  lessonMinutesInHongKong,
+  overlappingLesson,
+  shiftAvailabilityWeek,
+  subtractMinuteRanges,
+  takeCompletedLessonOnce,
+} from "@/lib/calendar";
 import {
   isModifiedClick,
   replaceCalendarHref,
@@ -40,6 +52,7 @@ type LeaveSlot = {
   leave_date: string;
   start_minute?: number | null;
   end_minute?: number | null;
+  kind?: string | null;
 };
 
 type WeekLesson = {
@@ -114,8 +127,10 @@ export function EmployerAssignWorkspace({
           slotEndMinute: selection.slotEnd,
         }
       : null;
-  const leaveSet = new Set(
-    leaves.filter(isFullDayLeave).map((leave) => leave.leave_date),
+  const fullDayLeaveByDate = new Map(
+    leaves
+      .filter(isFullDayLeave)
+      .map((leave) => [leave.leave_date, leave.kind === "sick"] as const),
   );
   const { start: gridStart, end: gridEnd } = weekGridRange([
     ...slots,
@@ -141,6 +156,14 @@ export function EmployerAssignWorkspace({
 
   const openSlot =
     liveSlot != null &&
+    !fullDayLeaveByDate.has(liveSlot.date) &&
+    !leaves.some(
+      (leave) =>
+        leave.leave_date === liveSlot.date &&
+        !isFullDayLeave(leave) &&
+        (leave.start_minute ?? 0) < liveSlot.slotEndMinute &&
+        (leave.end_minute ?? 0) > liveSlot.startMinute,
+    ) &&
     slots.some(
       (slot) =>
         !slot.released &&
@@ -246,44 +269,79 @@ export function EmployerAssignWorkspace({
         gridStart={gridStart}
         gridEnd={gridEnd}
         nowMinute={days.includes(today) ? nowMinute : null}
-        allDay={(date) =>
-          leaveSet.has(date) ? (
-            <p className="rounded-sm bg-stone-300 px-1 py-1 text-center text-xs font-medium text-stone-800">
-              放假
-            </p>
-          ) : null
-        }
-        events={(date) => {
-          if (leaveSet.has(date)) {
+        allDay={(date) => {
+          if (!fullDayLeaveByDate.has(date)) {
             return null;
           }
-          const breakBlocks = leaves
-            .filter(
-              (leave) =>
-                leave.leave_date === date && !isFullDayLeave(leave),
-            )
-            .map((leave) => {
-              const start = leave.start_minute ?? 0;
-              const end = leave.end_minute ?? 0;
-              const { top, height } = eventPosition(
-                start,
-                end,
-                gridStart,
-                gridEnd,
-              );
-              const label = `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)}`;
-              return (
-                <div
-                  key={leave.id ?? `${date}-${start}`}
-                  title={`${label} 小休`}
-                  className="absolute right-0.5 left-0.5 z-[1] overflow-hidden rounded-sm border border-stone-400 bg-stone-300 px-1 py-0.5 text-left text-xs font-medium text-stone-800"
-                  style={{ top, height }}
-                >
-                  <span className="font-bold tabular-nums">{label}</span>
-                  <span className="mt-0.5 block truncate">小休</span>
-                </div>
-              );
-            });
+          const sick = fullDayLeaveByDate.get(date);
+          return (
+            <p
+              className={`rounded-sm px-1 py-1 text-center text-xs font-medium ${
+                sick
+                  ? "bg-red-100 text-red-950"
+                  : "bg-stone-300 text-stone-800"
+              }`}
+            >
+              {sick ? "全日病假" : "放假"}
+            </p>
+          );
+        }}
+        events={(date) => {
+          if (fullDayLeaveByDate.has(date)) {
+            return null;
+          }
+          const dayTimedLeaves = leaves.filter(
+            (leave) => leave.leave_date === date && !isFullDayLeave(leave),
+          );
+          const breakBlocks = dayTimedLeaves.map((leave) => {
+            const start = leave.start_minute ?? 0;
+            const end = leave.end_minute ?? 0;
+            const sick = leave.kind === "sick";
+            const { top, height } = eventPosition(
+              start,
+              end,
+              gridStart,
+              gridEnd,
+            );
+            const label = `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)}`;
+            const absenceLabel = sick ? "病假" : "小休";
+            return (
+              <div
+                key={leave.id ?? `${date}-${start}`}
+                title={`${label} ${absenceLabel}`}
+                className={`absolute right-0.5 left-0.5 z-[2] overflow-visible rounded-sm border px-1 py-0.5 text-left text-xs font-medium ${
+                  sick
+                    ? "border-red-400 bg-red-100 text-red-950"
+                    : "border-stone-400 bg-stone-300 text-stone-800"
+                }`}
+                style={{ top, height }}
+              >
+                <span className="font-bold tabular-nums">{label}</span>
+                <span className="mt-0.5 block truncate">{absenceLabel}</span>
+                {leave.id && date >= today ? (
+                  <ServerActionButton
+                    action={employerCancelLeaveByIdAction.bind(null, leave.id)}
+                    confirmMessage={
+                      sick
+                        ? "確定撤銷病假？已取消的派更同可返工時間會一併恢復。"
+                        : "確定撤銷放假？已取消的可返工時間會一併恢復。"
+                    }
+                    confirmLabel={sick ? "確定撤銷病假" : "確定撤銷放假"}
+                    confirmVariant={sick ? "sickQuiet" : "leaveQuiet"}
+                    className="mt-1 min-h-8 w-full rounded-sm border border-current/30 bg-white/80 px-1 py-0.5 text-[10px] text-stone-900 disabled:opacity-60"
+                  >
+                    {sick ? "撤銷病假" : "撤銷放假"}
+                  </ServerActionButton>
+                ) : null}
+              </div>
+            );
+          });
+          const sickBlocks = dayTimedLeaves
+            .filter((leave) => leave.kind === "sick")
+            .map((leave) => ({
+              start: leave.start_minute ?? 0,
+              end: leave.end_minute ?? 0,
+            }));
           const seenCompleted = new Set<string>();
           const availabilityBlocks = (byDate.get(date) ?? []).flatMap((slot) => {
             if (slot.released) {
@@ -314,12 +372,12 @@ export function EmployerAssignWorkspace({
                 </div>,
               ];
             }
-            return availabilitySegments(
-              date,
-              slot.start_minute,
-              slot.end_minute,
-              lessons,
-            )
+            const openRanges = subtractMinuteRanges(
+              [{ start: slot.start_minute, end: slot.end_minute }],
+              sickBlocks,
+            );
+            return openRanges.flatMap((range) =>
+              availabilitySegments(date, range.start, range.end, lessons)
               .filter((segment) => takeCompletedLessonOnce(segment, seenCompleted))
               .map((segment) => {
             const pending = segment.lesson?.status === "assigned";
@@ -404,7 +462,8 @@ export function EmployerAssignWorkspace({
                 <span className="mt-0.5 block truncate">待公司派更</span>
               </Link>
             );
-          });
+              }),
+            );
           });
           return [...breakBlocks, ...availabilityBlocks];
         }}

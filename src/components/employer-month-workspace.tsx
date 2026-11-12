@@ -1,6 +1,9 @@
 "use client";
 
-import { restoreReleasedAvailabilityAction } from "@/actions/availability";
+import {
+  employerCancelLeaveByIdAction,
+  restoreReleasedAvailabilityAction,
+} from "@/actions/availability";
 import {
   cancelLessonAction,
   employerEditCheckInAction,
@@ -22,6 +25,7 @@ import {
   isFullDayLeave,
   lessonDayKey,
   lessonMinutesInHongKong,
+  subtractMinuteRanges,
 } from "@/lib/calendar";
 import {
   pushCalendarHref,
@@ -223,6 +227,19 @@ export function EmployerMonthWorkspace({
     });
     availabilityByDay.set(leave.leave_date, list);
   }
+  const timedSickByCoachDate = new Map<string, { start: number; end: number }[]>();
+  for (const leave of leaves) {
+    if (isFullDayLeave(leave) || leave.kind !== "sick") {
+      continue;
+    }
+    const key = `${leave.coach_id}:${leave.leave_date}`;
+    const blocks = timedSickByCoachDate.get(key) ?? [];
+    blocks.push({
+      start: leave.start_minute ?? 0,
+      end: leave.end_minute ?? 0,
+    });
+    timedSickByCoachDate.set(key, blocks);
+  }
   const seenCompletedOnMonth = new Set<string>();
   for (const availability of availabilities) {
     if (!visibleStaff.has(availability.coach_id)) {
@@ -251,41 +268,51 @@ export function EmployerMonthWorkspace({
       availabilityByDay.set(availability.available_date, list);
       continue;
     }
-    for (const segment of availabilitySegments(
-      availability.available_date,
-      availability.start_minute,
-      availability.end_minute,
-      shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
-    )) {
-      if (!takeCompletedLessonOnce(segment, seenCompletedOnMonth)) {
-        continue;
+    const sickBlocks =
+      timedSickByCoachDate.get(
+        `${availability.coach_id}:${availability.available_date}`,
+      ) ?? [];
+    const openRanges = subtractMinuteRanges(
+      [{ start: availability.start_minute, end: availability.end_minute }],
+      sickBlocks,
+    );
+    for (const range of openRanges) {
+      for (const segment of availabilitySegments(
+        availability.available_date,
+        range.start,
+        range.end,
+        shiftLessons.filter((lesson) => lesson.coach_id === availability.coach_id),
+      )) {
+        if (!takeCompletedLessonOnce(segment, seenCompletedOnMonth)) {
+          continue;
+        }
+        const variant =
+          segment.lesson?.status === "assigned"
+            ? "pending"
+            : segment.lesson?.status === "completed"
+              ? "confirmed"
+              : "slot";
+        if (!variantVisible(variant, filter.statuses)) {
+          continue;
+        }
+        const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
+        const confirmedLabel =
+          variant === "confirmed"
+            ? checkedInLabel({
+                time: segmentTime,
+                typeName: typeMap.get(segment.lesson?.lesson_type_id ?? ""),
+                studentNames: segment.lesson?.student_names,
+                withStatus: false,
+              })
+            : segmentTime;
+        list.push({
+          id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
+          label: `${coachName} ${confirmedLabel}`,
+          coachName,
+          timeLabel: confirmedLabel,
+          variant,
+        });
       }
-      const variant =
-        segment.lesson?.status === "assigned"
-          ? "pending"
-          : segment.lesson?.status === "completed"
-            ? "confirmed"
-            : "slot";
-      if (!variantVisible(variant, filter.statuses)) {
-        continue;
-      }
-      const segmentTime = `${formatAvailabilityTime(segment.startMinute)}–${formatAvailabilityTime(segment.endMinute)}`;
-      const confirmedLabel =
-        variant === "confirmed"
-          ? checkedInLabel({
-              time: segmentTime,
-              typeName: typeMap.get(segment.lesson?.lesson_type_id ?? ""),
-              studentNames: segment.lesson?.student_names,
-              withStatus: false,
-            })
-          : segmentTime;
-      list.push({
-        id: `${availability.id}-${segment.startMinute}-${segment.endMinute}`,
-        label: `${coachName} ${confirmedLabel}`,
-        coachName,
-        timeLabel: confirmedLabel,
-        variant,
-      });
     }
     availabilityByDay.set(availability.available_date, list);
   }
@@ -416,7 +443,7 @@ export function EmployerMonthWorkspace({
           </ServerActionButton>
           <ServerActionButton
             action={markAssignmentSickLeaveAction.bind(null, lesson.id)}
-            confirmMessage="確定將這段派更轉為病假？"
+            confirmMessage="確定將這段派更轉為病假？重疊的可返工時間會一併取消，不再顯示待公司派更。"
             confirmLabel="確定轉為病假"
             confirmVariant="sick"
             variant="sickQuiet"
@@ -472,15 +499,33 @@ export function EmployerMonthWorkspace({
     const fullDay = isFullDayLeave(leave);
     const start = fullDay ? 0 : (leave.start_minute ?? 0);
     const end = fullDay ? 0 : (leave.end_minute ?? 0);
+    const sick = leave.kind === "sick";
+    const canCancel = day >= today;
     coachChips(leave.coachId, leave.coachName).items.push({
       key: leave.id,
       start,
-      tone: leave.kind === "sick" ? "sick" : "leave",
+      tone: sick ? "sick" : "leave",
       label: fullDay
-        ? leave.kind === "sick"
+        ? sick
           ? "全日病假"
           : "全日放假"
-        : `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)} ${leave.kind === "sick" ? "病假" : "放假"}`,
+        : `${formatAvailabilityTime(start)}–${formatAvailabilityTime(end)} ${sick ? "病假" : "放假"}`,
+      body: canCancel ? (
+        <ServerActionButton
+          action={employerCancelLeaveByIdAction.bind(null, leave.id)}
+          confirmMessage={
+            sick
+              ? "確定撤銷病假？已取消的派更同可返工時間會一併恢復。"
+              : "確定撤銷放假？已取消的可返工時間會一併恢復。"
+          }
+          confirmLabel={sick ? "確定撤銷病假" : "確定撤銷放假"}
+          confirmVariant={sick ? "sickQuiet" : "leaveQuiet"}
+          variant={sick ? "sickQuiet" : "leaveQuiet"}
+          className="w-full"
+        >
+          {sick ? "撤銷病假" : "撤銷放假"}
+        </ServerActionButton>
+      ) : undefined,
     });
   }
 
@@ -522,22 +567,10 @@ export function EmployerMonthWorkspace({
           start: leave.start_minute ?? 0,
           end: leave.end_minute ?? 0,
         }));
-      let openRanges = [{ start: slot.start, end: slot.end }];
-      for (const block of sickBlocks) {
-        openRanges = openRanges.flatMap((range) => {
-          if (block.end <= range.start || block.start >= range.end) {
-            return [range];
-          }
-          const next: { start: number; end: number }[] = [];
-          if (block.start > range.start) {
-            next.push({ start: range.start, end: block.start });
-          }
-          if (block.end < range.end) {
-            next.push({ start: block.end, end: range.end });
-          }
-          return next;
-        });
-      }
+      const openRanges = subtractMinuteRanges(
+        [{ start: slot.start, end: slot.end }],
+        sickBlocks,
+      );
       for (const range of openRanges) {
       for (const segment of availabilitySegments(
         day,

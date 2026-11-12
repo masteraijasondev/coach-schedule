@@ -1600,26 +1600,26 @@ export async function markAssignmentSickLeaveAction(
     }
 
     const window = lessonMinutesInHongKong(lesson.starts_at, lesson.ends_at);
-    const admin = createAdminClient();
-    const { error: leaveError } = await admin.from("staff_leaves").insert({
-      coach_id: lesson.coach_id,
-      leave_date: window.date,
-      start_minute: window.startMinute,
-      end_minute: window.endMinute,
-      kind: "sick",
+    // Same effects as coach sick leave: carve availability, cancel overlapping
+    // assigned shifts, and snapshot so undo can restore — no leftover 待公司派更.
+    const { error } = await supabase.rpc("employer_save_staff_sick_leave", {
+      p_coach_id: lesson.coach_id,
+      p_leave_date: window.date,
+      p_start_minute: window.startMinute,
+      p_end_minute: window.endMinute,
     });
-    if (leaveError) {
-      console.error("[markAssignmentSickLeaveAction] leave", { error: leaveError, lessonId });
-      return { ok: false, error: "轉為病假失敗" };
-    }
-
-    const { error } = await supabase
-      .from("lessons")
-      .update({ status: "cancelled" })
-      .eq("id", lessonId);
     if (error) {
-      console.error("[markAssignmentSickLeaveAction] cancel", { error, lessonId });
-      return { ok: false, error: "已記下病假，但未能取消原派更" };
+      console.error("[markAssignmentSickLeaveAction] sick leave", { error, lessonId });
+      if (error.message.includes("Completed work cannot be changed to sick leave")) {
+        return { ok: false, error: "已簽到的時段不能改為病假" };
+      }
+      if (error.message.includes("in the past")) {
+        return { ok: false, error: "過去的時段不能轉為病假" };
+      }
+      if (error.message.includes("leave day")) {
+        return { ok: false, error: "此時段已申報放假或小休" };
+      }
+      return { ok: false, error: "轉為病假失敗" };
     }
 
     revalidateCalendar();
