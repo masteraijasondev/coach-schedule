@@ -122,7 +122,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "coach-student-form",
         title: "新增學生",
-        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵同性別可以稍後再填。",
+        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵可以稍後再填。",
       },
     ],
   },
@@ -189,7 +189,7 @@ export const COACH_TOURS: RouteTour[] = [
       {
         id: "coach-student-form",
         title: "學生資料",
-        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵同性別可以稍後再填。",
+        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵可以稍後再填。",
       },
     ],
   },

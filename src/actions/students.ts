@@ -1,9 +1,6 @@
 "use server";
 
-import {
-  createAcuityClient,
-  type AcuityStudentGender,
-} from "@/lib/acuity";
+import { createAcuityClient } from "@/lib/acuity";
 import {
   createAirtableStudentProfile,
   listAirtableStudentNames,
@@ -44,16 +41,6 @@ export async function createStudentAction(
   }
 }
 
-function parseGender(value: string): AcuityStudentGender | null | "invalid" {
-  if (!value) {
-    return null;
-  }
-  if (value === "男" || value === "女") {
-    return value;
-  }
-  return "invalid";
-}
-
 export async function createAcuityStudentProfileAction(
   _prev: ActionResult | null,
   formData: FormData,
@@ -63,14 +50,10 @@ export async function createAcuityStudentProfileAction(
     if (profile.role !== "employer" && profile.role !== "coach") {
       return { ok: false, error: "沒有權限新增學生" };
     }
-    const gender = parseGender(String(formData.get("gender") ?? "").trim());
-    if (gender === "invalid") {
-      return { ok: false, error: "性別只可以選擇男或女" };
-    }
     const name = String(formData.get("name") ?? "");
     const phone = String(formData.get("phone") ?? "");
     const email = String(formData.get("email") ?? "");
-    const acuity = await createAcuityClient({ name, phone, email, gender });
+    const acuity = await createAcuityClient({ name, phone, email });
     if (!acuity.ok) {
       return acuity;
     }
@@ -80,7 +63,6 @@ export async function createAcuityStudentProfileAction(
       name,
       phone,
       email,
-      gender,
     });
     if (!airtable.ok) {
       return {

@@ -1,3 +1,4 @@
+import { splitClientName } from "@/lib/acuity";
 import type { SlotWindow } from "@/lib/fee-ledger";
 import { airtableSessionKind } from "@/lib/session-kind";
 
@@ -562,15 +563,11 @@ export async function lookupAirtableExpectedStudents(input: {
   }
 }
 
-const STUDENT_GENDERS = ["男", "女"] as const;
-export type AirtableStudentGender = (typeof STUDENT_GENDERS)[number];
-
 /** Mirror an Acuity client into the Airtable student table for tuition / check-in search. */
 export async function createAirtableStudentProfile(input: {
   name: string;
   phone: string;
   email: string | null;
-  gender: AirtableStudentGender | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const token = airtableToken();
   if (!token) {
@@ -589,26 +586,23 @@ export async function createAirtableStudentProfile(input: {
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "電郵格式不正確" };
   }
-  if (input.gender && !STUDENT_GENDERS.includes(input.gender)) {
-    return { ok: false, error: "性別只可以選擇男或女" };
-  }
   const last8 = digits.slice(-8);
   try {
     const duplicate = await airtablePhoneExists(token, last8);
     if (duplicate) {
       return { ok: false, error: "此電話已有學生（Airtable）" };
     }
+    // Full_Name / Student_Name are formulas (First+Last / Full_Name) — do not write them.
+    const { firstName, lastName } = splitClientName(name);
     const fields: Record<string, string> = {
-      "First Name": name,
-      Full_Name: name,
-      Student_Name: name,
+      "First Name": lastName === "-" ? name : firstName,
       Phone: phone,
     };
+    if (lastName !== "-") {
+      fields["Last Name"] = lastName;
+    }
     if (email) {
       fields.Email = email;
-    }
-    if (input.gender) {
-      fields.Gender = input.gender;
     }
     const response = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${STUDENT_TABLE}`,
@@ -618,16 +612,24 @@ export async function createAirtableStudentProfile(input: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ records: [{ fields }] }),
+        body: JSON.stringify({ records: [{ fields }], typecast: true }),
       },
     );
-    const payload = (await response.json()) as { error?: { message?: string } };
+    const payload = (await response.json()) as {
+      error?: { message?: string; type?: string };
+    };
     if (!response.ok) {
       console.error("[createAirtableStudentProfile] airtable", {
         status: response.status,
+        type: payload.error?.type,
         message: payload.error?.message,
       });
-      return { ok: false, error: "寫入 Airtable 失敗" };
+      return {
+        ok: false,
+        error: payload.error?.message
+          ? `寫入 Airtable 失敗（${payload.error.message}）`
+          : "寫入 Airtable 失敗",
+      };
     }
     studentNameCache = null;
     return { ok: true };

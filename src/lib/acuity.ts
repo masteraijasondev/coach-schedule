@@ -1,8 +1,5 @@
 const ACUITY_API_BASE = "https://acuityscheduling.com/api/v1";
 
-const STUDENT_GENDERS = ["男", "女"] as const;
-export type AcuityStudentGender = (typeof STUDENT_GENDERS)[number];
-
 function acuityCredentials(): { userId: string; apiKey: string } | null {
   const userId = process.env.ACUITY_USER_ID?.trim() || "";
   const apiKey = process.env.ACUITY_API_KEY?.trim() || "";
@@ -32,7 +29,6 @@ export async function createAcuityClient(input: {
   name: string;
   phone: string;
   email: string | null;
-  gender: AcuityStudentGender | null;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const credentials = acuityCredentials();
   if (!credentials) {
@@ -52,9 +48,6 @@ export async function createAcuityClient(input: {
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, error: "電郵格式不正確" };
   }
-  if (input.gender && !STUDENT_GENDERS.includes(input.gender)) {
-    return { ok: false, error: "性別只可以選擇男或女" };
-  }
 
   const { firstName, lastName } = splitClientName(name);
   const body: Record<string, string> = {
@@ -64,9 +57,6 @@ export async function createAcuityClient(input: {
   };
   if (email) {
     body.email = email;
-  }
-  if (input.gender) {
-    body.notes = `性別：${input.gender}`;
   }
 
   try {
