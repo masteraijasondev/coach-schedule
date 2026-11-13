@@ -122,7 +122,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "coach-student-form",
         title: "新增學生",
-        body: "姓名同電話必填。提交後資料寫入 Acuity 客戶名單。電郵同性別可以稍後再填。",
+        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵同性別可以稍後再填。",
       },
     ],
   },
@@ -133,7 +133,7 @@ export const EMPLOYER_TOURS: RouteTour[] = [
       {
         id: "employer-settings",
         title: "設定",
-        body: "按「同事與工作類型」改時薪或分成。按「課堂類型」設定計薪方式。按「新增學生」寫入 Acuity。",
+        body: "按「同事與工作類型」改時薪或分成。按「課堂類型」設定計薪方式。按「新增學生」寫入 Acuity 並同步 Airtable。",
       },
     ],
   },
@@ -189,7 +189,7 @@ export const COACH_TOURS: RouteTour[] = [
       {
         id: "coach-student-form",
         title: "學生資料",
-        body: "姓名同電話必填。提交後資料寫入 Acuity 客戶名單。電郵同性別可以稍後再填。",
+        body: "姓名同電話必填。提交後先寫入 Acuity，再同步到 Airtable。電郵同性別可以稍後再填。",
       },
     ],
   },

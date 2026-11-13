@@ -3,6 +3,7 @@
 import { createAcuityStudentProfileAction } from "@/actions/students";
 import { ActionForm } from "@/components/action-form";
 import { Field, SelectField, SubmitButton } from "@/components/ui";
+import { clearAirtableStudentNamesCache } from "@/lib/airtable-student-names-client";
 import { useState } from "react";
 
 export function NewStudentForm() {
@@ -13,8 +14,11 @@ export function NewStudentForm() {
       <ActionForm
         action={createAcuityStudentProfileAction}
         className="space-y-3"
-        successMessage="已新增學生到 Acuity"
-        onSuccess={() => setGeneration((current) => current + 1)}
+        successMessage="已新增學生到 Acuity，並同步到 Airtable"
+        onSuccess={() => {
+          clearAirtableStudentNamesCache();
+          setGeneration((current) => current + 1);
+        }}
       >
         <div key={generation} className="space-y-3">
           <Field label="姓名" name="name" required />

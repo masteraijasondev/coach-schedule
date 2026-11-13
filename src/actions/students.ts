@@ -5,6 +5,7 @@ import {
   type AcuityStudentGender,
 } from "@/lib/acuity";
 import {
+  createAirtableStudentProfile,
   listAirtableStudentNames,
   lookupAirtableExpectedStudents,
   searchAirtableStudents,
@@ -66,15 +67,28 @@ export async function createAcuityStudentProfileAction(
     if (gender === "invalid") {
       return { ok: false, error: "性別只可以選擇男或女" };
     }
-    const result = await createAcuityClient({
-      name: String(formData.get("name") ?? ""),
-      phone: String(formData.get("phone") ?? ""),
-      email: String(formData.get("email") ?? ""),
+    const name = String(formData.get("name") ?? "");
+    const phone = String(formData.get("phone") ?? "");
+    const email = String(formData.get("email") ?? "");
+    const acuity = await createAcuityClient({ name, phone, email, gender });
+    if (!acuity.ok) {
+      return acuity;
+    }
+
+    // Acuity is source of create; mirror into Airtable for tuition / check-in search.
+    const airtable = await createAirtableStudentProfile({
+      name,
+      phone,
+      email,
       gender,
     });
-    if (!result.ok) {
-      return result;
+    if (!airtable.ok) {
+      return {
+        ok: false,
+        error: `已新增至 Acuity，但同步 Airtable 失敗：${airtable.error}`,
+      };
     }
+
     revalidatePath("/employer/students");
     revalidatePath("/coach/students");
     return { ok: true, data: undefined };
