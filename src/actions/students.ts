@@ -1,15 +1,15 @@
 "use server";
 
 import {
-  createAirtableStudent,
-  createAirtableStudentProfile,
+  createAcuityClient,
+  type AcuityStudentGender,
+} from "@/lib/acuity";
+import {
   listAirtableStudentNames,
   lookupAirtableExpectedStudents,
   searchAirtableStudents,
-  type AirtableStudentGender,
 } from "@/lib/airtable-tuition";
 import { requireEmployer, requireProfile } from "@/lib/auth";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 import { revalidatePath } from "next/cache";
@@ -43,7 +43,7 @@ export async function createStudentAction(
   }
 }
 
-function parseGender(value: string): AirtableStudentGender | null | "invalid" {
+function parseGender(value: string): AcuityStudentGender | null | "invalid" {
   if (!value) {
     return null;
   }
@@ -53,7 +53,7 @@ function parseGender(value: string): AirtableStudentGender | null | "invalid" {
   return "invalid";
 }
 
-export async function createAirtableStudentProfileAction(
+export async function createAcuityStudentProfileAction(
   _prev: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -66,7 +66,7 @@ export async function createAirtableStudentProfileAction(
     if (gender === "invalid") {
       return { ok: false, error: "性別只可以選擇男或女" };
     }
-    const result = await createAirtableStudentProfile({
+    const result = await createAcuityClient({
       name: String(formData.get("name") ?? ""),
       phone: String(formData.get("phone") ?? ""),
       email: String(formData.get("email") ?? ""),
@@ -79,42 +79,7 @@ export async function createAirtableStudentProfileAction(
     revalidatePath("/coach/students");
     return { ok: true, data: undefined };
   } catch (error) {
-    console.error("[createAirtableStudentProfileAction]", { error });
-    return { ok: false, error: "新增學生時發生錯誤" };
-  }
-}
-
-export async function createCheckInStudentAction(
-  name: string,
-): Promise<ActionResult<{ id: string; name: string; airtableSaved: boolean }>> {
-  try {
-    const profile = await requireProfile();
-    if (profile.role !== "coach" && profile.role !== "employer") {
-      return { ok: false, error: "沒有權限新增學生" };
-    }
-    const trimmed = name.trim();
-    if (!trimmed) {
-      return { ok: false, error: "請輸入學生姓名" };
-    }
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("students")
-      .insert({ name: trimmed })
-      .select("id, name")
-      .single();
-    if (error || !data) {
-      console.error("[createCheckInStudentAction]", { error });
-      return { ok: false, error: "新增學生失敗" };
-    }
-    const airtable = await createAirtableStudent(trimmed);
-    revalidatePath("/employer/students");
-    revalidatePath("/coach");
-    return {
-      ok: true,
-      data: { id: data.id, name: data.name, airtableSaved: airtable.ok },
-    };
-  } catch (error) {
-    console.error("[createCheckInStudentAction] unexpected", { error });
+    console.error("[createAcuityStudentProfileAction]", { error });
     return { ok: false, error: "新增學生時發生錯誤" };
   }
 }
