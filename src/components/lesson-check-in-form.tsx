@@ -598,7 +598,7 @@ function LessonCheckInFields({
           !searchError ? (
             <p className="text-xs text-stone-500">沒有符合的學生</p>
           ) : null}
-          <div className="max-h-36 space-y-1 overflow-auto">
+          <div className="student-match-list max-h-36 touch-pan-y space-y-1 pr-1">
             {searchNames.map((name) => (
               <button
                 key={name}

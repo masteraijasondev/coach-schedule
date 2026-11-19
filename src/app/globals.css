@@ -15,3 +15,27 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* iOS and Android use overlay scrollbars that stay hidden until a drag.
+   The student match list is short and clipped, so the bar has to stay visible. */
+.student-match-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #a8a29e #f5f5f4;
+}
+
+.student-match-list::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 8px;
+}
+
+.student-match-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: #a8a29e;
+}
+
+.student-match-list::-webkit-scrollbar-track {
+  background-color: #f5f5f4;
+}
